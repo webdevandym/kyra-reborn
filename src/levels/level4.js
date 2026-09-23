@@ -18,6 +18,6 @@ export default {
   ],
   signs: [
     { col: 10, text: { uk: 'Літаюча морквина!\nСтрибни на неї зверху', en: 'Flying carrot!\nJump on it from above' } },
-    { col: 76, text: { uk: 'Бджола! Пробіжи під нею\nабо стрибни зверху', en: 'A bee! Run under it\nor jump on it' } },
+    { col: 76, text: { uk: 'Бджола! Пробіжи під нею,\nколи вона вгорі,\nабо стрибни зверху', en: 'A bee! Run under it\nwhen it flies high,\nor jump on it' } },
   ],
 };

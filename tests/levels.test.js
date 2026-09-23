@@ -30,6 +30,7 @@ test('the level list is level1 to level5 in order, with difficulty 1-3 that neve
     assert.ok(def.difficulty >= previous, `${def.id} is easier than the level before it`);
     previous = def.difficulty;
   }
+  assert.deepEqual(levels.map((def) => def.difficulty), [1, 1, 2, 2, 3]);
 });
 
 function surfaceRow(map, col) {

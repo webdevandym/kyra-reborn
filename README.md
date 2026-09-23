@@ -26,7 +26,7 @@ Open <http://localhost:8123> in Chrome. ES modules need a local server, so openi
 - Jump on a carrot to remove it. A big zombie shrinks and speeds up on the first jump and disappears on the second.
 - Propeller carrots and bees fly back and forth; one jump from above removes them. You can run under a bee when it is at the top of its wave.
 - Touching an enemy any other way costs a life and restarts the level. Crystals you already collected stay collected.
-- Any level can be picked on the main screen. With no lives left, "Try again" restarts the level you picked.
+- Any level can be picked on the main screen. With no lives left, "Try again" restarts the level you picked, and "Main menu" goes back to the level picker.
 
 ## Develop
 

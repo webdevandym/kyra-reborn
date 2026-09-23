@@ -97,7 +97,7 @@ test('touching a carrot costs a life and restarts the level but keeps collected 
   assert.equal(game.points, 2);
 });
 
-test('losing the last life is game over, and confirm starts again from level 1 with fresh lives', () => {
+test('losing the last life is game over, and confirm starts again from the picked level (level 1 by default) with fresh lives', () => {
   const game = createGame([CRYSTALS_THEN_CARROT, EMPTY_RUN], { best: 1 });
   start(game);
   game.lives = 1;
