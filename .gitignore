@@ -3,3 +3,5 @@ node_modules/
 .worktrees/
 .DS_Store
 .playwright-mcp/
+.claude/worktrees/
+.superpowers/
