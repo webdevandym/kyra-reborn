@@ -1,0 +1,245 @@
+:root {
+  --paper: #fbfcff;
+  --card: #fffef8;
+  --ink: #2340a8;
+  --ink-soft: #5a72c4;
+  --desk: #d9e3f2;
+  --comb: #e5484d;
+  --sun: #ffd84d;
+  --sign: #fff1c1;
+  --grass: #8bd17c;
+  --shadow: rgba(35, 64, 168, 0.18);
+  --font-hand: "Caveat", "Comic Sans MS", "Chalkboard SE", cursive;
+  --font-ui: "Balsamiq Sans", system-ui, sans-serif;
+  --wobbly: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--desk);
+  color: var(--ink);
+  font-family: var(--font-ui);
+}
+
+.desk {
+  min-height: 100%;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  padding-inline: 16px;
+  padding-block: 16px;
+}
+
+.stage {
+  position: relative;
+  width: min(calc(100vw - 32px), calc((100dvh - 96px) * 16 / 9), 1600px);
+  aspect-ratio: 16 / 9;
+  max-width: 100%;
+  container-type: inline-size;
+  border-radius: 6px;
+  box-shadow: 0 2px 0 rgba(35, 64, 168, 0.12), 0 18px 40px -18px rgba(35, 64, 168, 0.45);
+  overflow: hidden;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--paper);
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 3cqi;
+  overflow: auto;
+  background: rgba(251, 252, 255, 0.35);
+}
+
+.card {
+  display: grid;
+  justify-items: center;
+  gap: 1.6cqi;
+  max-width: min(92%, 62cqi);
+  padding: 3cqi 5cqi;
+  background: var(--card);
+  border: 3px solid var(--ink);
+  border-radius: var(--wobbly);
+  box-shadow: 0.6cqi 0.8cqi 0 var(--shadow);
+  text-align: center;
+  font-size: clamp(12px, 2.1cqi, 24px);
+  transform: rotate(-0.6deg);
+}
+
+.card h2 {
+  margin: 0;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 6.2cqi;
+  line-height: 1;
+  text-wrap: balance;
+}
+
+.logo {
+  margin: 0;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 10cqi;
+  line-height: 0.9;
+  letter-spacing: 0.01em;
+  text-decoration: underline wavy var(--comb) 0.35cqi;
+  text-underline-offset: 1.4cqi;
+}
+
+.subtitle {
+  margin: 0;
+  font-family: var(--font-hand);
+  font-weight: 600;
+  font-size: 3.4cqi;
+}
+
+.lead,
+.stat {
+  margin: 0;
+}
+
+.stat strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.2cqi;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.45em 1.1em;
+  font: 700 1em var(--font-ui);
+  color: var(--ink);
+  background: var(--sign);
+  border: 3px solid var(--ink);
+  border-radius: var(--wobbly);
+  cursor: pointer;
+  transition: transform 120ms ease;
+}
+
+.btn--primary {
+  font-size: 1.35em;
+  background: var(--sun);
+}
+
+.btn--quiet {
+  background: transparent;
+}
+
+.btn:hover,
+.btn:focus-visible {
+  transform: rotate(-1.5deg) scale(1.05);
+}
+
+.btn:focus-visible {
+  outline: 3px dashed var(--comb);
+  outline-offset: 4px;
+}
+
+kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 0.05em 0.4em;
+  font: 700 0.8em var(--font-ui);
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-bottom-width: 4px;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.banner {
+  position: absolute;
+  top: 34%;
+  left: 50%;
+  translate: -50% 0;
+  padding: 1.2cqi 4cqi;
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 6cqi;
+  white-space: nowrap;
+  background: var(--card);
+  border: 3px solid var(--ink);
+  border-radius: var(--wobbly);
+  box-shadow: 0.6cqi 0.8cqi 0 var(--shadow);
+  animation: banner-in 420ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+@keyframes banner-in {
+  from {
+    transform: translateY(-40%) rotate(-4deg) scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: rotate(-1deg);
+    opacity: 1;
+  }
+}
+
+.touch-note {
+  display: none;
+  margin: 0;
+  color: var(--comb);
+}
+
+@media (pointer: coarse) {
+  .touch-note {
+    display: block;
+  }
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 22px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+
+.legend kbd {
+  margin-right: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .banner {
+    animation: none;
+  }
+  .btn {
+    transition: none;
+  }
+}

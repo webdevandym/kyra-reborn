@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kyra Reborn</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='28' cy='38' r='20' fill='%23FFFDF5' stroke='%232340A8' stroke-width='4'/%3E%3Ccircle cx='40' cy='20' r='12' fill='%23FFFDF5' stroke='%232340A8' stroke-width='4'/%3E%3Cpath d='M50 18l10 4-10 4z' fill='%23F59E0B'/%3E%3Ccircle cx='36' cy='8' r='5' fill='%23E5484D'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Balsamiq+Sans:wght@400;700&family=Caveat:wght@600;700&display=swap" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="desk">
+    <div class="stage" id="stage">
+      <canvas id="game" width="960" height="540" aria-label="Kyra Reborn"></canvas>
+
+      <section class="overlay" data-screen="title" aria-labelledby="title-heading">
+        <div class="card card--title">
+          <h1 id="title-heading" class="logo">Kyra Reborn</h1>
+          <p class="subtitle" data-i18n="subtitle"></p>
+          <button class="btn btn--primary" type="button" data-action="confirm" data-primary><span data-i18n="play"></span> <kbd>Enter</kbd></button>
+          <div class="row">
+            <button class="btn" type="button" data-action="lang"><kbd>L</kbd> <span data-i18n="otherLanguage"></span></button>
+            <button class="btn" type="button" data-action="mute"><kbd>M</kbd> <span data-sound-label></span></button>
+          </div>
+          <p class="stat"><span data-i18n="best"></span>: <strong data-stat="best"></strong></p>
+          <p class="touch-note" data-i18n="keyboardNeeded"></p>
+        </div>
+      </section>
+
+      <div class="banner" data-screen="intro" hidden>
+        <span data-stat="levelTitle"></span>
+      </div>
+
+      <section class="overlay" data-screen="paused" aria-labelledby="pause-heading" hidden>
+        <div class="card">
+          <h2 id="pause-heading" data-i18n="paused"></h2>
+          <button class="btn btn--primary" type="button" data-action="resume" data-primary><span data-i18n="resume"></span> <kbd>Esc</kbd></button>
+          <div class="row">
+            <button class="btn" type="button" data-action="lang"><kbd>L</kbd> <span data-i18n="otherLanguage"></span></button>
+            <button class="btn" type="button" data-action="mute"><kbd>M</kbd> <span data-sound-label></span></button>
+          </div>
+          <button class="btn btn--quiet" type="button" data-action="menu" data-i18n="menu"></button>
+        </div>
+      </section>
+
+      <section class="overlay" data-screen="levelComplete" aria-labelledby="complete-heading" hidden>
+        <div class="card">
+          <h2 id="complete-heading" data-i18n="levelComplete"></h2>
+          <p class="stat"><span data-i18n="crystals"></span>: <strong data-stat="crystals"></strong></p>
+          <p class="stat"><span data-i18n="points"></span>: <strong data-stat="points"></strong></p>
+          <button class="btn btn--primary" type="button" data-action="confirm" data-primary><span data-i18n="next"></span> <kbd>Enter</kbd></button>
+        </div>
+      </section>
+
+      <section class="overlay" data-screen="gameOver" aria-labelledby="gameover-heading" hidden>
+        <div class="card">
+          <h2 id="gameover-heading" data-i18n="gameOver"></h2>
+          <p class="stat"><span data-i18n="points"></span>: <strong data-stat="points"></strong></p>
+          <p class="stat"><span data-i18n="best"></span>: <strong data-stat="best"></strong></p>
+          <button class="btn btn--primary" type="button" data-action="confirm" data-primary><span data-i18n="tryAgain"></span> <kbd>Enter</kbd></button>
+        </div>
+      </section>
+
+      <section class="overlay" data-screen="victory" aria-labelledby="victory-heading" hidden>
+        <div class="card">
+          <h2 id="victory-heading" data-i18n="victory"></h2>
+          <p class="lead" data-i18n="allLevelsDone"></p>
+          <p class="stat"><span data-i18n="crystals"></span>: <strong data-stat="crystals"></strong></p>
+          <p class="stat"><span data-i18n="points"></span>: <strong data-stat="points"></strong></p>
+          <p class="stat"><span data-i18n="best"></span>: <strong data-stat="best"></strong></p>
+          <p class="lead" data-i18n="comingSoon"></p>
+          <button class="btn btn--primary" type="button" data-action="confirm" data-primary><span data-i18n="playAgain"></span> <kbd>Enter</kbd></button>
+        </div>
+      </section>
+    </div>
+
+    <ul class="legend" aria-label="Controls">
+      <li><kbd>←</kbd><kbd>→</kbd> <span data-i18n="walk"></span></li>
+      <li><kbd>Space</kbd> <span data-i18n="jump"></span></li>
+      <li><kbd>P</kbd> <span data-i18n="pause"></span></li>
+      <li><kbd>M</kbd> <span data-i18n="sound"></span></li>
+      <li><kbd>L</kbd> <span data-i18n="language"></span></li>
+    </ul>
+  </main>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
