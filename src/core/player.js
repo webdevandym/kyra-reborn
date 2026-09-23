@@ -16,6 +16,7 @@ export function createPlayer(spawn) {
     coyote: 0,
     buffer: 0,
     jumping: false,
+    squash: 0,
     invuln: PLAYER.spawnGrace,
     dead: false,
     won: false,
@@ -49,6 +50,8 @@ export function updatePlayer(p, input, dt, level) {
   applyGravity(p, dt);
   const wasOnGround = p.onGround;
   moveAndCollide(p, dt, level);
+  const landed = !wasOnGround && p.onGround;
+  p.squash = landed ? PLAYER.squashTime : Math.max(0, p.squash - dt);
   p.invuln = Math.max(0, p.invuln - dt);
-  return { jumped, landed: !wasOnGround && p.onGround };
+  return { jumped, landed };
 }

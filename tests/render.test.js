@@ -41,6 +41,7 @@ test('every sprite draws without errors and with finite coordinates', () => {
   const { ctx, calls } = mockContext();
   drawChicken(ctx, { x: 100, y: 450, facing: -1, vx: 200, onGround: true }, 1.3);
   drawChicken(ctx, { x: 100, y: 300, facing: 1, vx: 0, onGround: false, celebrate: true }, 2.1);
+  drawChicken(ctx, { x: 100, y: 450, squash: 0.1 }, 0.3);
   drawCarrot(ctx, { x: 200, y: 450, dir: 1, anim: 3 }, 0.5);
   drawZombie(ctx, { x: 300, y: 450, size: 'big', anim: 1, dizzy: 0, dir: -1 }, 0.7);
   drawZombie(ctx, { x: 300, y: 450, size: 'small', anim: 1, dizzy: 0.4, dir: 1 }, 0.7);

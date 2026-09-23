@@ -23,6 +23,7 @@ export const PLAYER = {
   stompTolerance: 12,
   stompGrace: 0.35,
   spawnGrace: 1.0,
+  squashTime: 0.14,
 };
 
 export const CARROT = { w: 30, h: 38, speed: 60 };

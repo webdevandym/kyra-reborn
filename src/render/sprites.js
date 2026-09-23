@@ -1,4 +1,4 @@
-import { COLORS, ZOMBIE } from '../config.js';
+import { COLORS, PLAYER, ZOMBIE } from '../config.js';
 import { inkShape, inkEllipse, inkLine, inkPoly, inkRect } from './ink.js';
 
 const INK_W = 2.6;
@@ -26,16 +26,17 @@ export function drawStar(ctx, x, y, r, color = COLORS.star, seed = 1) {
 }
 
 export function drawChicken(ctx, chicken, time, seed = 11) {
-  const { x, y, facing = 1, vx = 0, onGround = true, celebrate = false } = chicken;
+  const { x, y, facing = 1, vx = 0, onGround = true, celebrate = false, squash = 0 } = chicken;
   const speed = Math.min(1, Math.abs(vx) / 260);
   const phase = time * 16;
   const hop = celebrate ? Math.abs(Math.sin(time * 7)) * 16 : 0;
   const bob = onGround && speed > 0.1 ? Math.abs(Math.sin(phase)) * 2.5 : 0;
   const swing = onGround ? Math.sin(phase) * 6 * speed : 3;
+  const k = squash / PLAYER.squashTime;
 
   ctx.save();
   ctx.translate(x, y - hop);
-  ctx.scale(facing, 1);
+  ctx.scale(facing * (1 + 0.25 * k), 1 - 0.3 * k);
 
   const legY = -12 - bob;
   marker(ctx, [[-5, legY], [-6 + swing, -1]], COLORS.beak, 2, seed + 1);

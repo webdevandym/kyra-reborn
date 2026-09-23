@@ -103,6 +103,19 @@ test('pressing jump in mid-air without coyote time does nothing', () => {
   assert.equal(r.jumped, false);
 });
 
+test('squash flattens the chicken on landing and eases back out over squashTime', () => {
+  const level = flat();
+  const p = createPlayer(level.spawn);
+  let squashAtLanding = -1;
+  runSteps(150, (i) => {
+    const r = updatePlayer(p, { ...IDLE, jumpPressed: i === 0, jumpHeld: true }, STEP, level);
+    if (r.landed) squashAtLanding = p.squash;
+  });
+  assert.equal(squashAtLanding, PLAYER.squashTime);
+  runSteps(Math.ceil(PLAYER.squashTime / STEP), () => updatePlayer(p, IDLE, STEP, level));
+  assert.equal(p.squash, 0);
+});
+
 test('invulnerability counts down to zero', () => {
   const level = flat();
   const p = createPlayer(level.spawn);
