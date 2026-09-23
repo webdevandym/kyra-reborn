@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "description": "Kyra Reborn — a notebook-doodle chicken platformer for kids",
+  "engines": { "node": ">=22" },
   "scripts": {
     "test": "node --test 'tests/**/*.test.js'",
     "dev": "python3 -m http.server 8123"

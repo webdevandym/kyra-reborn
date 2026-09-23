@@ -17,7 +17,7 @@ export default {
   ],
   signs: [
     { col: 4, text: { uk: '← → — йти', en: '← → to walk' } },
-    { col: 11, text: { uk: 'Пробіл — стрибок!', en: 'Space to jump!' } },
+    { col: 11, text: { uk: 'Пробіл — стрибок!\nТримай — вище!', en: 'Space to jump!\nHold it to go higher!' } },
     { col: 20, text: { uk: 'Стрибни на\nморквину зверху!', en: 'Jump on the\ncarrot from above!' } },
     { col: 42, text: { uk: '5 кристалів =\n+1 життя', en: '5 crystals =\n+1 life' } },
     { col: 92, text: { uk: 'Зелений кристал —\nфініш!', en: 'Green crystal =\nfinish!' } },
