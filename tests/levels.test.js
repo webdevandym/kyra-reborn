@@ -7,9 +7,30 @@ import levels from '../src/levels/index.js';
 const standable = (ch) => ch === '#' || ch === '=';
 
 const EXPECTED_COUNTS = {
-  level1: { crystals: 15, carrots: 5, zombies: 0 },
-  level2: { crystals: 20, carrots: 6, zombies: 3 },
+  level1: { crystals: 15, carrot: 5, zombie: 0, propeller: 0, bee: 0 },
+  level2: { crystals: 20, carrot: 6, zombie: 3, propeller: 0, bee: 0 },
+  level3: { crystals: 22, carrot: 7, zombie: 5, propeller: 0, bee: 0 },
+  level4: { crystals: 22, carrot: 4, zombie: 2, propeller: 4, bee: 4 },
+  level5: { crystals: 25, carrot: 7, zombie: 4, propeller: 4, bee: 5 },
 };
+
+function cellsOf(map, chars) {
+  const cells = [];
+  map.forEach((line, row) => [...line].forEach((ch, col) => {
+    if (chars.includes(ch)) cells.push({ ch, col, row });
+  }));
+  return cells;
+}
+
+test('the level list is level1 to level5 in order, with difficulty 1-3 that never goes down', () => {
+  assert.deepEqual(levels.map((def) => def.id), ['level1', 'level2', 'level3', 'level4', 'level5']);
+  let previous = 1;
+  for (const def of levels) {
+    assert.ok(Number.isInteger(def.difficulty) && def.difficulty >= 1 && def.difficulty <= 3, `${def.id} difficulty ${def.difficulty}`);
+    assert.ok(def.difficulty >= previous, `${def.id} is easier than the level before it`);
+    previous = def.difficulty;
+  }
+});
 
 function surfaceRow(map, col) {
   for (let row = 0; row < ROWS; row++) if (map[row][col] === '#') return row;
@@ -74,6 +95,27 @@ for (const def of levels) {
     });
   });
 
+  test(`${def.id}: every propeller carrot hovers directly above a surface`, () => {
+    for (const { col, row } of cellsOf(def.map, 'p')) {
+      assert.ok(row + 1 < ROWS && standable(def.map[row + 1][col]), `propeller carrot at ${col},${row}`);
+    }
+  });
+
+  test(`${def.id}: every bee has open air above and below it and a surface two rows down`, () => {
+    for (const { col, row } of cellsOf(def.map, 'b')) {
+      assert.ok(row === 0 || def.map[row - 1][col] !== '#', `ground above the bee at ${col},${row}`);
+      assert.ok(row + 1 < ROWS && !standable(def.map[row + 1][col]), `surface right under the bee at ${col},${row}`);
+      assert.ok(row + 2 < ROWS && standable(def.map[row + 2][col]), `no surface two rows under the bee at ${col},${row}`);
+    }
+  });
+
+  test(`${def.id}: no enemy starts within 5 columns of the chicken`, () => {
+    const [spawn] = cellsOf(def.map, 'C');
+    for (const { ch, col } of cellsOf(def.map, 'cZpb')) {
+      assert.ok(Math.abs(col - spawn.col) > 5, `'${ch}' at column ${col}, chicken at ${spawn.col}`);
+    }
+  });
+
   test(`${def.id}: the chicken, enemies and goal stand on something`, () => {
     def.map.forEach((line, row) => {
       [...line].forEach((ch, col) => {
@@ -84,12 +126,14 @@ for (const def of levels) {
   });
 }
 
-test('each level matches the spec exact crystal, carrot and zombie counts', () => {
+test('each level matches the spec exact crystal and enemy counts', () => {
   for (const def of levels) {
     const level = parseLevel(def);
     const expected = EXPECTED_COUNTS[def.id];
+    assert.ok(expected, `${def.id} has expected counts`);
     assert.equal(level.crystals.length, expected.crystals, `${def.id} crystals`);
-    assert.equal(level.enemies.filter((e) => e.kind === 'carrot').length, expected.carrots, `${def.id} carrots`);
-    assert.equal(level.enemies.filter((e) => e.kind === 'zombie').length, expected.zombies, `${def.id} zombies`);
+    for (const kind of ['carrot', 'zombie', 'propeller', 'bee']) {
+      assert.equal(level.enemies.filter((e) => e.kind === kind).length, expected[kind], `${def.id} ${kind}`);
+    }
   }
 });
