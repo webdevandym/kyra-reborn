@@ -6,6 +6,11 @@ import levels from '../src/levels/index.js';
 
 const standable = (ch) => ch === '#' || ch === '=';
 
+const EXPECTED_COUNTS = {
+  level1: { crystals: 15, carrots: 5, zombies: 0 },
+  level2: { crystals: 20, carrots: 6, zombies: 3 },
+};
+
 function surfaceRow(map, col) {
   for (let row = 0; row < ROWS; row++) if (map[row][col] === '#') return row;
   return ROWS;
@@ -29,7 +34,6 @@ for (const def of levels) {
     const level = parseLevel(def);
     assert.ok(def.name.uk && def.name.en);
     for (const sign of def.signs) assert.ok(sign.text.uk && sign.text.en, `sign at col ${sign.col}`);
-    assert.ok(level.crystals.length >= 10, 'at least 10 red crystals');
   });
 
   test(`${def.id}: has no pits — every column has solid ground on the bottom row`, () => {
@@ -80,9 +84,12 @@ for (const def of levels) {
   });
 }
 
-test('level 1 teaches with carrots only; level 2 adds zombies', () => {
-  const [one, two] = levels.map(parseLevel);
-  assert.equal(one.enemies.filter((e) => e.kind === 'zombie').length, 0);
-  assert.ok(one.enemies.filter((e) => e.kind === 'carrot').length >= 4);
-  assert.ok(two.enemies.filter((e) => e.kind === 'zombie').length >= 3);
+test('each level matches the spec exact crystal, carrot and zombie counts', () => {
+  for (const def of levels) {
+    const level = parseLevel(def);
+    const expected = EXPECTED_COUNTS[def.id];
+    assert.equal(level.crystals.length, expected.crystals, `${def.id} crystals`);
+    assert.equal(level.enemies.filter((e) => e.kind === 'carrot').length, expected.carrots, `${def.id} carrots`);
+    assert.equal(level.enemies.filter((e) => e.kind === 'zombie').length, expected.zombies, `${def.id} zombies`);
+  }
 });

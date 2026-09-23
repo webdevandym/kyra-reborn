@@ -54,4 +54,5 @@ test('parseLevel rejects malformed maps with a message naming the problem', () =
   assert.throws(() => parseLevel({ ...base, map: mapFromBottom(['...G', '####']) }), /missing chicken start/);
   assert.throws(() => parseLevel({ ...base, map: mapFromBottom(['C...', '####']) }), /missing green crystal/);
   assert.throws(() => parseLevel({ ...base, map: mapFromBottom(['CC.G', '####']) }), /more than one chicken/);
+  assert.throws(() => parseLevel({ ...base, map: mapFromBottom(['C.GG', '####']) }), /more than one green crystal/);
 });
