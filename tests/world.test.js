@@ -125,3 +125,30 @@ test('touching the green crystal wins the level', () => {
   assert.equal(world.done, true);
   assert.equal(world.player.won, true);
 });
+
+for (const [kind, map] of [
+  ['propeller', ['C........p..........G', '#####################']],
+  ['bee', ['.........b...........', 'C...................G', '#####################']],
+]) {
+  test(`landing on a ${kind} from above defeats it and bounces the chicken up`, () => {
+    const world = createWorld(testLevel(map));
+    dropOnto(world, world.enemies[0], 20);
+    let stomp = null;
+    for (let i = 0; i < 120 && !stomp; i++) stomp = world.step(STEP, IDLE).find((e) => e.type === 'stomp');
+    assert.ok(stomp, 'stomped');
+    assert.equal(stomp.kind, kind);
+    assert.equal(stomp.result, 'defeated');
+    assert.equal(world.enemies.length, 0);
+    assert.equal(world.player.vy, -PLAYER.stompBounce);
+    assert.equal(world.done, false);
+  });
+}
+
+test('walking into a propeller carrot from the side is a hit', () => {
+  const world = createWorld(testLevel(['C........p..........G', '#####################']));
+  world.player.invuln = 0;
+  const events = run(world, RIGHT, 3);
+  assert.ok(!types(events).includes('stomp'));
+  assert.deepEqual(types(events).filter((t) => t === 'hit'), ['hit']);
+  assert.equal(world.player.dead, true);
+});

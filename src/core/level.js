@@ -1,8 +1,8 @@
 import { TILE, ROWS } from '../config.js';
 
 const TILE_KINDS = { '#': 'solid', '=': 'oneway' };
-const ENEMY_CHARS = { c: 'carrot', Z: 'zombie' };
-const KNOWN_CHARS = new Set(['.', '#', '=', 'C', 'c', 'Z', 'r', 'G']);
+const ENEMY_CHARS = { c: 'carrot', Z: 'zombie', p: 'propeller', b: 'bee' };
+const KNOWN_CHARS = new Set(['.', '#', '=', 'C', 'c', 'Z', 'p', 'b', 'r', 'G']);
 
 export function parseLevel(def) {
   const { id, map } = def;
@@ -46,6 +46,7 @@ export function parseLevel(def) {
   const level = {
     id,
     name: def.name,
+    difficulty: def.difficulty ?? 1,
     cols,
     rows: ROWS,
     width: cols * TILE,

@@ -26,6 +26,19 @@ test('parseLevel reads size, tiles, spawn, goal, enemies and crystals', () => {
   assert.equal(tileAt(level, 3, 9), 'empty');
 });
 
+test('parseLevel reads p as a propeller carrot and b as a bee, with feet on the bottom edge of their tile', () => {
+  const level = testLevel(['..b......', '.....p...', 'C.......G', '#########']);
+  assert.deepEqual(level.enemies, [
+    { kind: 'bee', x: 2.5 * TILE, y: 9 * TILE },
+    { kind: 'propeller', x: 5.5 * TILE, y: 10 * TILE },
+  ]);
+});
+
+test('parseLevel passes difficulty through and defaults it to 1', () => {
+  assert.equal(testLevel(['C.G', '###']).difficulty, 1);
+  assert.equal(testLevel(['C.G', '###'], { difficulty: 3 }).difficulty, 3);
+});
+
 test('tileAt treats the left/right edges and the floor as solid and the sky as empty', () => {
   const level = testLevel(['C........G', '##########']);
   assert.equal(tileAt(level, -1, 5), 'solid');

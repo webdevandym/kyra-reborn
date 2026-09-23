@@ -1,4 +1,4 @@
-import { TILE, CARROT, ZOMBIE } from '../config.js';
+import { TILE, CARROT, ZOMBIE, PROPELLER, BEE, FLYER } from '../config.js';
 import { applyGravity, moveAndCollide } from './physics.js';
 import { tileAt } from './level.js';
 
@@ -63,7 +63,65 @@ const zombie = {
   },
 };
 
-export const ENEMY_KINDS = { carrot, zombie };
+const EPS = 0.001;
+
+function flyerFeet(e) {
+  return e.homeY + e.bob * Math.sin(e.phase) + e.h / 2;
+}
+
+function envelopeBlocked(e, level, col) {
+  const rowTop = Math.floor((e.homeY - e.bob - e.h / 2) / TILE);
+  const rowBottom = Math.floor((e.homeY + e.bob + e.h / 2 - EPS) / TILE);
+  for (let row = rowTop; row <= rowBottom; row++) {
+    if (tileAt(level, col, row) === 'solid') return true;
+  }
+  return false;
+}
+
+function hover(e, dt, level) {
+  e.phase += e.bobSpeed * dt;
+  let x = e.x + e.dir * e.speed * dt;
+  const col = e.dir > 0 ? Math.floor((x + e.w / 2 - EPS) / TILE) : Math.floor((x - e.w / 2) / TILE);
+  if (envelopeBlocked(e, level, col)) {
+    x = e.dir > 0 ? col * TILE - e.w / 2 : (col + 1) * TILE + e.w / 2;
+    e.dir = -e.dir;
+  } else if (Math.abs(x - e.homeX) >= e.range) {
+    x = e.homeX + Math.sign(x - e.homeX) * e.range;
+    e.dir = -e.dir;
+  }
+  e.x = x;
+  e.vx = e.dir * e.speed;
+  e.prevBottom = e.y;
+  e.y = flyerFeet(e);
+  e.anim += dt * (e.speed / 20);
+}
+
+function flyer(cfg) {
+  return {
+    create(spec) {
+      const e = {
+        ...baseEnemy(spec, cfg.w, cfg.h, cfg.speed),
+        onGround: false,
+        homeX: spec.x,
+        homeY: spec.y - TILE / 2 - cfg.lift,
+        range: cfg.range * TILE,
+        bob: cfg.bob,
+        bobSpeed: (Math.PI * 2) / cfg.bobPeriod,
+        phase: Math.floor(spec.x / TILE) * FLYER.phasePerCol,
+      };
+      e.y = flyerFeet(e);
+      e.prevBottom = e.y;
+      return e;
+    },
+    update: hover,
+    onStomp(e) {
+      e.alive = false;
+      return 'defeated';
+    },
+  };
+}
+
+export const ENEMY_KINDS = { carrot, zombie, propeller: flyer(PROPELLER), bee: flyer(BEE) };
 
 export function createEnemy(spec) {
   const kind = ENEMY_KINDS[spec.kind];

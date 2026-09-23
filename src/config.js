@@ -38,6 +38,10 @@ export const ZOMBIE = {
   dizzyTime: 0.6,
 };
 
+export const PROPELLER = { w: 30, h: 36, speed: 60, range: 3, bob: 6, bobPeriod: 1.0, lift: 16 };
+export const BEE = { w: 32, h: 28, speed: 120, range: 4, bob: 30, bobPeriod: 1.6, lift: 0 };
+export const FLYER = { phasePerCol: 1.3 };
+
 export const CRYSTAL = { size: 26 };
 export const GOAL = { w: 44, h: 64 };
 
@@ -70,6 +74,8 @@ export const COLORS = {
   zombie: '#9CC28A',
   zombieStripe: '#6F9A5E',
   zombieMouth: '#3B2F4A',
+  bee: '#FFD84D',
+  beeWing: 'rgba(236, 243, 255, 0.6)',
   teeth: '#FFFFFF',
   eyeWhite: '#FFFFFF',
   crystal: '#F43F5E',
