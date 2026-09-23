@@ -10,6 +10,7 @@ export function createGame(levelDefs, { best = 0 } = {}) {
     levels,
     state: 'title',
     levelIndex: 0,
+    selectedIndex: 0,
     lives: RULES.startLives,
     points: 0,
     collected: new Set(),
@@ -28,7 +29,16 @@ export function createGame(levelDefs, { best = 0 } = {}) {
     newGame() {
       game.lives = RULES.startLives;
       game.points = 0;
-      enterLevel(0);
+      enterLevel(game.selectedIndex);
+    },
+
+    selectLevel(index) {
+      if (game.state !== 'title' || !Number.isInteger(index)) return false;
+      const picked = Math.max(0, Math.min(levels.length - 1, index));
+      if (picked === game.selectedIndex) return false;
+      game.selectedIndex = picked;
+      showPickedLevel();
+      return true;
     },
 
     confirm() {
@@ -46,9 +56,7 @@ export function createGame(levelDefs, { best = 0 } = {}) {
 
     quitToTitle() {
       game.state = 'title';
-      game.levelIndex = 0;
-      game.collected = new Set();
-      game.world = createWorld(levels[0]);
+      showPickedLevel();
     },
 
     tick(dt, input) {
@@ -66,6 +74,12 @@ export function createGame(levelDefs, { best = 0 } = {}) {
       return events;
     },
   };
+
+  function showPickedLevel() {
+    game.levelIndex = game.selectedIndex;
+    game.collected = new Set();
+    game.world = createWorld(levels[game.selectedIndex]);
+  }
 
   function enterLevel(index) {
     game.levelIndex = index;

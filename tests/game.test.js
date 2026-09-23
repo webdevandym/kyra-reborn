@@ -165,7 +165,7 @@ test('pause freezes play and only toggles from playing or paused', () => {
   assert.equal(game.state, 'playing');
 });
 
-test('quitting to the title resets to the first level', () => {
+test('quitting to the title without a pick shows the first level', () => {
   const game = createGame([SHORT, EMPTY_RUN]);
   start(game);
   playUntil(game, RIGHT, 'levelComplete');
@@ -173,4 +173,104 @@ test('quitting to the title resets to the first level', () => {
   game.quitToTitle();
   assert.equal(game.state, 'title');
   assert.equal(game.levelIndex, 0);
+});
+
+test('picking a level on the title rebuilds the preview world for that level', () => {
+  const game = createGame([SHORT, FIVE_CRYSTALS]);
+  assert.equal(game.selectedIndex, 0);
+  assert.equal(game.selectLevel(1), true);
+  assert.equal(game.state, 'title');
+  assert.equal(game.selectedIndex, 1);
+  assert.equal(game.levelIndex, 1);
+  assert.equal(game.world.level, game.levels[1]);
+  assert.deepEqual(game.levelCrystals(), { got: 0, total: 5 });
+  assert.deepEqual(play(game, RIGHT, 1), [], 'the preview does not move');
+});
+
+test('selectLevel clamps to the level list and reports whether the pick changed', () => {
+  const game = createGame([SHORT, EMPTY_RUN, FIVE_CRYSTALS]);
+  assert.equal(game.selectLevel(-3), false);
+  assert.equal(game.selectedIndex, 0);
+  assert.equal(game.selectLevel(99), true);
+  assert.equal(game.selectedIndex, 2);
+  assert.equal(game.selectLevel(2), false);
+  assert.equal(game.selectLevel(Number.NaN), false);
+  assert.equal(game.selectLevel(1.5), false);
+  assert.equal(game.selectLevel('1'), false);
+  assert.equal(game.selectedIndex, 2);
+  assert.equal(game.levelIndex, 2);
+});
+
+test('selectLevel is ignored outside the title screen', () => {
+  const game = createGame([SHORT, EMPTY_RUN]);
+  start(game);
+  const world = game.world;
+  assert.equal(game.selectLevel(1), false);
+  game.togglePause();
+  assert.equal(game.selectLevel(1), false);
+  assert.equal(game.selectedIndex, 0);
+  assert.equal(game.levelIndex, 0);
+  assert.equal(game.world, world);
+});
+
+test('play on the title starts the picked level', () => {
+  const game = createGame([SHORT, EMPTY_RUN, FIVE_CRYSTALS]);
+  game.selectLevel(2);
+  game.confirm();
+  assert.equal(game.state, 'intro');
+  assert.equal(game.levelIndex, 2);
+  assert.deepEqual(game.tick(STEP, IDLE).filter((e) => e.type === 'levelStart'), [{ type: 'levelStart', index: 2 }]);
+  assert.equal(game.lives, RULES.startLives);
+  assert.equal(game.points, 0);
+});
+
+test('game over on a picked level restarts that level with fresh lives and no points', () => {
+  const game = createGame([EMPTY_RUN, CRYSTALS_THEN_CARROT, SHORT]);
+  game.selectLevel(1);
+  start(game);
+  assert.equal(game.levelIndex, 1);
+  game.lives = 1;
+  playUntil(game, RIGHT, 'death');
+  playUntil(game, IDLE, 'gameOver');
+  assert.equal(game.points, 2);
+
+  game.confirm();
+  assert.equal(game.state, 'intro');
+  assert.equal(game.levelIndex, 1);
+  assert.equal(game.lives, RULES.startLives);
+  assert.equal(game.points, 0);
+  assert.equal(game.world.crystals.length, 2);
+});
+
+test('starting on a later level and finishing the last one is victory, and play again restarts the pick', () => {
+  const game = createGame([EMPTY_RUN, SHORT, FIVE_CRYSTALS]);
+  game.selectLevel(1);
+  start(game);
+  playUntil(game, RIGHT, 'levelComplete');
+  game.confirm();
+  assert.equal(game.levelIndex, 2);
+  playUntil(game, RIGHT, 'victory');
+  assert.equal(game.state, 'victory');
+  assert.equal(game.best, 5);
+
+  game.confirm();
+  assert.equal(game.state, 'intro');
+  assert.equal(game.levelIndex, 1);
+  assert.equal(game.points, 0);
+});
+
+test('quitting to the title keeps the pick and shows that level again with its crystals back', () => {
+  const game = createGame([SHORT, FIVE_CRYSTALS, SHORT]);
+  game.selectLevel(1);
+  start(game);
+  play(game, RIGHT, 1);
+  assert.ok(game.collected.size > 0);
+  game.togglePause();
+  game.quitToTitle();
+  assert.equal(game.state, 'title');
+  assert.equal(game.selectedIndex, 1);
+  assert.equal(game.levelIndex, 1);
+  assert.equal(game.world.level, game.levels[1]);
+  assert.equal(game.collected.size, 0);
+  assert.equal(game.world.crystals.length, 5);
 });
