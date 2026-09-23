@@ -214,6 +214,12 @@ let time = 0;
 let fps = 60;
 let prevState = null;
 
+function syncState() {
+  if (game.state === prevState) return;
+  prevState = game.state;
+  onStateChange();
+}
+
 function frame(now) {
   const dt = Math.min((now - last) / 1000, MAX_FRAME);
   last = now;
@@ -223,6 +229,7 @@ function frame(now) {
     time += dt;
   }
   while (acc >= STEP) {
+    syncState();
     const gameInput = game.state === 'playing' ? input.snapshot() : NO_INPUT;
     handleEvents(game.tick(STEP, gameInput));
     particles.update(STEP);
@@ -230,10 +237,7 @@ function frame(now) {
     shakeTime = Math.max(0, shakeTime - STEP);
     acc -= STEP;
   }
-  if (game.state !== prevState) {
-    prevState = game.state;
-    onStateChange();
-  }
+  syncState();
   const k = shakeTime / 0.3;
   const shake = { x: (Math.random() - 0.5) * 10 * k, y: (Math.random() - 0.5) * 8 * k };
   ctx.setTransform(canvas.width / VIEW_W, 0, 0, canvas.height / VIEW_H, 0, 0);
