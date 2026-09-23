@@ -1,6 +1,6 @@
 # Kyra Reborn
 
-A notebook-doodle platformer for kids aged 8–10. Kyra the chicken («кура») walks, jumps, collects red crystals, stomps carrots and zombies, and reaches the big green crystal at the end of each level. The game design and the characters come from a young designer's voice note and notebook drawing.
+A notebook-doodle platformer for kids aged 8–10. Kyra the chicken («кура») walks, jumps, collects red crystals, stomps carrots, zombies, propeller carrots and bees, and reaches the big green crystal at the end of each of the five levels. The game design and the characters come from a young designer's voice note and notebook drawing.
 
 ## Play
 
@@ -12,6 +12,7 @@ Open <http://localhost:8123> in Chrome. ES modules need a local server, so openi
 
 | Key | Action |
 |---|---|
+| ← → | choose a level (main screen) |
 | ← → or A D | walk |
 | Space, ↑ or W | jump (hold for a higher jump) |
 | Esc or P | pause |
@@ -23,8 +24,9 @@ Open <http://localhost:8123> in Chrome. ES modules need a local server, so openi
 
 - Each red crystal is 1 point; every 5 points give an extra life.
 - Jump on a carrot to remove it. A big zombie shrinks and speeds up on the first jump and disappears on the second.
+- Propeller carrots and bees fly back and forth; one jump from above removes them. You can run under a bee when it is at the top of its wave.
 - Touching an enemy any other way costs a life and restarts the level. Crystals you already collected stay collected.
-- With no lives left the game starts again from level 1.
+- Any level can be picked on the main screen. With no lives left, "Try again" restarts the level you picked.
 
 ## Develop
 

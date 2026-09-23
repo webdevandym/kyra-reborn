@@ -19,6 +19,11 @@
         <div class="card card--title">
           <h1 id="title-heading" class="logo">Kyra Reborn</h1>
           <p class="subtitle" data-i18n="subtitle"></p>
+          <div class="picker" role="group" aria-labelledby="picker-heading">
+            <p id="picker-heading" class="picker__heading"><span data-i18n="chooseLevel"></span> <kbd>←</kbd><kbd>→</kbd></p>
+            <div class="levels" data-level-picker></div>
+            <p class="picker__name" data-stat="pickedLevel"></p>
+          </div>
           <button class="btn btn--primary" type="button" data-action="confirm" data-primary><span data-i18n="play"></span> <kbd>Enter</kbd></button>
           <div class="row">
             <button class="btn" type="button" data-action="lang"><kbd>L</kbd> <span data-i18n="otherLanguage"></span></button>

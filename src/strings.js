@@ -4,6 +4,7 @@ export const STRINGS = {
   uk: {
     subtitle: 'Курка проти морквин і зомбі',
     play: 'Грати',
+    chooseLevel: 'Обери рівень',
     resume: 'Продовжити',
     menu: 'Головне меню',
     next: 'Далі',
@@ -33,6 +34,7 @@ export const STRINGS = {
   en: {
     subtitle: 'A chicken versus carrots and zombies',
     play: 'Play',
+    chooseLevel: 'Choose a level',
     resume: 'Continue',
     menu: 'Main menu',
     next: 'Next',

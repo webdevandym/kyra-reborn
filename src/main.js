@@ -16,6 +16,7 @@ const ARROWS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const screens = [...document.querySelectorAll('[data-screen]')];
+const picker = document.querySelector('[data-level-picker]');
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const debug = location.hash.includes('debug');
 
@@ -37,20 +38,54 @@ function resizeCanvas() {
   canvas.height = Math.max(1, Math.round(height * dpr));
 }
 
-function levelTitle() {
-  return `${t('level', prefs.lang)} ${game.levelIndex + 1} · ${localized(game.level.name, prefs.lang)}`;
+function levelTitle(index = game.levelIndex) {
+  return `${t('level', prefs.lang)} ${index + 1} · ${localized(game.levels[index].name, prefs.lang)}`;
 }
 
 function fillStats() {
   const { got, total } = game.levelCrystals();
-  const values = { best: game.best, points: game.points, crystals: `${got} / ${total}`, levelTitle: levelTitle() };
+  const values = {
+    best: game.best,
+    points: game.points,
+    crystals: `${got} / ${total}`,
+    levelTitle: levelTitle(),
+    pickedLevel: levelTitle(game.selectedIndex),
+  };
   for (const el of document.querySelectorAll('[data-stat]')) el.textContent = values[el.dataset.stat];
+}
+
+function buildPicker() {
+  game.levels.forEach((level, index) => {
+    const tile = document.createElement('button');
+    tile.type = 'button';
+    tile.className = 'btn level-tile';
+    tile.dataset.action = 'pick';
+    tile.dataset.level = String(index);
+    const number = document.createElement('span');
+    number.className = 'level-tile__number';
+    number.textContent = String(index + 1);
+    const stars = document.createElement('span');
+    stars.className = 'level-tile__stars';
+    stars.setAttribute('aria-hidden', 'true');
+    stars.textContent = '★'.repeat(level.difficulty);
+    tile.append(number, stars);
+    picker.append(tile);
+  });
+}
+
+function syncPicker() {
+  for (const tile of picker.children) {
+    const index = Number(tile.dataset.level);
+    tile.setAttribute('aria-pressed', String(index === game.selectedIndex));
+    tile.setAttribute('aria-label', levelTitle(index));
+  }
 }
 
 function applyStrings() {
   document.documentElement.lang = prefs.lang;
   for (const el of document.querySelectorAll('[data-i18n]')) el.textContent = t(el.dataset.i18n, prefs.lang);
   for (const el of document.querySelectorAll('[data-sound-label]')) el.textContent = t(audio.muted ? 'soundOff' : 'soundOn', prefs.lang);
+  syncPicker();
   fillStats();
 }
 
@@ -58,16 +93,24 @@ function visibleScreen() {
   return screens.find((el) => !el.hidden) ?? null;
 }
 
-function syncScreens() {
-  fillStats();
-  let shown = null;
-  for (const el of screens) {
-    el.hidden = el.dataset.screen !== game.state;
-    if (!el.hidden) shown = el;
-  }
-  const primary = shown?.querySelector('[data-primary]');
+function focusPrimary() {
+  const primary = visibleScreen()?.querySelector('[data-primary]');
   if (primary) primary.focus({ preventScroll: true });
   else if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+}
+
+function syncScreens() {
+  fillStats();
+  for (const el of screens) el.hidden = el.dataset.screen !== game.state;
+  focusPrimary();
+}
+
+function pickLevel(index) {
+  if (!game.selectLevel(index)) return false;
+  snapCamera(camera, game.world.player, game.world.level.width);
+  syncPicker();
+  fillStats();
+  return true;
 }
 
 function toggleMute() {
@@ -84,6 +127,10 @@ function toggleLang() {
 
 const BUTTON_ACTIONS = {
   confirm: () => game.confirm(),
+  pick: (button) => {
+    pickLevel(Number(button.dataset.level));
+    focusPrimary();
+  },
   resume: () => game.togglePause(),
   menu: () => game.quitToTitle(),
   lang: toggleLang,
@@ -157,7 +204,7 @@ document.addEventListener('click', (event) => {
   if (!button) return;
   audio.unlock();
   audio.sfx.click();
-  BUTTON_ACTIONS[button.dataset.action]?.();
+  BUTTON_ACTIONS[button.dataset.action]?.(button);
 });
 
 input.onAction((action) => {
@@ -171,6 +218,14 @@ window.addEventListener('keydown', (event) => {
   audio.unlock();
   const screen = visibleScreen();
   if (!screen || !ARROWS.has(event.code)) return;
+  if (game.state === 'title' && (event.code === 'ArrowLeft' || event.code === 'ArrowRight')) {
+    event.preventDefault();
+    if (pickLevel(game.selectedIndex + (event.code === 'ArrowLeft' ? -1 : 1))) {
+      audio.sfx.click();
+      focusPrimary();
+    }
+    return;
+  }
   const buttons = [...screen.querySelectorAll('button')];
   if (!buttons.length) return;
   event.preventDefault();
@@ -247,6 +302,7 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
+buildPicker();
 applyStrings();
 snapCamera(camera, game.world.player, game.world.level.width);
 requestAnimationFrame(frame);

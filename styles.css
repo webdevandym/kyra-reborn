@@ -166,6 +166,81 @@ canvas {
   outline-offset: 4px;
 }
 
+.card--title {
+  gap: 1cqi;
+  padding-block: 2.4cqi;
+}
+
+.card--title .logo {
+  font-size: 8cqi;
+}
+
+.card--title .subtitle {
+  font-size: 3cqi;
+}
+
+.picker {
+  display: grid;
+  justify-items: center;
+  gap: 0.7cqi;
+}
+
+.picker__heading,
+.picker__name {
+  margin: 0;
+}
+
+.picker__heading {
+  font-size: 0.85em;
+  color: var(--ink-soft);
+}
+
+.picker__name {
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-size: 1.45em;
+  line-height: 1;
+}
+
+.levels {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1cqi;
+}
+
+.level-tile {
+  display: grid;
+  justify-items: center;
+  gap: 0;
+  min-width: 3.4em;
+  padding: 0.15em 0.7em 0.3em;
+}
+
+.level-tile__number {
+  font-family: var(--font-hand);
+  font-size: 1.8em;
+  line-height: 1;
+}
+
+.level-tile__stars {
+  font-size: 0.8em;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  color: var(--sun);
+  -webkit-text-stroke: 1px var(--ink);
+}
+
+.level-tile[aria-pressed="true"] {
+  background: var(--sun);
+  box-shadow: 0 0 0 2px var(--ink);
+  transform: rotate(-3deg) scale(1.08);
+}
+
+.level-tile[aria-pressed="true"] .level-tile__stars {
+  color: var(--paper);
+}
+
 kbd {
   display: inline-block;
   min-width: 1.6em;
