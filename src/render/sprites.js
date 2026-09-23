@@ -43,7 +43,9 @@ export function drawChicken(ctx, chicken, time, seed = 11) {
   marker(ctx, [[5, legY], [6 - swing, -1]], COLORS.beak, 2, seed + 2);
   for (const [fx, s] of [[-6 + swing, seed + 3], [6 - swing, seed + 4]]) {
     inkLine(ctx, [[fx - 3, 0], [fx + 6, 0]], { width: 2, seed: s, stroke: COLORS.ink });
-    inkLine(ctx, [[fx, 0], [fx + 4, -3]], { width: 1.6, seed: s + 1 });
+    inkLine(ctx, [[fx + 6, 0], [fx + 9, -3]], { width: 1.6, seed: s + 1 });
+    inkLine(ctx, [[fx + 2, 0], [fx + 3, -4]], { width: 1.6, seed: s + 2 });
+    inkLine(ctx, [[fx - 3, 0], [fx - 6, -2]], { width: 1.6, seed: s + 3 });
   }
 
   const by = -bob;

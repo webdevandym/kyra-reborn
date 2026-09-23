@@ -45,7 +45,7 @@ export function createScene(ctx) {
 
   function drawGrid(camX) {
     ctx.lineWidth = 1;
-    for (const [spacing, color] of [[15, COLORS.gridMinor], [45, COLORS.gridMajor]]) {
+    for (const [spacing, color] of [[TILE / 3, COLORS.gridMinor], [TILE, COLORS.gridMajor]]) {
       ctx.strokeStyle = color;
       ctx.beginPath();
       for (let x = -(camX % spacing); x < VIEW_W; x += spacing) {
@@ -141,9 +141,12 @@ export function createScene(ctx) {
           c++;
           continue;
         }
-        const start = c;
-        while (c <= c1 && solid(c, r) && !solid(c, r - 1)) c++;
-        drawGrassRun(start * TILE, c * TILE, r * TILE, start * 13 + r);
+        let start = c;
+        while (solid(start - 1, r) && !solid(start - 1, r - 1)) start--;
+        let end = c;
+        while (solid(end, r) && !solid(end, r - 1)) end++;
+        drawGrassRun(start * TILE, end * TILE, r * TILE, start * 13 + r);
+        c = end;
       }
     }
 
@@ -154,9 +157,12 @@ export function createScene(ctx) {
           c++;
           continue;
         }
-        const start = c;
-        while (c <= c1 && tileAt(level, c, r) === 'oneway') c++;
-        drawPlank(start * TILE + 2, c * TILE - 2, r * TILE, start * 29 + r);
+        let start = c;
+        while (tileAt(level, start - 1, r) === 'oneway') start--;
+        let end = c;
+        while (tileAt(level, end, r) === 'oneway') end++;
+        drawPlank(start * TILE + 2, end * TILE - 2, r * TILE, start * 29 + r);
+        c = end;
       }
     }
   }
@@ -237,7 +243,7 @@ export function createScene(ctx) {
 
     ctx.fillStyle = COLORS.paper;
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-    drawGrid(camX);
+    drawGrid(Math.round(camX));
     drawBackdrop(level, camX);
 
     ctx.save();

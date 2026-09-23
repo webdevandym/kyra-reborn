@@ -21,8 +21,9 @@ export function createParticles({ reduced = false, seed = 1234 } = {}) {
       }
     },
     sparkle(x, y, color = COLORS.star) {
-      for (let i = 0; i < scale(10); i++) {
-        const a = (i / 10) * Math.PI * 2;
+      const n = scale(10);
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * Math.PI * 2;
         const speed = range(120, 220);
         add({ kind: 'sparkle', x, y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, drag: 3, size: range(4, 7), life: range(0.35, 0.6), color });
       }
@@ -39,8 +40,9 @@ export function createParticles({ reduced = false, seed = 1234 } = {}) {
       }
     },
     poof(x, y) {
-      for (let i = 0; i < scale(8); i++) {
-        const a = (i / 8) * Math.PI * 2;
+      const n = scale(8);
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * Math.PI * 2;
         add({ kind: 'dust', x, y, vx: Math.cos(a) * 90, vy: Math.sin(a) * 90, drag: 3, size: range(7, 11), life: 0.45, color: COLORS.inkSoft });
       }
     },
@@ -96,6 +98,7 @@ export function createParticles({ reduced = false, seed = 1234 } = {}) {
     } else if (p.kind === 'text') {
       ctx.font = `700 ${p.size}px "Balsamiq Sans", system-ui, sans-serif`;
       ctx.textAlign = 'center';
+      ctx.lineJoin = 'round';
       ctx.lineWidth = 6;
       ctx.strokeStyle = COLORS.paper;
       ctx.strokeText(p.text, 0, 0);

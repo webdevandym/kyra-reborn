@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STEP, RULES } from '../src/config.js';
+import { STEP, RULES, TILE } from '../src/config.js';
 import levels from '../src/levels/index.js';
 import { createGame } from '../src/core/game.js';
 import { createWorld } from '../src/core/world.js';
@@ -73,7 +73,7 @@ test('the scene renders every game state of both levels without errors', () => {
     game.levelIndex = index;
     game.world = createWorld(game.levels[index]);
     for (let col = 0; col < game.level.cols; col += 20) {
-      game.world.player.x = col * 45;
+      game.world.player.x = col * TILE;
       snapCamera(camera, game.world.player, game.level.width);
       frame(col * 0.37);
       scene.render({ game, camera, particles, time: col, lang: 'en', muted: false });
