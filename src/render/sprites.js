@@ -1,4 +1,4 @@
-import { COLORS, PLAYER, ZOMBIE } from '../config.js';
+import { COLORS, PLAYER, ZOMBIE, BEE } from '../config.js';
 import { inkShape, inkEllipse, inkLine, inkPoly, inkRect } from './ink.js';
 
 const INK_W = 2.6;
@@ -101,6 +101,32 @@ export function drawCarrot(ctx, carrot, time, seed = 21) {
   leaf(ctx, -5, -37, -0.45, seed + 3);
   leaf(ctx, 0, -39, 0, seed + 4);
   leaf(ctx, 5, -37, 0.45, seed + 5);
+  carrotBody(ctx, wave, seed);
+  ctx.restore();
+}
+
+export function drawPropellerCarrot(ctx, flyer, time, seed = 221) {
+  const { x, y, dir = -1, anim = 0 } = flyer;
+  const dangle = Math.sin(anim * 0.8) * 2;
+  const flap = Math.sin(time * 9 + seed) * 4;
+  const spin = Math.cos(time * 25 + seed);
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(dir < 0 ? -1 : 1, 1);
+
+  inkLine(ctx, [[-3, -7], [-4 + dangle, 1]], { width: 2.2, seed: seed + 1 });
+  inkLine(ctx, [[3, -7], [4 - dangle, 1]], { width: 2.2, seed: seed + 2 });
+  inkLine(ctx, [[-19, -51], [-10, -55], [0, -56], [10, -55], [19, -51]], { stroke: COLORS.inkSoft, width: 1.4, seed: seed + 3 });
+  inkLine(ctx, [[0, -39], [0, -47]], { stroke: COLORS.leaves, width: 3, seed: seed + 4 });
+  for (const side of [-1, 1]) {
+    const reach = 16 * spin * side;
+    inkEllipse(ctx, reach / 2, -48, Math.max(1.5, Math.abs(reach) / 2), 3.4, { fill: COLORS.leaves, width: 1.8, seed: seed + 6 + side });
+  }
+  carrotBody(ctx, flap, seed);
+  ctx.restore();
+}
+
+function carrotBody(ctx, wave, seed) {
   inkLine(ctx, [[-12, -25], [-19, -19 + wave]], { width: 2, seed: seed + 6 });
   inkLine(ctx, [[12, -25], [19, -30 - wave]], { width: 2, seed: seed + 7 });
 
@@ -119,6 +145,39 @@ export function drawCarrot(ctx, carrot, time, seed = 21) {
   inkLine(ctx, [[-8, -35], [-3, -36.5]], { width: 1.6, seed: seed + 13 });
   inkLine(ctx, [[3, -36.5], [8, -35]], { width: 1.6, seed: seed + 14 });
   inkLine(ctx, [[-3, -20], [0, -21.5], [3, -20]], { width: 1.6, seed: seed + 15 });
+}
+
+export function drawBee(ctx, bee, time, seed = 251) {
+  const { x, y, dir = -1 } = bee;
+  const flap = Math.abs(Math.sin(time * 38 + seed));
+  ctx.save();
+  ctx.translate(x, y - BEE.h / 2);
+  ctx.scale(dir < 0 ? -1 : 1, 1);
+
+  for (const k of [0, 1, 2]) {
+    inkLine(ctx, [[-23 - k * 3, -6 + k * 6], [-31 - k * 3, -6 + k * 6]], { stroke: COLORS.inkSoft, width: 1.4, seed: seed + k });
+  }
+  inkPoly(ctx, [[-16, -3], [-24, 1], [-16, 4]], { fill: COLORS.ink, width: 1.4, seed: seed + 3 });
+  inkEllipse(ctx, -5, -14 - 3 * flap, 7, 9 * (0.45 + 0.55 * flap), { fill: COLORS.beeWing, width: 1.6, seed: seed + 4 });
+  inkEllipse(ctx, 4, -15 - 3 * flap, 6, 8 * (0.45 + 0.55 * flap), { fill: COLORS.beeWing, width: 1.6, seed: seed + 5 });
+  inkEllipse(ctx, 0, 0, 17, 13, { fill: COLORS.bee, width: INK_W, seed: seed + 6 });
+  inkLine(ctx, [[-7, -11], [-9, 0], [-7, 11]], { width: 4, seed: seed + 7 });
+  inkLine(ctx, [[1, -12.5], [-1, 0], [1, 12.5]], { width: 4, seed: seed + 8 });
+
+  inkEllipse(ctx, 9, -3, 5, 5, { fill: COLORS.eyeWhite, width: 1.6, seed: seed + 9 });
+  ctx.fillStyle = COLORS.ink;
+  ctx.beginPath();
+  ctx.arc(10.5, -2.5, 2.2, 0, Math.PI * 2);
+  ctx.fill();
+  inkLine(ctx, [[4, -10], [14, -6.5]], { width: 2.4, seed: seed + 10 });
+  inkLine(ctx, [[10, 5], [14, 3.5]], { width: 1.6, seed: seed + 11 });
+  inkLine(ctx, [[6, -11], [9, -19], [13, -21]], { width: 1.6, seed: seed + 12 });
+  inkLine(ctx, [[1, -12.5], [2, -21], [5, -25]], { width: 1.6, seed: seed + 13 });
+  for (const [dx, dy] of [[13, -21], [5, -25]]) {
+    ctx.beginPath();
+    ctx.arc(dx, dy, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
   ctx.restore();
 }
 

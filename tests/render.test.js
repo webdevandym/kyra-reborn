@@ -7,7 +7,7 @@ import { createWorld } from '../src/core/world.js';
 import { createCamera, snapCamera } from '../src/core/camera.js';
 import { createScene } from '../src/render/scene.js';
 import { createParticles } from '../src/render/particles.js';
-import { drawChicken, drawCarrot, drawZombie, drawRedCrystal, drawGreenCrystal, drawSign, drawHeart } from '../src/render/sprites.js';
+import { drawChicken, drawCarrot, drawPropellerCarrot, drawZombie, drawBee, drawRedCrystal, drawGreenCrystal, drawSign, drawHeart } from '../src/render/sprites.js';
 
 function mockContext() {
   const calls = new Map();
@@ -45,6 +45,10 @@ test('every sprite draws without errors and with finite coordinates', () => {
   drawCarrot(ctx, { x: 200, y: 450, dir: 1, anim: 3 }, 0.5);
   drawZombie(ctx, { x: 300, y: 450, size: 'big', anim: 1, dizzy: 0, dir: -1 }, 0.7);
   drawZombie(ctx, { x: 300, y: 450, size: 'small', anim: 1, dizzy: 0.4, dir: 1 }, 0.7);
+  drawPropellerCarrot(ctx, { x: 350, y: 440, dir: -1, anim: 2 }, 0.9);
+  drawPropellerCarrot(ctx, { x: 350, y: 440, dir: 1, anim: 0 }, Math.PI / 50);
+  drawBee(ctx, { x: 380, y: 400, dir: 1 }, 1.1);
+  drawBee(ctx, { x: 380, y: 400, dir: -1 }, 0);
   drawRedCrystal(ctx, { x: 400, y: 300 }, 1);
   drawGreenCrystal(ctx, { x: 500, y: 450 }, 1);
   drawSign(ctx, { x: 600, y: 450 }, 'Два\nрядки');
@@ -53,7 +57,7 @@ test('every sprite draws without errors and with finite coordinates', () => {
   assert.ok(calls.get('fill') > 20);
 });
 
-test('the scene renders every game state of both levels without errors', () => {
+test('the scene renders every game state of every level without errors', () => {
   const { ctx, calls } = mockContext();
   const game = createGame(levels);
   const camera = createCamera();
@@ -69,7 +73,7 @@ test('the scene renders every game state of both levels without errors', () => {
   particles.feathers(200, 400);
   particles.confetti();
   particles.text(200, 300, '+1');
-  for (const index of [0, 1]) {
+  for (const index of game.levels.keys()) {
     game.levelIndex = index;
     game.world = createWorld(game.levels[index]);
     for (let col = 0; col < game.level.cols; col += 20) {

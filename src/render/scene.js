@@ -6,7 +6,9 @@ import { mulberry32, setBoilTime, inkShape, inkEllipse, inkLine } from './ink.js
 import {
   drawChicken,
   drawCarrot,
+  drawPropellerCarrot,
   drawZombie,
+  drawBee,
   drawRedCrystal,
   drawGreenCrystal,
   drawSign,
@@ -15,7 +17,7 @@ import {
   drawMutedIcon,
 } from './sprites.js';
 
-const ENEMY_DRAWERS = { carrot: drawCarrot, zombie: drawZombie };
+const ENEMY_DRAWERS = { carrot: drawCarrot, zombie: drawZombie, propeller: drawPropellerCarrot, bee: drawBee };
 const GROUND_Y = 10 * TILE;
 
 function hashString(s) {
