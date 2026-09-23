@@ -62,6 +62,16 @@ test('arrow keys and space never scroll the page, other keys are left alone', ()
   assert.equal(press('KeyM').defaultPrevented, false);
 });
 
+test('modifier chords are ignored so shortcuts and stuck directions never fire', () => {
+  const { input, press } = setup();
+  const seen = [];
+  input.onAction((action) => seen.push(action));
+  press('KeyL', { metaKey: true });
+  press('ArrowRight', { ctrlKey: true });
+  assert.deepEqual(seen, []);
+  assert.equal(input.snapshot().right, false);
+});
+
 test('one-shot actions reach handlers once per press', () => {
   const { input, press } = setup();
   const seen = [];

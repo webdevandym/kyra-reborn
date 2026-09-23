@@ -31,6 +31,7 @@ export function createInput(target) {
   function onKeyDown(event) {
     const action = actionForCode(event.code);
     if (SCROLL_KEYS.has(event.code) && !isButton(event.target)) event.preventDefault();
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
     if (!action) return;
     if (!event.repeat) {
       if (!held.has(action)) pressed.add(action);
