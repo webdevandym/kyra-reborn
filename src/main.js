@@ -173,6 +173,7 @@ window.addEventListener('keydown', (event) => {
   if (!screen || !ARROWS.has(event.code)) return;
   const buttons = [...screen.querySelectorAll('button')];
   if (!buttons.length) return;
+  event.preventDefault();
   const index = buttons.indexOf(document.activeElement);
   const delta = event.code === 'ArrowUp' || event.code === 'ArrowLeft' ? -1 : 1;
   buttons[(index + delta + buttons.length) % buttons.length].focus();
@@ -181,6 +182,7 @@ window.addEventListener('keydown', (event) => {
 window.addEventListener('pointerdown', () => audio.unlock());
 
 const autoPause = () => {
+  input.reset();
   if (game.state === 'playing') game.togglePause();
 };
 document.addEventListener('visibilitychange', () => {

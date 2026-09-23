@@ -14,7 +14,7 @@ export function createAudio({ muted = false } = {}) {
       master.gain.value = isMuted ? 0 : MASTER_VOLUME;
       master.connect(ctx.destination);
     }
-    if (ctx.state === 'suspended') ctx.resume();
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
   }
 
   function tone({ type = 'square', from, to = from, dur = 0.12, vol = 0.4, delay = 0 }) {
