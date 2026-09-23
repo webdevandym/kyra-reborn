@@ -81,8 +81,8 @@ export function createGame(levelDefs, { best = 0 } = {}) {
     if (event.type === 'crystal') {
       game.collected.add(event.id);
       game.points += 1;
-      if (game.points % RULES.crystalsPerLife === 0) {
-        game.lives = Math.min(game.lives + 1, RULES.maxLives);
+      if (game.points % RULES.crystalsPerLife === 0 && game.lives < RULES.maxLives) {
+        game.lives += 1;
         queue.push({ type: 'life', x: event.x, y: event.y });
       }
     } else if (event.type === 'hit') {

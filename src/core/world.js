@@ -40,12 +40,13 @@ export function stepWorld(world, dt, input) {
   for (const e of world.enemies) {
     const contact = classifyContact(p, e);
     if (contact === 'stomp') {
+      const top = e.y - e.h;
       const result = stompEnemy(e);
       p.vy = -(input.jumpHeld ? PLAYER.stompBounceHeld : PLAYER.stompBounce);
       p.jumping = false;
       p.onGround = false;
       p.invuln = Math.max(p.invuln, PLAYER.stompGrace);
-      events.push({ type: 'stomp', kind: e.kind, result, x: e.x, y: e.y - e.h });
+      events.push({ type: 'stomp', kind: e.kind, result, x: e.x, y: top });
     } else if (contact === 'hit' && p.invuln <= 0) {
       return die(world, events);
     }

@@ -74,8 +74,9 @@ test('lives never go above the cap', () => {
   const game = createGame([FIVE_CRYSTALS]);
   start(game);
   game.lives = RULES.maxLives;
-  play(game, RIGHT, 1.5);
+  const events = play(game, RIGHT, 1.5);
   assert.equal(game.lives, RULES.maxLives);
+  assert.equal(types(events).filter((t) => t === 'life').length, 0);
 });
 
 test('touching a carrot costs a life and restarts the level but keeps collected crystals', () => {
