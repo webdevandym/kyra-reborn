@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { ROWS } from '../src/config.js';
 import { parseLevel } from '../src/core/level.js';
 import levels from '../src/levels/index.js';
+import { LANGS } from '../src/strings.js';
 
 const standable = (ch) => ch === '#' || ch === '=';
 
@@ -52,10 +53,12 @@ function platformRuns(map) {
 }
 
 for (const def of levels) {
-  test(`${def.id}: parses, has a name in both languages and signs in both languages`, () => {
-    const level = parseLevel(def);
-    assert.ok(def.name.uk && def.name.en);
-    for (const sign of def.signs) assert.ok(sign.text.uk && sign.text.en, `sign at col ${sign.col}`);
+  test(`${def.id}: parses, has a name and signs in every language`, () => {
+    parseLevel(def);
+    for (const lang of LANGS) {
+      assert.ok(def.name[lang], `name in ${lang}`);
+      for (const sign of def.signs) assert.ok(sign.text[lang], `sign at col ${sign.col} in ${lang}`);
+    }
   });
 
   test(`${def.id}: has no pits — every column has solid ground on the bottom row`, () => {

@@ -7,7 +7,7 @@ import { createInput } from './input.js';
 import { createAudio } from './audio.js';
 import { createScene } from './render/scene.js';
 import { createParticles } from './render/particles.js';
-import { LANGS, t, localized, nextLang } from './strings.js';
+import { t, localized, nextLang, nextLangName, resolveLang } from './strings.js';
 import { load, save } from './storage.js';
 
 const NO_INPUT = { left: false, right: false, jumpHeld: false, jumpPressed: false };
@@ -20,8 +20,7 @@ const picker = document.querySelector('[data-level-picker]');
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const debug = location.hash.includes('debug');
 
-const storedLang = load('kyra.lang', 'uk');
-const prefs = { lang: LANGS.includes(storedLang) ? storedLang : 'uk' };
+const prefs = { lang: resolveLang(load('kyra.lang')) };
 const game = createGame(levels, { best: Number(load('kyra.best', 0)) || 0 });
 const camera = createCamera();
 const particles = createParticles({ reduced: reducedMotion });
@@ -85,6 +84,7 @@ function applyStrings() {
   document.documentElement.lang = prefs.lang;
   for (const el of document.querySelectorAll('[data-i18n]')) el.textContent = t(el.dataset.i18n, prefs.lang);
   for (const el of document.querySelectorAll('[data-sound-label]')) el.textContent = t(audio.muted ? 'soundOff' : 'soundOn', prefs.lang);
+  for (const el of document.querySelectorAll('[data-next-lang]')) el.textContent = nextLangName(prefs.lang);
   syncPicker();
   fillStats();
 }

@@ -21,7 +21,7 @@ Open <http://localhost:8123> in Chrome. ES modules need a local server, so openi
 | Space, ↑ or W | jump (hold for a higher jump) |
 | Esc or P | pause |
 | M | sound on/off |
-| L | Українська / English |
+| L | Polski / Українська / English |
 | Enter | confirm / next |
 
 ## Rules

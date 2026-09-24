@@ -1,6 +1,6 @@
 export default {
   id: 'level4',
-  name: { uk: 'Бджолина галявина', en: 'Bee Meadow' },
+  name: { pl: 'Pszczela polana', uk: 'Бджолина галявина', en: 'Bee Meadow' },
   difficulty: 2,
   map: [
     '......................................................................................................................................................',
@@ -17,7 +17,7 @@ export default {
     '######################################################################################################################################################',
   ],
   signs: [
-    { col: 10, text: { uk: 'Літаюча морквина!\nСтрибни на неї зверху', en: 'Flying carrot!\nJump on it from above' } },
-    { col: 76, text: { uk: 'Бджола! Пробіжи під нею,\nколи вона вгорі,\nабо стрибни зверху', en: 'A bee! Run under it\nwhen it flies high,\nor jump on it' } },
+    { col: 10, text: { pl: 'Latająca marchewka!\nSkocz na nią z góry', uk: 'Літаюча морквина!\nСтрибни на неї зверху', en: 'Flying carrot!\nJump on it from above' } },
+    { col: 76, text: { pl: 'Pszczoła! Przebiegnij pod nią,\ngdy leci wysoko,\nalbo skocz na nią z góry', uk: 'Бджола! Пробіжи під нею,\nколи вона вгорі,\nабо стрибни зверху', en: 'A bee! Run under it\nwhen it flies high,\nor jump on it' } },
   ],
 };

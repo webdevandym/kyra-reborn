@@ -1,6 +1,6 @@
 export default {
   id: 'level1',
-  name: { uk: 'Морквяне поле', en: 'Carrot Field' },
+  name: { pl: 'Marchewkowe pole', uk: 'Морквяне поле', en: 'Carrot Field' },
   difficulty: 1,
   map: [
     '....................................................................................................',
@@ -17,10 +17,10 @@ export default {
     '####################################################################################################',
   ],
   signs: [
-    { col: 4, text: { uk: '← → — йти', en: '← → to walk' } },
-    { col: 11, text: { uk: 'Пробіл — стрибок!\nТримай — вище!', en: 'Space to jump!\nHold it to go higher!' } },
-    { col: 20, text: { uk: 'Стрибни на\nморквину зверху!', en: 'Jump on the\ncarrot from above!' } },
-    { col: 42, text: { uk: '5 кристалів =\n+1 життя', en: '5 crystals =\n+1 life' } },
-    { col: 92, text: { uk: 'Зелений кристал —\nфініш!', en: 'Green crystal =\nfinish!' } },
+    { col: 4, text: { pl: '← → — idź', uk: '← → — йти', en: '← → to walk' } },
+    { col: 11, text: { pl: 'Spacja — skok!\nPrzytrzymaj — wyżej!', uk: 'Пробіл — стрибок!\nТримай — вище!', en: 'Space to jump!\nHold it to go higher!' } },
+    { col: 20, text: { pl: 'Skocz na\nmarchewkę z góry!', uk: 'Стрибни на\nморквину зверху!', en: 'Jump on the\ncarrot from above!' } },
+    { col: 42, text: { pl: '5 kryształów =\n+1 życie', uk: '5 кристалів =\n+1 життя', en: '5 crystals =\n+1 life' } },
+    { col: 92, text: { pl: 'Zielony kryształ —\nmeta!', uk: 'Зелений кристал —\nфініш!', en: 'Green crystal =\nfinish!' } },
   ],
 };
