@@ -5,3 +5,10 @@ node_modules/
 .playwright-mcp/
 .claude/worktrees/
 .superpowers/
+docs/
+metadata/
+Dockerfile
+docker-compose.yml
+nginx.conf
+.dockerignore
+deploy.sh
