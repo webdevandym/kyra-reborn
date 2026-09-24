@@ -4,6 +4,10 @@ A notebook-doodle platformer for kids aged 8–10. Kyra the chicken («кура�
 
 ## Play
 
+Play in the browser at <https://webdevandym.github.io/kyra-reborn/> (a keyboard is needed).
+
+To run it locally:
+
 ```sh
 npm run dev
 ```
