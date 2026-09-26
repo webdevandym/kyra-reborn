@@ -5,6 +5,7 @@ import { classifyContact } from './combat.js';
 import { bodyRect, centeredRect, overlaps } from './rect.js';
 import { shiftX } from './physics.js';
 import { createMover, updateMovers } from './platforms.js';
+import { createRainCloud, rainPhase, rainRect } from './hazards.js';
 
 export function createWorld(level, collected = new Set()) {
   const world = {
@@ -12,6 +13,7 @@ export function createWorld(level, collected = new Set()) {
     player: createPlayer(level.spawn),
     enemies: level.enemies.map(createEnemy),
     movers: level.movers.map(createMover),
+    rain: level.rainClouds.map((spec) => createRainCloud(spec, level)),
     crystals: level.crystals.filter((c) => !collected.has(c.id)).map((c) => ({ ...c })),
     goal: { x: level.goal.x, y: level.goal.y, w: GOAL.w, h: GOAL.h },
     time: 0,
@@ -24,10 +26,16 @@ export function createWorld(level, collected = new Set()) {
 export function stepWorld(world, dt, input) {
   const events = [];
   if (world.done) return events;
+  const before = world.time;
   world.time += dt;
   const p = world.player;
 
   updateMovers(world.movers, world.time);
+  for (const cloud of world.rain) {
+    if (rainPhase(cloud, before) !== 'rain' && rainPhase(cloud, world.time) === 'rain') {
+      events.push({ type: 'rainStart', x: cloud.x, y: cloud.y });
+    }
+  }
   if (p.ride && p.onGround) shiftX(p, p.ride.dx, world.level);
   p.ride = null;
 
@@ -59,6 +67,14 @@ export function stepWorld(world, dt, input) {
     }
   }
   world.enemies = world.enemies.filter((e) => e.alive);
+
+  if (p.invuln <= 0) {
+    const box = bodyRect(p);
+    for (const cloud of world.rain) {
+      const wet = rainRect(cloud, world.time);
+      if (wet && overlaps(box, wet)) return die(world, events);
+    }
+  }
 
   if (p.y > world.level.height + RULES.fallLimit) return die(world, events);
 

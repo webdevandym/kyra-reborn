@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TILE, STEP, PLAYER } from '../src/config.js';
+import { TILE, STEP, PLAYER, RAIN } from '../src/config.js';
 import { createWorld } from '../src/core/world.js';
+import { rainPhase } from '../src/core/hazards.js';
 import { testLevel } from './helpers.js';
 
 const IDLE = { left: false, right: false, jumpHeld: false, jumpPressed: false };
@@ -180,4 +181,65 @@ test('a chicken standing on a moving cloud is carried with it', () => {
   assert.ok(Math.abs(p.x - mover.x - offset) < 0.5, 'the chicken kept its place on the cloud');
   assert.equal(p.y, mover.y);
   assert.equal(p.ride, mover);
+});
+
+const PERIOD = RAIN.dry + RAIN.warn + RAIN.rain;
+const RAIN_START = RAIN.dry + RAIN.warn;
+const RAIN_MAP = [
+  '............R.....',
+  '..................',
+  '..................',
+  '..................',
+  'C................G',
+  '##################',
+];
+
+function rainWorld() {
+  const world = createWorld(testLevel(RAIN_MAP));
+  return { world, cloud: world.rain[0] };
+}
+
+function standUnder(world, cloud) {
+  world.player.x = cloud.x;
+  world.player.invuln = 0;
+}
+
+function clockTo(world, cloud, u) {
+  world.time = u - cloud.col * RAIN.phasePerCol + PERIOD * 4 - STEP;
+}
+
+test('standing under a rain cloud is safe while it is dry or warning, and a hit once the rain reaches the chicken', () => {
+  for (const u of [RAIN.dry * 0.5, RAIN.dry + RAIN.warn * 0.5]) {
+    const { world, cloud } = rainWorld();
+    standUnder(world, cloud);
+    clockTo(world, cloud, u);
+    assert.ok(!types(world.step(STEP, IDLE)).includes('hit'), `hit at u = ${u}`);
+  }
+  const { world, cloud } = rainWorld();
+  standUnder(world, cloud);
+  clockTo(world, cloud, RAIN_START + 0.6);
+  assert.deepEqual(types(world.step(STEP, IDLE)).filter((t) => t === 'hit'), ['hit']);
+  assert.equal(world.done, true);
+});
+
+test('spawn grace and stomp grace protect the chicken from rain', () => {
+  const { world, cloud } = rainWorld();
+  standUnder(world, cloud);
+  world.player.invuln = 0.5;
+  clockTo(world, cloud, RAIN_START + 0.6);
+  assert.ok(!types(world.step(STEP, IDLE)).includes('hit'));
+});
+
+test('each rain cloud announces rainStart once per cycle', () => {
+  const { world } = rainWorld();
+  const events = run(world, IDLE, PERIOD);
+  const starts = events.filter((e) => e.type === 'rainStart');
+  assert.equal(starts.length, 1);
+  assert.deepEqual(Object.keys(starts[0]).sort(), ['type', 'x', 'y']);
+});
+
+test('rain at level start never reaches a chicken at its spawn', () => {
+  const { world, cloud } = rainWorld();
+  assert.equal(rainPhase(cloud, 0), 'rain');
+  assert.ok(!types(run(world, IDLE, PERIOD)).includes('hit'));
 });
