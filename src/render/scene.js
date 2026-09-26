@@ -1,8 +1,11 @@
 import { TILE, VIEW_W, VIEW_H, COLORS, RULES, CRYSTAL } from '../config.js';
 import { bodyRect, centeredRect } from '../core/rect.js';
+import { rainPhase, rainRect } from '../core/hazards.js';
 import { t } from '../i18n/index.js';
 import { setBoilTime, inkEllipse, inkLine } from './ink.js';
 import { createMeadowTheme } from './meadow.js';
+import { createSkyTheme } from './sky.js';
+import { drawStarEnemy, drawBat, drawRainCloud, drawMovingCloud } from './sky-sprites.js';
 import {
   drawChicken,
   drawCarrot,
@@ -16,10 +19,10 @@ import {
   drawMutedIcon,
 } from './sprites.js';
 
-const ENEMY_DRAWERS = { carrot: drawCarrot, zombie: drawZombie, propeller: drawPropellerCarrot, bee: drawBee };
+const ENEMY_DRAWERS = { carrot: drawCarrot, zombie: drawZombie, propeller: drawPropellerCarrot, bee: drawBee, star: drawStarEnemy, bat: drawBat };
 
 export function createScene(ctx) {
-  const themes = { meadow: createMeadowTheme(ctx) };
+  const themes = { meadow: createMeadowTheme(ctx), sky: createSkyTheme(ctx) };
 
   function drawGrid(camX) {
     ctx.lineWidth = 1;
@@ -81,6 +84,11 @@ export function createScene(ctx) {
     world.enemies.forEach((e) => box(bodyRect(e)));
     world.crystals.forEach((c) => box(centeredRect(c.x, c.y, CRYSTAL.size, CRYSTAL.size)));
     box(bodyRect(world.goal));
+    world.movers.forEach((m) => ctx.strokeRect(m.x, m.y, m.w, 6));
+    world.rain.forEach((cloud) => {
+      const wet = rainRect(cloud, world.time);
+      if (wet) box(wet);
+    });
     ctx.restore();
   }
 
@@ -100,6 +108,7 @@ export function createScene(ctx) {
     ctx.translate(-Math.round(camX) + shake.x, shake.y);
     drawFinishLine(world.goal);
     theme.drawTiles(level, camX);
+    world.movers.forEach((m, i) => drawMovingCloud(ctx, m, 391 + i * 13));
     level.signs.forEach((sign, i) => drawSign(ctx, sign, t(sign.textKey, lang), 61 + i * 7));
     world.crystals.forEach((c, i) => drawRedCrystal(ctx, c, time, 41 + i));
     theme.drawGoal(world.goal, time, world.player.won);
@@ -114,6 +123,7 @@ export function createScene(ctx) {
       drawChicken(ctx, { ...p, celebrate: p.won }, time);
       ctx.globalAlpha = 1;
     }
+    world.rain.forEach((cloud, i) => drawRainCloud(ctx, cloud, { phase: rainPhase(cloud, world.time), wet: rainRect(cloud, world.time), time }, 361 + i * 11));
     particles.drawWorld(ctx);
     if (debug) drawDebug(world);
     ctx.restore();

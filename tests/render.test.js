@@ -12,6 +12,9 @@ import { createMeadowTheme } from '../src/render/meadow.js';
 import { createParticles } from '../src/render/particles.js';
 import { drawChicken, drawCarrot, drawPropellerCarrot, drawZombie, drawBee, drawRedCrystal, drawGreenCrystal, drawSign, drawHeart } from '../src/render/sprites.js';
 import { LANGS, loadLang } from '../src/i18n/index.js';
+import { mapFromBottom } from './helpers.js';
+import { createSkyTheme } from '../src/render/sky.js';
+import { drawStarEnemy, drawBat, drawRainCloud, drawMovingCloud, drawMoon } from '../src/render/sky-sprites.js';
 
 before(async () => {
   for (const lang of LANGS) await loadLang(lang, { fetchJson: (url) => JSON.parse(readFileSync(url, 'utf8')) });
@@ -106,4 +109,66 @@ test('the meadow theme paints white paper and draws its backdrop, tiles and the 
   theme.drawGoal({ x: 300, y: 450 }, 1.2, false);
   assert.ok(calls.get('stroke') > 10);
   assert.ok(calls.get('fill') > 10);
+});
+
+test('every sky sprite draws without errors and with finite coordinates', () => {
+  const { ctx, calls } = mockContext();
+  drawStarEnemy(ctx, { x: 100, y: 450, dir: 1, anim: 2, lives: 2, dizzy: 0 }, 0.4);
+  drawStarEnemy(ctx, { x: 100, y: 450, dir: -1, anim: 1, lives: 1, dizzy: 0.3 }, 1.2);
+  drawBat(ctx, { x: 200, y: 400, dir: -1 }, 0.7);
+  drawBat(ctx, { x: 200, y: 400, dir: 1 }, 0);
+  const cloud = { x: 300, y: 250, top: 270, bottom: 450 };
+  drawRainCloud(ctx, cloud, { phase: 'dry', wet: null, time: 0.2 });
+  drawRainCloud(ctx, cloud, { phase: 'warn', wet: null, time: 0.9 });
+  drawRainCloud(ctx, cloud, { phase: 'rain', wet: { left: 255, right: 345, top: 270, bottom: 450 }, time: 1.1 });
+  drawRainCloud(ctx, cloud, { phase: 'dry', wet: { left: 255, right: 345, top: 400, bottom: 450 }, time: 1.3 });
+  drawMovingCloud(ctx, { x: 400, y: 450, w: 135, dx: 1.2 });
+  drawMovingCloud(ctx, { x: 400, y: 450, w: 90, dx: -0.8 });
+  drawMovingCloud(ctx, { x: 400, y: 450, w: 90, dx: 0 });
+  drawMoon(ctx, { x: 500, y: 450 }, 0.3, false);
+  drawMoon(ctx, { x: 500, y: 450 }, 2.3, true);
+  assert.ok(calls.get('stroke') > 20);
+  assert.ok(calls.get('fill') > 10);
+});
+
+test('the sky theme paints the evening wash and draws its backdrop, cloud tiles and the Moon', () => {
+  const { ctx, calls } = mockContext();
+  const theme = createSkyTheme(ctx);
+  const level = parseLevel({ id: 'skytheme', theme: 'sky', map: mapFromBottom(['..=====...', 'C...##...G', '####..####']) });
+  assert.equal(theme.paper, COLORS.skyWash);
+  theme.drawBackdrop(level, 0, 0.5);
+  theme.drawTiles(level, 0);
+  theme.drawGoal({ x: 300, y: 450 }, 1.2, false);
+  theme.drawGoal({ x: 300, y: 450 }, 1.2, true);
+  assert.ok(calls.get('stroke') > 10);
+  assert.ok(calls.get('fill') > 10);
+});
+
+test('the scene renders a sky level with moving clouds, rain, a star, a bat and the Moon', () => {
+  const { ctx, calls } = mockContext();
+  const def = {
+    id: 'skytest',
+    theme: 'sky',
+    map: mapFromBottom([
+      '..............R.....',
+      '....................',
+      '....................',
+      '.........v..........',
+      '....................',
+      'C.......*..r.......G',
+      '####=#######..~~..##',
+    ]),
+  };
+  const game = createGame([def]);
+  const camera = createCamera();
+  const particles = createParticles();
+  const scene = createScene(ctx);
+  game.confirm();
+  for (let i = 0; i < 720; i++) {
+    game.tick(STEP, IDLE);
+    if (i % 60 === 0) scene.render({ game, camera, particles, time: i * STEP, lang: 'pl', muted: false, debug: true });
+  }
+  game.world.player.won = true;
+  scene.render({ game, camera, particles, time: 9, lang: 'en', muted: false });
+  assert.ok(calls.get('stroke') > 50);
 });

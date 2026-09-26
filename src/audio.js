@@ -63,6 +63,7 @@ export function createAudio({ muted = false } = {}) {
       noise({ dur: 0.25, vol: 0.3 });
       tone({ type: 'square', from: 440, to: 110, dur: 0.45, vol: 0.22 });
     },
+    rain: () => noise({ dur: 0.6, vol: 0.12, freq: 2600 }),
     life: () => notes([523, 659, 784, 1046], { type: 'square', dur: 0.1, vol: 0.18, gap: 0.08 }),
     levelComplete: () => notes([523, 659, 784, 659, 784, 1046], { type: 'triangle', dur: 0.16, vol: 0.32, gap: 0.11 }),
     gameOver: () => notes([392, 370, 349, 262], { type: 'triangle', dur: 0.32, vol: 0.32, gap: 0.28 }),

@@ -197,10 +197,14 @@ function handleEvents(events) {
         particles.text(e.x, e.y - 50, '+1 ♥', COLORS.heart);
         break;
       case 'stomp':
-        if (e.result === 'shrunk') audio.sfx.shrink();
+        if (e.result === 'shrunk' || e.result === 'hurt') audio.sfx.shrink();
         else audio.sfx.stomp();
         particles.stars(e.x, e.y);
+        if (e.result === 'hurt') particles.text(e.x, e.y - 14, '♥', COLORS.heart);
         if (e.result === 'defeated') particles.poof(e.x, e.y + 12);
+        break;
+      case 'rainStart':
+        if (e.x > camera.x - 100 && e.x < camera.x + VIEW_W + 100) audio.sfx.rain();
         break;
       case 'hit':
         audio.sfx.hit();
