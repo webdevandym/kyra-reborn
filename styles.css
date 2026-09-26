@@ -234,7 +234,7 @@ canvas {
   min-height: 86%;
   padding: 0.3em 0.4em;
   transform: var(--pose);
-  transition: transform 260ms ease, opacity 260ms ease, background-color 260ms ease;
+  transition: transform 260ms ease, opacity 260ms ease, background-color 260ms ease, visibility 260ms ease;
 }
 
 .level-card:hover,

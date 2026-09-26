@@ -43,6 +43,6 @@ Open <http://localhost:8123> in Chrome. ES modules need a local server, so openi
 npm test
 ```
 
-Runs the unit tests for the game logic (`src/core`, `src/levels`) with Node's built-in test runner — no dependencies. Add `#debug` to the URL to see hitboxes and FPS and to get `window.kyra` in the console (`kyra.teleport(col)` jumps the chicken to a level column).
+Runs the unit tests for the game logic, rendering and translations (`src/core`, `src/levels`, `src/render`, `src/i18n`) with Node's built-in test runner — no dependencies. Add `#debug` to the URL to see hitboxes and FPS and to get `window.kyra` in the console (`kyra.teleport(col)` jumps the chicken to a level column).
 
 Levels are ASCII maps in `src/levels/`. The map characters are defined in `src/core/level.js`, and the geometry rules are enforced by `tests/levels.test.js`. All text, including level names and signs, lives in `src/i18n/pl.json`, `uk.json` and `en.json`. Each language is fetched only when it is first shown.
