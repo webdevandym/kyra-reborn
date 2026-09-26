@@ -16,6 +16,7 @@ export function createGame(levelDefs, { best = 0 } = {}) {
     collected: new Set(),
     world: createWorld(levels[0]),
     timer: 0,
+    levelTime: 0,
     best,
 
     get level() {
@@ -64,6 +65,7 @@ export function createGame(levelDefs, { best = 0 } = {}) {
         game.timer -= dt;
         if (game.timer <= 0) game.state = 'playing';
       } else if (game.state === 'playing') {
+        game.levelTime += dt;
         for (const event of game.world.step(dt, input)) handleWorldEvent(event);
       } else if (game.state === 'dying') {
         game.timer -= dt;
@@ -83,6 +85,7 @@ export function createGame(levelDefs, { best = 0 } = {}) {
 
   function enterLevel(index) {
     game.levelIndex = index;
+    game.levelTime = 0;
     game.collected = new Set();
     game.world = createWorld(levels[index], game.collected);
     game.state = 'intro';

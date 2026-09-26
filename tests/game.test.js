@@ -274,3 +274,48 @@ test('quitting to the title keeps the pick and shows that level again with its c
   assert.equal(game.collected.size, 0);
   assert.equal(game.world.crystals.length, 5);
 });
+
+function playCounting(game, input, seconds) {
+  let playing = 0;
+  const events = [];
+  for (let i = 0; i < Math.round(seconds / STEP); i++) {
+    if (game.state === 'playing') playing++;
+    events.push(...game.tick(STEP, input));
+  }
+  return { playing, events };
+}
+
+const near = (a, b) => Math.abs(a - b) < 1e-9;
+
+test('levelTime starts at 0 and counts only playing steps, not the intro or a pause', () => {
+  const game = createGame([EMPTY_RUN]);
+  game.confirm();
+  assert.equal(game.levelTime, 0);
+  const { playing } = playCounting(game, IDLE, RULES.introTime + 0.5);
+  assert.ok(playing > 0);
+  assert.ok(near(game.levelTime, playing * STEP), `${game.levelTime} vs ${playing * STEP}`);
+  const before = game.levelTime;
+  game.togglePause();
+  playCounting(game, IDLE, 1);
+  assert.equal(game.levelTime, before);
+});
+
+test('levelTime keeps running through a lost life and skips the dying pause', () => {
+  const game = createGame([CRYSTALS_THEN_CARROT]);
+  game.confirm();
+  const { playing, events } = playCounting(game, RIGHT, RULES.introTime + 3);
+  assert.ok(types(events).includes('respawn'));
+  assert.ok(near(game.levelTime, playing * STEP), `${game.levelTime} vs ${playing * STEP}`);
+});
+
+test('levelTime includes the step that reaches the goal, stops on the end card and resets on the next level', () => {
+  const game = createGame([SHORT, SHORT]);
+  game.confirm();
+  const { playing, events } = playCounting(game, RIGHT, RULES.introTime + 3);
+  assert.ok(types(events).includes('levelComplete'));
+  assert.ok(near(game.levelTime, playing * STEP), `${game.levelTime} vs ${playing * STEP}`);
+  playCounting(game, RIGHT, 1);
+  assert.ok(near(game.levelTime, playing * STEP), 'the clock stops on the end card');
+  game.confirm();
+  assert.equal(game.levelTime, 0);
+});

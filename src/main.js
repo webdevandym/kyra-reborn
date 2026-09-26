@@ -7,7 +7,7 @@ import { createInput } from './input.js';
 import { createAudio } from './audio.js';
 import { createScene } from './render/scene.js';
 import { createParticles } from './render/particles.js';
-import { t, loadLang, nextLang, nextLangName, resolveLang, DEFAULT_LANG } from './i18n/index.js';
+import { t, loadLang, nextLang, nextLangName, resolveLang, DEFAULT_LANG, formatTime } from './i18n/index.js';
 import { load, save } from './storage.js';
 
 const NO_INPUT = { left: false, right: false, jumpHeld: false, jumpPressed: false };
@@ -64,6 +64,7 @@ function fillStats() {
     best: game.best,
     points: game.points,
     crystals: `${got} / ${total}`,
+    levelTime: formatTime(game.levelTime),
     levelTitle: levelTitle(),
     pickedLevel: levelTitle(game.selectedIndex),
   };

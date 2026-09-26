@@ -53,3 +53,8 @@ export function nextLangName(lang) {
 export function resolveLang(saved) {
   return LANGS.includes(saved) ? saved : DEFAULT_LANG;
 }
+
+export function formatTime(seconds) {
+  const whole = Number.isFinite(seconds) && seconds > 0 ? Math.floor(seconds) : 0;
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
+}

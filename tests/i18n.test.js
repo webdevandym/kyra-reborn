@@ -1,7 +1,7 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { LANGS, DEFAULT_LANG, LANG_NAMES, loadLang, unloadLangs, t, nextLang, nextLangName, resolveLang } from '../src/i18n/index.js';
+import { LANGS, DEFAULT_LANG, LANG_NAMES, loadLang, unloadLangs, t, nextLang, nextLangName, resolveLang, formatTime } from '../src/i18n/index.js';
 
 const dir = new URL('../src/i18n/', import.meta.url);
 const readJson = (url) => JSON.parse(readFileSync(url, 'utf8'));
@@ -109,4 +109,15 @@ test('resolveLang keeps a saved language and defaults to Polish otherwise', () =
   assert.equal(resolveLang('en'), 'en');
   assert.equal(resolveLang(undefined), 'pl');
   assert.equal(resolveLang('fr'), 'pl');
+});
+
+test('formatTime shows whole minutes and zero-padded whole seconds', () => {
+  assert.equal(formatTime(0), '0:00');
+  assert.equal(formatTime(5), '0:05');
+  assert.equal(formatTime(59.99), '0:59');
+  assert.equal(formatTime(83.4), '1:23');
+  assert.equal(formatTime(3665), '61:05');
+  assert.equal(formatTime(-3), '0:00');
+  assert.equal(formatTime(Number.NaN), '0:00');
+  assert.equal(formatTime(Number.POSITIVE_INFINITY), '0:00');
 });
