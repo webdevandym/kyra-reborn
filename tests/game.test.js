@@ -333,3 +333,25 @@ test('levelTime includes the step that reaches the goal, stops on the end card a
   game.confirm();
   assert.equal(game.levelTime, 0);
 });
+
+test('pausing while riding a moving cloud keeps the chicken on it', () => {
+  const RIDE = def('ride', ['C.........G', '..~~~......', '###########']);
+  const game = createGame([RIDE]);
+  start(game);
+  const [mover] = game.world.movers;
+  const p = game.world.player;
+  p.x = mover.x + mover.w / 2;
+  p.y = mover.y;
+  p.vy = 0;
+  p.onGround = true;
+  play(game, IDLE, 0.1);
+  assert.equal(p.ride, mover);
+  const offset = p.x - mover.x;
+  game.togglePause();
+  play(game, IDLE, 2);
+  game.togglePause();
+  play(game, IDLE, 0.5);
+  assert.equal(p.ride, mover);
+  assert.ok(Math.abs(p.x - mover.x - offset) < 0.5);
+  assert.equal(p.y, mover.y);
+});

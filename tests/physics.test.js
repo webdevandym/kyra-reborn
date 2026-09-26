@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TILE, STEP } from '../src/config.js';
-import { moveAndCollide, applyGravity } from '../src/core/physics.js';
+import { moveAndCollide, applyGravity, shiftX } from '../src/core/physics.js';
 import { testLevel, runSteps } from './helpers.js';
 
 const body = (x, y, extra = {}) => ({ x, y, w: 30, h: 40, vx: 0, vy: 0, onGround: false, hitWall: 0, prevBottom: y, ...extra });
@@ -95,4 +95,64 @@ test('one-way platforms never block sideways movement', () => {
   });
   assert.equal(b.hitWall, 0);
   assert.ok(b.x > 3 * TILE);
+});
+
+const platform = (x, y, w) => ({ x, y, w, dx: 0 });
+
+test('shiftX carries a body sideways and stops it flush against a wall', () => {
+  const level = testLevel(['C....#...G', '##########']);
+  const b = body(3 * TILE, 11 * TILE);
+  assert.equal(shiftX(b, 20, level), 0);
+  assert.equal(b.x, 3 * TILE + 20);
+  b.x = 5 * TILE - b.w / 2 - 5;
+  assert.equal(shiftX(b, 10, level), 1);
+  assert.equal(b.x, 5 * TILE - b.w / 2);
+});
+
+test('a falling body lands on a platform top from above and records the ride', () => {
+  const level = testLevel(['C........G', '##########']);
+  const m = platform(2 * TILE, 6 * TILE, 3 * TILE);
+  const b = body(3.5 * TILE, 4 * TILE);
+  fall(b, level, 120);
+  assert.equal(b.y, 11 * TILE, 'without platforms it falls through to the ground');
+  assert.equal(b.ride, undefined, 'no platforms passed, so no ride');
+  const c = body(3.5 * TILE, 4 * TILE);
+  runSteps(120, () => {
+    applyGravity(c, STEP);
+    moveAndCollide(c, STEP, level, [m]);
+  });
+  assert.equal(c.y, 6 * TILE);
+  assert.equal(c.onGround, true);
+  assert.equal(c.ride, m);
+});
+
+test('a body jumping up through a platform passes it, then lands on it from above', () => {
+  const level = testLevel(['C........G', '##########']);
+  const m = platform(2 * TILE, 6 * TILE, 3 * TILE);
+  const b = body(3.5 * TILE, 8 * TILE, { vy: -900 });
+  let passedAbove = false;
+  runSteps(120, () => {
+    applyGravity(b, STEP);
+    moveAndCollide(b, STEP, level, [m]);
+    if (b.vy < 0 && b.y < m.y) {
+      passedAbove = true;
+      assert.notEqual(b.ride, m, 'must not land while rising');
+    }
+  });
+  assert.ok(passedAbove);
+  assert.equal(b.y, m.y);
+  assert.equal(b.ride, m);
+});
+
+test('walking off the end of a platform drops the body', () => {
+  const level = testLevel(['C........G', '##########']);
+  const m = platform(2 * TILE, 6 * TILE, 3 * TILE);
+  const b = body(4.5 * TILE, 6 * TILE, { onGround: true });
+  runSteps(40, () => {
+    b.vx = 200;
+    applyGravity(b, STEP);
+    moveAndCollide(b, STEP, level, [m]);
+  });
+  assert.ok(b.x - b.w / 2 > m.x + m.w, 'walked past the end');
+  assert.ok(b.y > m.y, 'dropped below the platform top');
 });

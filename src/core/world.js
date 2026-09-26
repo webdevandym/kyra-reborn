@@ -3,12 +3,15 @@ import { createPlayer, updatePlayer } from './player.js';
 import { createEnemy, updateEnemy, stompEnemy } from './enemies.js';
 import { classifyContact } from './combat.js';
 import { bodyRect, centeredRect, overlaps } from './rect.js';
+import { shiftX } from './physics.js';
+import { createMover, updateMovers } from './platforms.js';
 
 export function createWorld(level, collected = new Set()) {
   const world = {
     level,
     player: createPlayer(level.spawn),
     enemies: level.enemies.map(createEnemy),
+    movers: level.movers.map(createMover),
     crystals: level.crystals.filter((c) => !collected.has(c.id)).map((c) => ({ ...c })),
     goal: { x: level.goal.x, y: level.goal.y, w: GOAL.w, h: GOAL.h },
     time: 0,
@@ -24,7 +27,11 @@ export function stepWorld(world, dt, input) {
   world.time += dt;
   const p = world.player;
 
-  const { jumped, landed } = updatePlayer(p, input, dt, world.level);
+  updateMovers(world.movers, world.time);
+  if (p.ride && p.onGround) shiftX(p, p.ride.dx, world.level);
+  p.ride = null;
+
+  const { jumped, landed } = updatePlayer(p, input, dt, world.level, world.movers);
   if (jumped) events.push({ type: 'jump', x: p.x, y: p.y });
   if (landed) events.push({ type: 'land', x: p.x, y: p.y });
 

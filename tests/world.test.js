@@ -162,3 +162,22 @@ test('falling into a gap is a hit, with the feathers at the bottom edge of the s
   assert.equal(world.done, true);
   assert.equal(world.player.dead, true);
 });
+
+test('a chicken standing on a moving cloud is carried with it', () => {
+  const world = createWorld(testLevel(['C.........G', '..~~~......', '###########']));
+  const [mover] = world.movers;
+  const p = world.player;
+  p.x = mover.x + mover.w / 2;
+  p.y = mover.y;
+  p.vy = 0;
+  p.onGround = true;
+  run(world, IDLE, 0.05);
+  assert.equal(p.ride, mover);
+  const offset = p.x - mover.x;
+  const startX = mover.x;
+  run(world, IDLE, 1);
+  assert.ok(Math.abs(mover.x - startX) > 10, 'the cloud moved');
+  assert.ok(Math.abs(p.x - mover.x - offset) < 0.5, 'the chicken kept its place on the cloud');
+  assert.equal(p.y, mover.y);
+  assert.equal(p.ride, mover);
+});

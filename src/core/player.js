@@ -12,6 +12,7 @@ export function createPlayer(spawn) {
     onGround: true,
     hitWall: 0,
     prevBottom: spawn.y,
+    ride: null,
     facing: 1,
     coyote: 0,
     buffer: 0,
@@ -27,7 +28,7 @@ function approach(value, target, delta) {
   return value < target ? Math.min(value + delta, target) : Math.max(value - delta, target);
 }
 
-export function updatePlayer(p, input, dt, level) {
+export function updatePlayer(p, input, dt, level, platforms = []) {
   const dir = (input.right ? 1 : 0) - (input.left ? 1 : 0);
   if (dir !== 0) p.facing = dir;
   const accel = p.onGround ? (dir !== 0 ? PLAYER.groundAccel : PLAYER.groundDecel) : PLAYER.airAccel;
@@ -49,7 +50,7 @@ export function updatePlayer(p, input, dt, level) {
 
   applyGravity(p, dt);
   const wasOnGround = p.onGround;
-  moveAndCollide(p, dt, level);
+  moveAndCollide(p, dt, level, platforms);
   const landed = !wasOnGround && p.onGround;
   p.squash = landed ? PLAYER.squashTime : Math.max(0, p.squash - dt);
   p.invuln = Math.max(0, p.invuln - dt);
