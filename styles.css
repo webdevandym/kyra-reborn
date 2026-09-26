@@ -173,6 +173,15 @@ canvas {
   padding-block: 1.9cqi;
 }
 
+[data-screen="victory"] .card {
+  gap: 1.1cqi;
+  padding-block: 2.4cqi;
+}
+
+[data-screen="victory"] .card h2 {
+  font-size: 5.4cqi;
+}
+
 .card--title .logo {
   font-size: 6.6cqi;
 }
