@@ -1,12 +1,14 @@
 import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { STEP, RULES, TILE } from '../src/config.js';
+import { STEP, RULES, TILE, COLORS } from '../src/config.js';
 import levels from '../src/levels/index.js';
 import { createGame } from '../src/core/game.js';
 import { createWorld } from '../src/core/world.js';
 import { createCamera, snapCamera } from '../src/core/camera.js';
+import { parseLevel } from '../src/core/level.js';
 import { createScene } from '../src/render/scene.js';
+import { createMeadowTheme } from '../src/render/meadow.js';
 import { createParticles } from '../src/render/particles.js';
 import { drawChicken, drawCarrot, drawPropellerCarrot, drawZombie, drawBee, drawRedCrystal, drawGreenCrystal, drawSign, drawHeart } from '../src/render/sprites.js';
 import { LANGS, loadLang } from '../src/i18n/index.js';
@@ -92,4 +94,16 @@ test('the scene renders every game state of every level without errors', () => {
   game.lives = 7;
   frame(3);
   assert.ok(calls.get('fillText') > 0);
+});
+
+test('the meadow theme paints white paper and draws its backdrop, tiles and the green crystal', () => {
+  const { ctx, calls } = mockContext();
+  const theme = createMeadowTheme(ctx);
+  const level = parseLevel(levels[0]);
+  assert.equal(theme.paper, COLORS.paper);
+  theme.drawBackdrop(level, 0, 0.5);
+  theme.drawTiles(level, 0);
+  theme.drawGoal({ x: 300, y: 450 }, 1.2, false);
+  assert.ok(calls.get('stroke') > 10);
+  assert.ok(calls.get('fill') > 10);
 });
