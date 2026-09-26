@@ -1,9 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { ROWS } from '../src/config.js';
 import { parseLevel } from '../src/core/level.js';
 import levels from '../src/levels/index.js';
-import { LANGS } from '../src/strings.js';
+import { LANGS } from '../src/i18n/index.js';
+
+const DICTS = Object.fromEntries(LANGS.map((lang) => [lang, JSON.parse(readFileSync(new URL(`../src/i18n/${lang}.json`, import.meta.url), 'utf8'))]));
 
 const standable = (ch) => ch === '#' || ch === '=';
 
@@ -53,11 +56,14 @@ function platformRuns(map) {
 }
 
 for (const def of levels) {
-  test(`${def.id}: parses, has a name and signs in every language`, () => {
+  test(`${def.id}: parses, holds no text itself, and its name and every sign have text in every language`, () => {
     parseLevel(def);
+    assert.equal(def.name, undefined, 'level names live in src/i18n');
+    for (const sign of def.signs) assert.equal(sign.text, undefined, `sign at col ${sign.col} still holds text`);
     for (const lang of LANGS) {
-      assert.ok(def.name[lang], `name in ${lang}`);
-      for (const sign of def.signs) assert.ok(sign.text[lang], `sign at col ${sign.col} in ${lang}`);
+      const text = DICTS[lang].levels[def.id];
+      assert.ok(text?.name, `name in ${lang}`);
+      for (const sign of def.signs) assert.ok(text.signs?.[sign.key], `sign '${sign.key}' at col ${sign.col} in ${lang}`);
     }
   });
 

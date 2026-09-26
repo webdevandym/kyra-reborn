@@ -45,7 +45,7 @@ export function parseLevel(def) {
 
   const level = {
     id,
-    name: def.name,
+    nameKey: `levels.${id}.name`,
     difficulty: def.difficulty ?? 1,
     cols,
     rows: ROWS,
@@ -59,7 +59,9 @@ export function parseLevel(def) {
     signs: [],
   };
   level.signs = (def.signs ?? []).map((sign) => ({
-    ...sign,
+    col: sign.col,
+    key: sign.key,
+    textKey: `levels.${id}.signs.${sign.key}`,
     x: (sign.col + 0.5) * TILE,
     y: solidTop(level, sign.col),
   }));

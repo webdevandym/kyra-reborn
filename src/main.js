@@ -7,7 +7,7 @@ import { createInput } from './input.js';
 import { createAudio } from './audio.js';
 import { createScene } from './render/scene.js';
 import { createParticles } from './render/particles.js';
-import { t, localized, nextLang, nextLangName, resolveLang } from './strings.js';
+import { t, loadLang, nextLang, nextLangName, resolveLang, DEFAULT_LANG } from './i18n/index.js';
 import { load, save } from './storage.js';
 
 const NO_INPUT = { left: false, right: false, jumpHeld: false, jumpPressed: false };
@@ -21,6 +21,23 @@ const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const debug = location.hash.includes('debug');
 
 const prefs = { lang: resolveLang(load('kyra.lang')) };
+prefs.lang = await bootLang(prefs.lang);
+
+async function bootLang(lang) {
+  try {
+    await loadLang(lang);
+    return lang;
+  } catch (error) {
+    console.warn(error);
+  }
+  try {
+    await loadLang(DEFAULT_LANG);
+  } catch (error) {
+    console.warn(error);
+  }
+  return DEFAULT_LANG;
+}
+
 const game = createGame(levels, { best: Number(load('kyra.best', 0)) || 0 });
 const camera = createCamera();
 const particles = createParticles({ reduced: reducedMotion });
@@ -38,7 +55,7 @@ function resizeCanvas() {
 }
 
 function levelTitle(index = game.levelIndex) {
-  return `${t('level', prefs.lang)} ${index + 1} · ${localized(game.levels[index].name, prefs.lang)}`;
+  return `${t('level', prefs.lang)} ${index + 1} · ${t(game.levels[index].nameKey, prefs.lang)}`;
 }
 
 function fillStats() {
@@ -85,6 +102,7 @@ function applyStrings() {
   for (const el of document.querySelectorAll('[data-i18n]')) el.textContent = t(el.dataset.i18n, prefs.lang);
   for (const el of document.querySelectorAll('[data-sound-label]')) el.textContent = t(audio.muted ? 'soundOff' : 'soundOn', prefs.lang);
   for (const el of document.querySelectorAll('[data-next-lang]')) el.textContent = nextLangName(prefs.lang);
+  for (const el of document.querySelectorAll('[data-i18n-aria-label]')) el.setAttribute('aria-label', t(el.dataset.i18nAriaLabel, prefs.lang));
   syncPicker();
   fillStats();
 }
@@ -119,10 +137,22 @@ function toggleMute() {
   applyStrings();
 }
 
+let switchingLang = false;
+
 function toggleLang() {
-  prefs.lang = nextLang(prefs.lang);
-  save('kyra.lang', prefs.lang);
-  applyStrings();
+  if (switchingLang) return;
+  switchingLang = true;
+  const next = nextLang(prefs.lang);
+  loadLang(next)
+    .then(() => {
+      prefs.lang = next;
+      save('kyra.lang', next);
+      applyStrings();
+    })
+    .catch((error) => console.warn(error))
+    .finally(() => {
+      switchingLang = false;
+    });
 }
 
 const BUTTON_ACTIONS = {

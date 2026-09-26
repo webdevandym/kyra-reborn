@@ -15,7 +15,7 @@
     <div class="stage" id="stage">
       <canvas id="game" width="960" height="540" aria-label="Kyra Reborn"></canvas>
 
-      <section class="overlay" data-screen="title" aria-labelledby="title-heading">
+      <section class="overlay" data-screen="title" aria-labelledby="title-heading" hidden>
         <div class="card card--title">
           <h1 id="title-heading" class="logo">Kyra Reborn</h1>
           <p class="subtitle" data-i18n="subtitle"></p>
@@ -83,7 +83,7 @@
       </section>
     </div>
 
-    <ul class="legend" aria-label="Controls">
+    <ul class="legend" data-i18n-aria-label="controls">
       <li><kbd>←</kbd><kbd>→</kbd> <span data-i18n="walk"></span></li>
       <li><kbd>Space</kbd> <span data-i18n="jump"></span></li>
       <li><kbd>P</kbd> <span data-i18n="pause"></span></li>

@@ -54,13 +54,14 @@ test('solidTop returns the y of the highest solid tile in a column, ignoring pla
   assert.equal(solidTop(level, 0), 11 * TILE);
 });
 
-test('signs get a world x at the column centre and a y on the ground', () => {
-  const level = testLevel(['C...G', '#####'], { signs: [{ col: 2, text: { uk: 'Привіт', en: 'Hi' } }] });
-  assert.deepEqual(level.signs, [{ col: 2, text: { uk: 'Привіт', en: 'Hi' }, x: 2.5 * TILE, y: 11 * TILE }]);
+test('parseLevel gives the level a name key and each sign a text key, a world x at the column centre and a y on the ground', () => {
+  const level = testLevel(['C...G', '#####'], { signs: [{ col: 2, key: 'hello' }] });
+  assert.equal(level.nameKey, 'levels.test.name');
+  assert.deepEqual(level.signs, [{ col: 2, key: 'hello', textKey: 'levels.test.signs.hello', x: 2.5 * TILE, y: 11 * TILE }]);
 });
 
 test('parseLevel rejects malformed maps with a message naming the problem', () => {
-  const base = { id: 'bad', name: { uk: 'x', en: 'x' } };
+  const base = { id: 'bad' };
   assert.throws(() => parseLevel({ ...base, map: ['C.G'] }), /exactly 12 rows/);
   assert.throws(() => parseLevel({ ...base, map: mapFromBottom(['C.G', '##']) }), /row 11 has 2 columns/);
   assert.throws(() => parseLevel({ ...base, map: mapFromBottom(['C.x.G', '#####']) }), /unknown character 'x'/);

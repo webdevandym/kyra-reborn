@@ -1,7 +1,7 @@
 import { TILE, VIEW_W, VIEW_H, COLORS, RULES, CRYSTAL } from '../config.js';
 import { tileAt } from '../core/level.js';
 import { bodyRect, centeredRect } from '../core/rect.js';
-import { t, localized } from '../strings.js';
+import { t } from '../i18n/index.js';
 import { mulberry32, setBoilTime, inkShape, inkEllipse, inkLine } from './ink.js';
 import {
   drawChicken,
@@ -213,7 +213,7 @@ export function createScene(ctx) {
     for (let i = 0; i < shown; i++) drawHeart(ctx, 32 + i * 34, 32, 13, 71 + i);
     if (game.lives > 5) hudText(`×${game.lives}`, 32 + shown * 34 - 8, 34, 'left', '700 24px "Balsamiq Sans", system-ui, sans-serif');
 
-    const title = `${t('level', lang)} ${game.levelIndex + 1} · ${localized(game.level.name, lang)}`;
+    const title = `${t('level', lang)} ${game.levelIndex + 1} · ${t(game.level.nameKey, lang)}`;
     hudText(title, VIEW_W / 2, 32, 'center', '700 32px "Caveat", "Comic Sans MS", cursive');
 
     drawGemIcon(ctx, VIEW_W - 92, 30);
@@ -252,7 +252,7 @@ export function createScene(ctx) {
     ctx.translate(-Math.round(camX) + shake.x, shake.y);
     drawFinishLine(world.goal);
     drawTiles(level, camX);
-    level.signs.forEach((sign, i) => drawSign(ctx, sign, localized(sign.text, lang), 61 + i * 7));
+    level.signs.forEach((sign, i) => drawSign(ctx, sign, t(sign.textKey, lang), 61 + i * 7));
     world.crystals.forEach((c, i) => drawRedCrystal(ctx, c, time, 41 + i));
     drawGreenCrystal(ctx, world.goal, time);
     world.enemies.forEach((e, i) => {

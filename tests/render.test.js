@@ -1,5 +1,6 @@
-import { test } from 'node:test';
+import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { STEP, RULES, TILE } from '../src/config.js';
 import levels from '../src/levels/index.js';
 import { createGame } from '../src/core/game.js';
@@ -8,6 +9,11 @@ import { createCamera, snapCamera } from '../src/core/camera.js';
 import { createScene } from '../src/render/scene.js';
 import { createParticles } from '../src/render/particles.js';
 import { drawChicken, drawCarrot, drawPropellerCarrot, drawZombie, drawBee, drawRedCrystal, drawGreenCrystal, drawSign, drawHeart } from '../src/render/sprites.js';
+import { LANGS, loadLang } from '../src/i18n/index.js';
+
+before(async () => {
+  for (const lang of LANGS) await loadLang(lang, { fetchJson: (url) => JSON.parse(readFileSync(url, 'utf8')) });
+});
 
 function mockContext() {
   const calls = new Map();

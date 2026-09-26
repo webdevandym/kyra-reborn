@@ -7,7 +7,7 @@ import { mapFromBottom } from './helpers.js';
 const IDLE = { left: false, right: false, jumpHeld: false, jumpPressed: false };
 const RIGHT = { ...IDLE, right: true };
 
-const def = (id, rows) => ({ id, name: { uk: id, en: id }, map: mapFromBottom(rows) });
+const def = (id, rows) => ({ id, map: mapFromBottom(rows) });
 const EMPTY_RUN = def('run', ['C' + '.'.repeat(38) + 'G', '#'.repeat(40)]);
 const FIVE_CRYSTALS = def('five', ['C.rrrrr' + '.'.repeat(30) + 'G', '#'.repeat(38)]);
 const CRYSTALS_THEN_CARROT = def('carrot', ['C.rr......c' + '.'.repeat(20) + 'G', '#'.repeat(32)]);

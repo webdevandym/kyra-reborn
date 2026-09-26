@@ -8,7 +8,7 @@ export function mapFromBottom(bottomRows) {
 }
 
 export function testLevel(bottomRows, extra = {}) {
-  return parseLevel({ id: 'test', name: { uk: 'Тест', en: 'Test' }, map: mapFromBottom(bottomRows), ...extra });
+  return parseLevel({ id: 'test', map: mapFromBottom(bottomRows), ...extra });
 }
 
 export function runSteps(n, fn) {

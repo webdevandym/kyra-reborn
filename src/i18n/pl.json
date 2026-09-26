@@ -1,0 +1,60 @@
+{
+  "ui": {
+    "subtitle": "Kurka kontra marchewki i zombie",
+    "play": "Graj",
+    "chooseLevel": "Wybierz poziom",
+    "resume": "Kontynuuj",
+    "menu": "Menu główne",
+    "next": "Dalej",
+    "tryAgain": "Spróbuj ponownie",
+    "playAgain": "Zagraj jeszcze raz",
+    "level": "Poziom",
+    "paused": "Pauza",
+    "levelComplete": "Poziom ukończony!",
+    "gameOver": "Koniec gry",
+    "victory": "Zwycięstwo!",
+    "allLevelsDone": "Wszystkie poziomy ukończone!",
+    "comingSoon": "Wkrótce nowe poziomy!",
+    "crystals": "Kryształy",
+    "points": "Punkty",
+    "best": "Rekord",
+    "soundOn": "Dźwięk: wł.",
+    "soundOff": "Dźwięk: wył.",
+    "keyboardNeeded": "Do gry potrzebna jest klawiatura",
+    "walk": "idź",
+    "jump": "skok",
+    "pause": "pauza",
+    "sound": "dźwięk",
+    "language": "język",
+    "confirm": "dalej",
+    "controls": "Sterowanie"
+  },
+  "levels": {
+    "level1": {
+      "name": "Marchewkowe pole",
+      "signs": {
+        "walk": "← → — idź",
+        "jump": "Spacja — skok!\nPrzytrzymaj — wyżej!",
+        "stomp": "Skocz na\nmarchewkę z góry!",
+        "crystals": "5 kryształów =\n+1 życie",
+        "goal": "Zielony kryształ —\nmeta!"
+      }
+    },
+    "level2": {
+      "name": "Wzgórza zombie",
+      "signs": { "zombie": "Zombie! Skocz na\nniego dwa razy!" }
+    },
+    "level3": { "name": "Schody zombie", "signs": {} },
+    "level4": {
+      "name": "Pszczela polana",
+      "signs": {
+        "propeller": "Latająca marchewka!\nSkocz na nią z góry",
+        "bee": "Pszczoła! Przebiegnij pod nią,\ngdy leci wysoko,\nalbo skocz na nią z góry"
+      }
+    },
+    "level5": {
+      "name": "Ostatnia góra",
+      "signs": { "last": "Ostatnia góra —\npowodzenia!" }
+    }
+  }
+}

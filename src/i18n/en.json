@@ -1,0 +1,60 @@
+{
+  "ui": {
+    "subtitle": "A chicken versus carrots and zombies",
+    "play": "Play",
+    "chooseLevel": "Choose a level",
+    "resume": "Continue",
+    "menu": "Main menu",
+    "next": "Next",
+    "tryAgain": "Try again",
+    "playAgain": "Play again",
+    "level": "Level",
+    "paused": "Paused",
+    "levelComplete": "Level complete!",
+    "gameOver": "Game over",
+    "victory": "You win!",
+    "allLevelsDone": "All levels done!",
+    "comingSoon": "New levels coming soon!",
+    "crystals": "Crystals",
+    "points": "Points",
+    "best": "Best",
+    "soundOn": "Sound: on",
+    "soundOff": "Sound: off",
+    "keyboardNeeded": "You need a keyboard to play",
+    "walk": "walk",
+    "jump": "jump",
+    "pause": "pause",
+    "sound": "sound",
+    "language": "language",
+    "confirm": "next",
+    "controls": "Controls"
+  },
+  "levels": {
+    "level1": {
+      "name": "Carrot Field",
+      "signs": {
+        "walk": "← → to walk",
+        "jump": "Space to jump!\nHold it to go higher!",
+        "stomp": "Jump on the\ncarrot from above!",
+        "crystals": "5 crystals =\n+1 life",
+        "goal": "Green crystal =\nfinish!"
+      }
+    },
+    "level2": {
+      "name": "Zombie Hills",
+      "signs": { "zombie": "Zombie! Jump on\nit twice!" }
+    },
+    "level3": { "name": "Zombie Stairs", "signs": {} },
+    "level4": {
+      "name": "Bee Meadow",
+      "signs": {
+        "propeller": "Flying carrot!\nJump on it from above",
+        "bee": "A bee! Run under it\nwhen it flies high,\nor jump on it"
+      }
+    },
+    "level5": {
+      "name": "Last Mountain",
+      "signs": { "last": "Last mountain —\ngood luck!" }
+    }
+  }
+}
