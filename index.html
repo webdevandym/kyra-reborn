@@ -21,8 +21,11 @@
           <p class="subtitle" data-i18n="subtitle"></p>
           <div class="picker" role="group" aria-labelledby="picker-heading">
             <p id="picker-heading" class="picker__heading"><span data-i18n="chooseLevel"></span> <kbd>←</kbd><kbd>→</kbd></p>
-            <div class="levels" data-level-picker></div>
-            <p class="picker__name" data-stat="pickedLevel"></p>
+            <div class="carousel">
+              <div class="carousel__track" data-level-picker></div>
+            </div>
+            <div class="carousel__dots" data-level-dots aria-hidden="true"></div>
+            <p class="visually-hidden" data-stat="pickedLevel" aria-live="polite"></p>
           </div>
           <button class="btn btn--primary" type="button" data-action="confirm" data-primary><span data-i18n="play"></span> <kbd>Enter</kbd></button>
           <div class="row">

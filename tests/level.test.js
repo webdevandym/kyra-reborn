@@ -60,6 +60,12 @@ test('parseLevel gives the level a name key and each sign a text key, a world x 
   assert.deepEqual(level.signs, [{ col: 2, key: 'hello', textKey: 'levels.test.signs.hello', x: 2.5 * TILE, y: 11 * TILE }]);
 });
 
+test('parseLevel passes theme through, defaults it to meadow and rejects unknown themes', () => {
+  assert.equal(testLevel(['C.G', '###']).theme, 'meadow');
+  assert.equal(testLevel(['C.G', '###'], { theme: 'sky' }).theme, 'sky');
+  assert.throws(() => testLevel(['C.G', '###'], { theme: 'space' }), /unknown theme 'space'/);
+});
+
 test('parseLevel rejects malformed maps with a message naming the problem', () => {
   const base = { id: 'bad' };
   assert.throws(() => parseLevel({ ...base, map: ['C.G'] }), /exactly 12 rows/);

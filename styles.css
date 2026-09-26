@@ -12,6 +12,8 @@
   --font-hand: "Caveat", "Comic Sans MS", "Chalkboard SE", cursive;
   --font-ui: "Balsamiq Sans", system-ui, sans-serif;
   --wobbly: 255px 15px 225px 15px / 15px 225px 15px 255px;
+  --dot-meadow: #3fae49;
+  --dot-sky: #9b8ad6;
   color-scheme: light;
 }
 
@@ -185,60 +187,147 @@ canvas {
   gap: 0.7cqi;
 }
 
-.picker__heading,
-.picker__name {
-  margin: 0;
-}
-
 .picker__heading {
+  margin: 0;
   font-size: 0.85em;
   color: var(--ink-soft);
 }
 
-.picker__name {
-  font-family: var(--font-hand);
-  font-weight: 700;
-  font-size: 1.45em;
-  line-height: 1;
+.carousel {
+  --card-w: 17cqi;
+  --gap: 1.4cqi;
+  position: relative;
+  width: calc(var(--card-w) * 2.3);
+  max-width: 100%;
+  height: calc(var(--card-w) * 0.82);
+  overflow: hidden;
 }
 
-.levels {
+.carousel__track {
+  position: absolute;
+  inset-block: 0;
+  left: 50%;
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 1cqi;
+  align-items: center;
+  gap: var(--gap);
+  transform: translateX(calc(-1 * (var(--index, 0) * (var(--card-w) + var(--gap)) + var(--card-w) / 2)));
+  transition: transform 260ms cubic-bezier(0.3, 1.25, 0.5, 1);
 }
 
-.level-tile {
+.level-card {
+  --pose: scale(1);
+  flex: 0 0 var(--card-w);
   display: grid;
   justify-items: center;
-  gap: 0;
-  min-width: 3.4em;
-  padding: 0.15em 0.7em 0.3em;
+  align-content: center;
+  gap: 0.15em;
+  width: var(--card-w);
+  min-height: 86%;
+  padding: 0.3em 0.4em;
+  transform: var(--pose);
+  transition: transform 260ms ease, opacity 260ms ease, background-color 260ms ease;
 }
 
-.level-tile__number {
+.level-card:hover,
+.level-card:focus-visible {
+  transform: var(--pose) scale(1.04);
+}
+
+.level-card[data-offset="0"] {
+  --pose: rotate(-2deg);
+  background: var(--sun);
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+.level-card[data-offset="-1"],
+.level-card[data-offset="1"] {
+  --pose: scale(0.72);
+  opacity: 0.55;
+}
+
+.level-card[data-offset="-2"],
+.level-card[data-offset="2"] {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.level-card__number {
   font-family: var(--font-hand);
-  font-size: 1.8em;
+  font-size: 2em;
   line-height: 1;
 }
 
-.level-tile__stars {
-  font-size: 0.8em;
+.level-card__name {
+  font-family: var(--font-hand);
+  font-size: 1.15em;
   line-height: 1;
+  text-wrap: balance;
+}
+
+.level-card__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+}
+
+.level-card__stars {
+  font-size: 0.8em;
   letter-spacing: 0.08em;
   color: var(--sun);
   -webkit-text-stroke: 1px var(--ink);
 }
 
-.level-tile[aria-pressed="true"] {
-  background: var(--sun);
-  box-shadow: 0 0 0 2px var(--ink);
-  transform: rotate(-3deg) scale(1.08);
+.level-card[data-offset="0"] .level-card__stars {
+  color: var(--paper);
 }
 
-.level-tile[aria-pressed="true"] .level-tile__stars {
-  color: var(--paper);
+.level-card__world {
+  width: 1.6em;
+  height: 1.1em;
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.carousel__dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.6cqi;
+}
+
+.carousel__dot {
+  width: 1.1cqi;
+  height: 1.1cqi;
+  min-width: 7px;
+  min-height: 7px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+}
+
+.carousel__dot[data-theme="meadow"] {
+  color: var(--dot-meadow);
+}
+
+.carousel__dot[data-theme="sky"] {
+  color: var(--dot-sky);
+}
+
+.carousel__dot[data-picked] {
+  background: currentColor;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 kbd {
@@ -315,6 +404,10 @@ kbd {
     animation: none;
   }
   .btn {
+    transition: none;
+  }
+  .carousel__track,
+  .level-card {
     transition: none;
   }
 }

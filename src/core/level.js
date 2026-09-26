@@ -3,9 +3,12 @@ import { TILE, ROWS } from '../config.js';
 const TILE_KINDS = { '#': 'solid', '=': 'oneway' };
 const ENEMY_CHARS = { c: 'carrot', Z: 'zombie', p: 'propeller', b: 'bee' };
 const KNOWN_CHARS = new Set(['.', '#', '=', 'C', 'c', 'Z', 'p', 'b', 'r', 'G']);
+const THEMES = new Set(['meadow', 'sky']);
 
 export function parseLevel(def) {
   const { id, map } = def;
+  const theme = def.theme ?? 'meadow';
+  if (!THEMES.has(theme)) throw new Error(`${id}: unknown theme '${theme}'`);
   if (!Array.isArray(map) || map.length !== ROWS) {
     throw new Error(`${id}: map must have exactly ${ROWS} rows`);
   }
@@ -46,6 +49,7 @@ export function parseLevel(def) {
   const level = {
     id,
     nameKey: `levels.${id}.name`,
+    theme,
     difficulty: def.difficulty ?? 1,
     cols,
     rows: ROWS,

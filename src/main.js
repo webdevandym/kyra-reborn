@@ -12,11 +12,16 @@ import { load, save } from './storage.js';
 
 const NO_INPUT = { left: false, right: false, jumpHeld: false, jumpPressed: false };
 const ARROWS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
+const WORLD_ICONS = {
+  meadow: '<svg class="level-card__world" viewBox="0 0 24 16" aria-hidden="true"><path d="M1 15h22M4 15c1-4 2-7 4-10M10 15c1-4 3-7 5-9M16 15c1-3 3-6 6-7"/></svg>',
+  sky: '<svg class="level-card__world" viewBox="0 0 30 18" aria-hidden="true"><path d="M26 2a5 5 0 1 0 3 8a4 4 0 1 1-3-8z"/><path d="M4 16a4 4 0 0 1 1-8a5 5 0 0 1 9-2a4 4 0 0 1 6 3a3.5 3.5 0 0 1 0 7z"/></svg>',
+};
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const screens = [...document.querySelectorAll('[data-screen]')];
 const picker = document.querySelector('[data-level-picker]');
+const dots = document.querySelector('[data-level-dots]');
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const debug = location.hash.includes('debug');
 
@@ -73,29 +78,34 @@ function fillStats() {
 
 function buildPicker() {
   game.levels.forEach((level, index) => {
-    const tile = document.createElement('button');
-    tile.type = 'button';
-    tile.className = 'btn level-tile';
-    tile.dataset.action = 'pick';
-    tile.dataset.level = String(index);
-    const number = document.createElement('span');
-    number.className = 'level-tile__number';
-    number.textContent = String(index + 1);
-    const stars = document.createElement('span');
-    stars.className = 'level-tile__stars';
-    stars.setAttribute('aria-hidden', 'true');
-    stars.textContent = '★'.repeat(level.difficulty);
-    tile.append(number, stars);
-    picker.append(tile);
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'btn level-card';
+    card.tabIndex = -1;
+    card.dataset.action = 'pick';
+    card.dataset.level = String(index);
+    card.innerHTML = `<span class="level-card__number">${index + 1}</span><span class="level-card__name"></span><span class="level-card__meta"><span class="level-card__stars" aria-hidden="true">${'★'.repeat(level.difficulty)}</span>${WORLD_ICONS[level.theme]}</span>`;
+    picker.append(card);
+    const dot = document.createElement('span');
+    dot.className = 'carousel__dot';
+    dot.dataset.theme = level.theme;
+    dots.append(dot);
   });
 }
 
 function syncPicker() {
-  for (const tile of picker.children) {
-    const index = Number(tile.dataset.level);
-    tile.setAttribute('aria-pressed', String(index === game.selectedIndex));
-    tile.setAttribute('aria-label', levelTitle(index));
+  picker.style.setProperty('--index', String(game.selectedIndex));
+  for (const card of picker.children) {
+    const index = Number(card.dataset.level);
+    const offset = Math.max(-2, Math.min(2, index - game.selectedIndex));
+    card.dataset.offset = String(offset);
+    card.setAttribute('aria-pressed', String(offset === 0));
+    card.setAttribute('aria-label', levelTitle(index));
+    if (Math.abs(offset) === 2) card.setAttribute('aria-hidden', 'true');
+    else card.removeAttribute('aria-hidden');
+    card.querySelector('.level-card__name').textContent = t(game.levels[index].nameKey, prefs.lang);
   }
+  [...dots.children].forEach((dot, index) => dot.toggleAttribute('data-picked', index === game.selectedIndex));
 }
 
 function applyStrings() {
@@ -257,7 +267,7 @@ window.addEventListener('keydown', (event) => {
     }
     return;
   }
-  const buttons = [...screen.querySelectorAll('button')];
+  const buttons = [...screen.querySelectorAll('button:not(.level-card)')];
   if (!buttons.length) return;
   event.preventDefault();
   const index = buttons.indexOf(document.activeElement);
