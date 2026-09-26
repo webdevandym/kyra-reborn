@@ -169,16 +169,16 @@ canvas {
 }
 
 .card--title {
-  gap: 1cqi;
-  padding-block: 2.4cqi;
+  gap: 0.85cqi;
+  padding-block: 1.9cqi;
 }
 
 .card--title .logo {
-  font-size: 8cqi;
+  font-size: 6.6cqi;
 }
 
 .card--title .subtitle {
-  font-size: 3cqi;
+  font-size: 2.4cqi;
 }
 
 .picker {
@@ -194,7 +194,7 @@ canvas {
 }
 
 .carousel {
-  --card-w: 17cqi;
+  --card-w: 14cqi;
   --gap: 1.4cqi;
   position: relative;
   width: calc(var(--card-w) * 2.3);
@@ -253,13 +253,13 @@ canvas {
 
 .level-card__number {
   font-family: var(--font-hand);
-  font-size: 2em;
+  font-size: 1.7em;
   line-height: 1;
 }
 
 .level-card__name {
   font-family: var(--font-hand);
-  font-size: 1.15em;
+  font-size: 1em;
   line-height: 1;
   text-wrap: balance;
 }
