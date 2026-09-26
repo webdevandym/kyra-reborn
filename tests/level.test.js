@@ -39,12 +39,47 @@ test('parseLevel passes difficulty through and defaults it to 1', () => {
   assert.equal(testLevel(['C.G', '###'], { difficulty: 3 }).difficulty, 3);
 });
 
-test('tileAt treats the left/right edges and the floor as solid and the sky as empty', () => {
+test('tileAt treats the left/right edges as solid, and the sky and everything below the map as empty', () => {
   const level = testLevel(['C........G', '##########']);
   assert.equal(tileAt(level, -1, 5), 'solid');
   assert.equal(tileAt(level, 10, 5), 'solid');
   assert.equal(tileAt(level, 3, -1), 'empty');
-  assert.equal(tileAt(level, 3, ROWS), 'solid');
+  assert.equal(tileAt(level, 3, ROWS), 'empty');
+  assert.equal(tileAt(level, 3, ROWS + 5), 'empty');
+});
+
+test('parseLevel reads * as a star, v as a bat, R as a rain cloud and each ~ run as one moving cloud', () => {
+  const level = testLevel([
+    '..R.......',
+    '..........',
+    '....~~~...',
+    '.v........',
+    'C..*.....G',
+    '####..~~##',
+  ]);
+  assert.deepEqual(level.enemies, [
+    { kind: 'bat', x: 1.5 * TILE, y: 10 * TILE },
+    { kind: 'star', x: 3.5 * TILE, y: 11 * TILE },
+  ]);
+  assert.deepEqual(level.rainClouds, [{ id: '2,6', col: 2, row: 6, x: 2.5 * TILE, y: 6.5 * TILE }]);
+  assert.deepEqual(level.movers, [
+    { id: '4,8', col: 4, row: 8, width: 3 * TILE, x: 4 * TILE, y: 8 * TILE },
+    { id: '6,11', col: 6, row: 11, width: 2 * TILE, x: 6 * TILE, y: 11 * TILE },
+  ]);
+  assert.equal(tileAt(level, 2, 6), 'empty');
+  assert.equal(tileAt(level, 5, 8), 'empty');
+  assert.equal(tileAt(level, 6, 11), 'empty');
+});
+
+test('two ~ runs in one row are two moving clouds', () => {
+  const level = testLevel(['C.......G', '.~~.~~~..', '#########']);
+  assert.deepEqual(level.movers.map((m) => [m.id, m.width / TILE]), [['1,10', 2], ['4,10', 3]]);
+});
+
+test('a level without R or ~ has no rain clouds and no moving clouds', () => {
+  const level = testLevel(['C.G', '###']);
+  assert.deepEqual(level.rainClouds, []);
+  assert.deepEqual(level.movers, []);
 });
 
 test('solidTop returns the y of the highest solid tile in a column, ignoring platforms', () => {

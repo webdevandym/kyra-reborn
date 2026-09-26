@@ -1,4 +1,4 @@
-import { TILE, CARROT, ZOMBIE, PROPELLER, BEE, FLYER } from '../config.js';
+import { TILE, CARROT, ZOMBIE, PROPELLER, BEE, FLYER, RULES } from '../config.js';
 import { applyGravity, moveAndCollide } from './physics.js';
 import { tileAt } from './level.js';
 
@@ -131,6 +131,7 @@ export function createEnemy(spec) {
 
 export function updateEnemy(e, dt, level) {
   ENEMY_KINDS[e.kind].update(e, dt, level);
+  if (e.y > level.height + RULES.fallLimit) e.alive = false;
 }
 
 export function stompEnemy(e) {

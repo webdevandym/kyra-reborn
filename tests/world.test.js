@@ -152,3 +152,13 @@ test('walking into a propeller carrot from the side is a hit', () => {
   assert.deepEqual(types(events).filter((t) => t === 'hit'), ['hit']);
   assert.equal(world.player.dead, true);
 });
+
+test('falling into a gap is a hit, with the feathers at the bottom edge of the screen', () => {
+  const world = createWorld(testLevel(['C......G', '##...###']));
+  const events = run(world, RIGHT, 3);
+  const hits = events.filter((e) => e.type === 'hit');
+  assert.equal(hits.length, 1);
+  assert.equal(hits[0].y, world.level.height - 30);
+  assert.equal(world.done, true);
+  assert.equal(world.player.dead, true);
+});

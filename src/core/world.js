@@ -68,6 +68,6 @@ function die(world, events) {
   world.done = true;
   world.enemies = world.enemies.filter((e) => e.alive);
   p.dead = true;
-  events.push({ type: 'hit', x: p.x, y: p.y - p.h / 2 });
+  events.push({ type: 'hit', x: p.x, y: Math.min(p.y - p.h / 2, world.level.height - 30) });
   return events;
 }

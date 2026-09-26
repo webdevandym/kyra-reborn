@@ -275,6 +275,20 @@ test('quitting to the title keeps the pick and shows that level again with its c
   assert.equal(game.world.crystals.length, 5);
 });
 
+test('falling into a gap with the last life is game over, and try again restarts the picked level', () => {
+  const PIT = def('pit', ['C' + '.'.repeat(16) + 'G', '##...' + '#'.repeat(13)]);
+  const game = createGame([EMPTY_RUN, PIT]);
+  game.selectLevel(1);
+  start(game);
+  game.lives = 1;
+  playUntil(game, RIGHT, 'death');
+  playUntil(game, IDLE, 'gameOver');
+  game.confirm();
+  assert.equal(game.state, 'intro');
+  assert.equal(game.levelIndex, 1);
+  assert.equal(game.lives, RULES.startLives);
+});
+
 function playCounting(game, input, seconds) {
   let playing = 0;
   const events = [];

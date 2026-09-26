@@ -223,3 +223,10 @@ test('a propeller carrot one tile above the ground blocks a walking chicken', ()
     assert.equal(overlaps(chicken, bodyRect({ ...e, y: e.homeY + PROPELLER.bob * Math.sin(phase) + e.h / 2 })), true);
   }
 });
+
+test('an enemy that falls out of the level is removed', () => {
+  const level = testLevel(['C...c...G', '####.####']);
+  const e = createEnemy(level.enemies[0]);
+  runSteps(240, () => updateEnemy(e, STEP, level));
+  assert.equal(e.alive, false);
+});

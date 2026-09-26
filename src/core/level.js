@@ -1,8 +1,8 @@
 import { TILE, ROWS } from '../config.js';
 
 const TILE_KINDS = { '#': 'solid', '=': 'oneway' };
-const ENEMY_CHARS = { c: 'carrot', Z: 'zombie', p: 'propeller', b: 'bee' };
-const KNOWN_CHARS = new Set(['.', '#', '=', 'C', 'c', 'Z', 'p', 'b', 'r', 'G']);
+const ENEMY_CHARS = { c: 'carrot', Z: 'zombie', p: 'propeller', b: 'bee', '*': 'star', v: 'bat' };
+const KNOWN_CHARS = new Set(['.', '#', '=', 'C', 'c', 'Z', 'p', 'b', 'r', 'G', '*', 'v', 'R', '~']);
 const THEMES = new Set(['meadow', 'sky']);
 
 export function parseLevel(def) {
@@ -16,6 +16,8 @@ export function parseLevel(def) {
   const tiles = [];
   const enemies = [];
   const crystals = [];
+  const rainClouds = [];
+  const movers = [];
   let spawn = null;
   let goal = null;
 
@@ -38,6 +40,12 @@ export function parseLevel(def) {
         enemies.push({ kind: ENEMY_CHARS[ch], ...feet });
       } else if (ch === 'r') {
         crystals.push({ id: `${col},${row}`, x: feet.x, y: (row + 0.5) * TILE });
+      } else if (ch === 'R') {
+        rainClouds.push({ id: `${col},${row}`, col, row, x: (col + 0.5) * TILE, y: (row + 0.5) * TILE });
+      } else if (ch === '~' && line[col - 1] !== '~') {
+        let end = col;
+        while (line[end] === '~') end++;
+        movers.push({ id: `${col},${row}`, col, row, width: (end - col) * TILE, x: col * TILE, y: row * TILE });
       }
     });
     tiles.push(tileRow);
@@ -60,6 +68,8 @@ export function parseLevel(def) {
     goal,
     enemies,
     crystals,
+    rainClouds,
+    movers,
     signs: [],
   };
   level.signs = (def.signs ?? []).map((sign) => ({
@@ -75,7 +85,7 @@ export function parseLevel(def) {
 export function tileAt(level, col, row) {
   if (col < 0 || col >= level.cols) return 'solid';
   if (row < 0) return 'empty';
-  if (row >= level.rows) return 'solid';
+  if (row >= level.rows) return 'empty';
   return level.tiles[row][col];
 }
 
