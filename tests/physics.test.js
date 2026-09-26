@@ -115,7 +115,7 @@ test('a falling body lands on a platform top from above and records the ride', (
   const b = body(3.5 * TILE, 4 * TILE);
   fall(b, level, 120);
   assert.equal(b.y, 11 * TILE, 'without platforms it falls through to the ground');
-  assert.equal(b.ride, undefined, 'no platforms passed, so no ride');
+  assert.equal(b.ride, null, 'no platforms passed, so no ride');
   const c = body(3.5 * TILE, 4 * TILE);
   runSteps(120, () => {
     applyGravity(c, STEP);
@@ -155,4 +155,5 @@ test('walking off the end of a platform drops the body', () => {
   });
   assert.ok(b.x - b.w / 2 > m.x + m.w, 'walked past the end');
   assert.ok(b.y > m.y, 'dropped below the platform top');
+  assert.equal(b.ride, null);
 });

@@ -35,6 +35,7 @@ export function moveAndCollide(body, dt, level, platforms = []) {
   const prevBottom = body.y;
   body.y += body.vy * dt;
   body.onGround = false;
+  body.ride = null;
   const colLeft = Math.floor((body.x - body.w / 2) / TILE);
   const colRight = Math.floor((body.x + body.w / 2 - EPS) / TILE);
   if (body.vy >= 0) {

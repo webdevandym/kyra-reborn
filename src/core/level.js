@@ -45,7 +45,11 @@ export function parseLevel(def) {
       } else if (ch === '~' && line[col - 1] !== '~') {
         let end = col;
         while (line[end] === '~') end++;
-        movers.push({ id: `${col},${row}`, col, row, width: (end - col) * TILE, x: col * TILE, y: row * TILE });
+        const len = end - col;
+        if (len < 2 || len > 4) {
+          throw new Error(`${id}: moving cloud at ${col},${row} must be 2–4 tiles`);
+        }
+        movers.push({ id: `${col},${row}`, col, row, width: len * TILE, x: col * TILE, y: row * TILE });
       }
     });
     tiles.push(tileRow);

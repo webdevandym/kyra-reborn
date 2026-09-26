@@ -76,6 +76,18 @@ test('two ~ runs in one row are two moving clouds', () => {
   assert.deepEqual(level.movers.map((m) => [m.id, m.width / TILE]), [['1,10', 2], ['4,10', 3]]);
 });
 
+test('parseLevel rejects a ~ run shorter than 2 or longer than 4 tiles', () => {
+  const base = { id: 'bad' };
+  assert.throws(
+    () => parseLevel({ ...base, map: mapFromBottom(['C.......G', '.~.......', '#########']) }),
+    /bad: moving cloud at 1,10 must be 2–4 tiles/,
+  );
+  assert.throws(
+    () => parseLevel({ ...base, map: mapFromBottom(['C.......G', '.~~~~~...', '#########']) }),
+    /bad: moving cloud at 1,10 must be 2–4 tiles/,
+  );
+});
+
 test('a level without R or ~ has no rain clouds and no moving clouds', () => {
   const level = testLevel(['C.G', '###']);
   assert.deepEqual(level.rainClouds, []);

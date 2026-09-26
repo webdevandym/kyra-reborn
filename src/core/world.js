@@ -37,7 +37,6 @@ export function stepWorld(world, dt, input) {
     }
   }
   if (p.ride && p.onGround) shiftX(p, p.ride.dx, world.level);
-  p.ride = null;
 
   const { jumped, landed } = updatePlayer(p, input, dt, world.level, world.movers);
   if (jumped) events.push({ type: 'jump', x: p.x, y: p.y });

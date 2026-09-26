@@ -348,7 +348,9 @@ test('pausing while riding a moving cloud keeps the chicken on it', () => {
   assert.equal(p.ride, mover);
   const offset = p.x - mover.x;
   game.togglePause();
+  const pausedAt = mover.x;
   play(game, IDLE, 2);
+  assert.equal(mover.x, pausedAt, 'the cloud does not move while paused');
   game.togglePause();
   play(game, IDLE, 0.5);
   assert.equal(p.ride, mover);
