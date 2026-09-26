@@ -56,6 +56,26 @@
     "level5": {
       "name": "Last Mountain",
       "signs": { "last": "Last mountain —\ngood luck!" }
+    },
+    "level6": {
+      "name": "Cloud Path",
+      "signs": {
+        "clouds": "Clouds!\nJump over the gaps",
+        "star": "A star has 2 lives —\njump on it twice!",
+        "rain": "Rain cloud!\nRun under it when it's dry",
+        "moon": "Touch the\nsleeping Moon!"
+      }
+    },
+    "level7": {
+      "name": "Drifting Clouds",
+      "signs": {
+        "bat": "A bat! Run under it\nor jump on it",
+        "mover": "A moving cloud —\nhop on and ride!"
+      }
+    },
+    "level8": {
+      "name": "Sleeping Moon",
+      "signs": { "final": "Final level —\ngood luck!" }
     }
   }
 }

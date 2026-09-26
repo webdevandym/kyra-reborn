@@ -56,6 +56,26 @@
     "level5": {
       "name": "Ostatnia góra",
       "signs": { "last": "Ostatnia góra —\npowodzenia!" }
+    },
+    "level6": {
+      "name": "Chmurkowa ścieżka",
+      "signs": {
+        "clouds": "Chmury!\nPrzeskakuj dziury",
+        "star": "Gwiazdka ma 2 życia —\nskocz na nią dwa razy!",
+        "rain": "Deszczowa chmura!\nBiegnij pod nią, gdy nie pada",
+        "moon": "Dotknij\nśpiącego Księżyca!"
+      }
+    },
+    "level7": {
+      "name": "Wędrujące chmury",
+      "signs": {
+        "bat": "Nietoperz! Przebiegnij pod nim\nalbo skocz na niego",
+        "mover": "Chmurka jedzie —\nwskocz i jedź!"
+      }
+    },
+    "level8": {
+      "name": "Śpiący Księżyc",
+      "signs": { "final": "Ostatni poziom —\npowodzenia!" }
     }
   }
 }
