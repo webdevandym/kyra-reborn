@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TILE, STEP, GRAVITY, CARROT, ZOMBIE, PROPELLER, BEE, FLYER, PLAYER } from '../src/config.js';
+import { TILE, STEP, GRAVITY, CARROT, ZOMBIE, PROPELLER, BEE, FLYER, PLAYER, STAR, BAT } from '../src/config.js';
 import { createEnemy, updateEnemy, stompEnemy, ENEMY_KINDS } from '../src/core/enemies.js';
 import { bodyRect, overlaps } from '../src/core/rect.js';
 import { testLevel, runSteps } from './helpers.js';
@@ -22,8 +22,8 @@ function track(e, level, steps) {
   return { minX, maxX, turns };
 }
 
-test('the registry knows carrots, zombies and both flyers and rejects unknown kinds', () => {
-  assert.deepEqual(Object.keys(ENEMY_KINDS).sort(), ['bee', 'carrot', 'propeller', 'zombie']);
+test('the registry knows every ground and flying kind and rejects unknown kinds', () => {
+  assert.deepEqual(Object.keys(ENEMY_KINDS).sort(), ['bat', 'bee', 'carrot', 'propeller', 'star', 'zombie']);
   assert.throws(() => createEnemy({ kind: 'dragon', x: 0, y: 0 }), /unknown enemy kind 'dragon'/);
 });
 
@@ -229,4 +229,68 @@ test('an enemy that falls out of the level is removed', () => {
   const e = createEnemy(level.enemies[0]);
   runSteps(240, () => updateEnemy(e, STEP, level));
   assert.equal(e.alive, false);
+});
+
+test('a star starts with two lives, walking left at star speed', () => {
+  const level = testLevel(['C........*.G', '############']);
+  const e = createEnemy(level.enemies[0]);
+  assert.equal(e.w, STAR.w);
+  assert.equal(e.h, STAR.h);
+  assert.equal(e.lives, 2);
+  updateEnemy(e, STEP, level);
+  assert.equal(e.vx, -STAR.speed);
+});
+
+test('a star turns back at a gap and in front of a moving cloud', () => {
+  const level = testLevel(['C......*....G', '####.####~~~#']);
+  const e = createEnemy(level.enemies[0]);
+  const { minX, maxX, turns } = track(e, level, 30 * 120);
+  assert.ok(minX >= 5 * TILE, `minX ${minX}`);
+  assert.ok(maxX <= 9 * TILE, `maxX ${maxX}`);
+  assert.ok(turns >= 2, `turned ${turns} times`);
+  assert.equal(e.alive, true);
+});
+
+test('the first stomp hurts a star, which gets dizzy and faster; the second defeats it', () => {
+  const e = createEnemy({ kind: 'star', x: 200, y: 450 });
+  assert.equal(stompEnemy(e), 'hurt');
+  assert.equal(e.alive, true);
+  assert.equal(e.lives, 1);
+  assert.equal(e.dizzy, STAR.dizzyTime);
+  assert.equal(e.speed, STAR.hurtSpeed);
+  assert.equal(stompEnemy(e), 'defeated');
+  assert.equal(e.alive, false);
+});
+
+test('a hurt star stops being dizzy after dizzyTime and walks at its hurt speed', () => {
+  const level = testLevel(['C...*.....G', '###########']);
+  const e = createEnemy(level.enemies[0]);
+  stompEnemy(e);
+  runSteps(Math.ceil(STAR.dizzyTime / STEP) + 1, () => updateEnemy(e, STEP, level));
+  assert.equal(e.dizzy, 0);
+  assert.equal(Math.abs(e.vx), STAR.hurtSpeed);
+});
+
+test('a bat hovers like a bee: no gravity, inside its bob, patrolling its range, one stomp defeats it', () => {
+  const level = testLevel(['....................', '..........v.........', '....................', 'C..................G', '####################']);
+  const e = createEnemy(level.enemies[0]);
+  assert.equal(e.w, BAT.w);
+  assert.equal(e.h, BAT.h);
+  let minX = e.x;
+  let maxX = e.x;
+  let minY = e.y;
+  let maxY = e.y;
+  runSteps(10 * 120, () => {
+    updateEnemy(e, STEP, level);
+    minX = Math.min(minX, e.x);
+    maxX = Math.max(maxX, e.x);
+    minY = Math.min(minY, e.y);
+    maxY = Math.max(maxY, e.y);
+  });
+  assert.ok(minX >= e.homeX - BAT.range * TILE - 1e-9, `minX ${minX}`);
+  assert.ok(maxX <= e.homeX + BAT.range * TILE + 1e-9, `maxX ${maxX}`);
+  assert.ok(maxX - minX > BAT.range * TILE, 'it patrols');
+  assert.ok(minY >= e.homeY - BAT.bob + BAT.h / 2 - 1e-9, `minY ${minY}`);
+  assert.ok(maxY <= e.homeY + BAT.bob + BAT.h / 2 + 1e-9, `maxY ${maxY}`);
+  assert.equal(stompEnemy(e), 'defeated');
 });

@@ -243,3 +243,23 @@ test('rain at level start never reaches a chicken at its spawn', () => {
   assert.equal(rainPhase(cloud, 0), 'rain');
   assert.ok(!types(run(world, IDLE, PERIOD)).includes('hit'));
 });
+
+test('a star needs two stomps and bounces the chicken both times', () => {
+  const world = createWorld(testLevel(['C.........*.................G', '#############################']));
+  const star = world.enemies[0];
+  dropOnto(world, star);
+  const first = [];
+  for (let i = 0; i < 120 && !first.length; i++) first.push(...world.step(STEP, IDLE).filter((e) => e.type === 'stomp'));
+  assert.equal(first[0].kind, 'star');
+  assert.equal(first[0].result, 'hurt');
+  assert.equal(world.player.vy, -PLAYER.stompBounce);
+  assert.equal(world.enemies.length, 1);
+  assert.equal(star.lives, 1);
+
+  dropOnto(world, star, 30);
+  const second = [];
+  for (let i = 0; i < 120 && !second.length; i++) second.push(...world.step(STEP, IDLE).filter((e) => e.type === 'stomp'));
+  assert.equal(second[0].result, 'defeated');
+  assert.equal(world.enemies.length, 0);
+  assert.equal(world.done, false);
+});

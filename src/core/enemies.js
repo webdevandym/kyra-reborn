@@ -1,4 +1,4 @@
-import { TILE, CARROT, ZOMBIE, PROPELLER, BEE, FLYER, RULES } from '../config.js';
+import { TILE, CARROT, ZOMBIE, PROPELLER, BEE, FLYER, RULES, STAR, BAT } from '../config.js';
 import { applyGravity, moveAndCollide } from './physics.js';
 import { tileAt } from './level.js';
 
@@ -34,6 +34,11 @@ function patrol(e, dt, level) {
   e.anim += dt * (e.speed / 20);
 }
 
+function dizzyPatrol(e, dt, level) {
+  e.dizzy = Math.max(0, e.dizzy - dt);
+  patrol(e, dt, level);
+}
+
 const carrot = {
   create: (spec) => baseEnemy(spec, CARROT.w, CARROT.h, CARROT.speed),
   update: patrol,
@@ -45,10 +50,7 @@ const carrot = {
 
 const zombie = {
   create: (spec) => ({ ...baseEnemy(spec, ZOMBIE.bigW, ZOMBIE.bigH, ZOMBIE.bigSpeed), size: 'big', dizzy: 0 }),
-  update(e, dt, level) {
-    e.dizzy = Math.max(0, e.dizzy - dt);
-    patrol(e, dt, level);
-  },
+  update: dizzyPatrol,
   onStomp(e) {
     if (e.size === 'big') {
       e.size = 'small';
@@ -57,6 +59,21 @@ const zombie = {
       e.speed = ZOMBIE.smallSpeed;
       e.dizzy = ZOMBIE.dizzyTime;
       return 'shrunk';
+    }
+    e.alive = false;
+    return 'defeated';
+  },
+};
+
+const star = {
+  create: (spec) => ({ ...baseEnemy(spec, STAR.w, STAR.h, STAR.speed), lives: 2, dizzy: 0 }),
+  update: dizzyPatrol,
+  onStomp(e) {
+    if (e.lives > 1) {
+      e.lives -= 1;
+      e.dizzy = STAR.dizzyTime;
+      e.speed = STAR.hurtSpeed;
+      return 'hurt';
     }
     e.alive = false;
     return 'defeated';
@@ -121,7 +138,7 @@ function flyer(cfg) {
   };
 }
 
-export const ENEMY_KINDS = { carrot, zombie, propeller: flyer(PROPELLER), bee: flyer(BEE) };
+export const ENEMY_KINDS = { carrot, zombie, propeller: flyer(PROPELLER), bee: flyer(BEE), star, bat: flyer(BAT) };
 
 export function createEnemy(spec) {
   const kind = ENEMY_KINDS[spec.kind];
