@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STEP, RULES } from '../src/config.js';
+import { STEP, RULES, TILE } from '../src/config.js';
 import { createGame } from '../src/core/game.js';
-import { mapFromBottom } from './helpers.js';
+import { mapFromBottom, castleMap } from './helpers.js';
 
 const IDLE = { left: false, right: false, jumpHeld: false, jumpPressed: false };
 const RIGHT = { ...IDLE, right: true };
@@ -356,4 +356,86 @@ test('pausing while riding a moving cloud keeps the chicken on it', () => {
   assert.equal(p.ride, mover);
   assert.ok(Math.abs(p.x - mover.x - offset) < 0.5);
   assert.equal(p.y, mover.y);
+});
+
+const KEEP = { id: 'keep', theme: 'castle', map: castleMap(['C.............S.O.#K......c..G', '#'.repeat(30)], [18]) };
+
+function throughPortal(game) {
+  const { world } = game;
+  world.portal.open = true;
+  world.player.x = world.portal.x;
+  world.player.invuln = 0;
+  return playUntil(game, IDLE, 'portal', 1);
+}
+
+test('going through the portal sets the checkpoint, and a later death respawns there without the spider', () => {
+  const game = createGame([KEEP]);
+  start(game);
+  throughPortal(game);
+  assert.deepEqual(game.checkpoint, { x: 19.5 * TILE, y: 11 * TILE });
+  playUntil(game, RIGHT, 'death');
+  play(game, IDLE, RULES.dyingTime + STEP);
+  assert.equal(game.state, 'playing');
+  assert.equal(game.world.player.x, 19.5 * TILE);
+  assert.equal(game.world.checkpointReached, true);
+  assert.deepEqual(game.world.enemies.map((e) => e.kind), ['carrot']);
+});
+
+test('dying before the portal restarts at the start with the spider back', () => {
+  const game = createGame([KEEP]);
+  start(game);
+  game.world.portal.open = true;
+  game.world.enemies = game.world.enemies.filter((e) => e.kind !== 'spider');
+  game.world.player.x = 15 * TILE;
+  game.world.player.invuln = 0;
+  game.world.enemies.find((e) => e.kind === 'carrot').x = 14.5 * TILE;
+  playUntil(game, IDLE, 'death');
+  play(game, IDLE, RULES.dyingTime + STEP);
+  assert.equal(game.checkpoint, null);
+  assert.equal(game.world.player.x, 0.5 * TILE);
+  assert.ok(game.world.enemies.some((e) => e.kind === 'spider'));
+  assert.equal(game.world.portal.open, false);
+});
+
+test('the level timer keeps running across a checkpoint respawn', () => {
+  const game = createGame([KEEP]);
+  start(game);
+  throughPortal(game);
+  playUntil(game, RIGHT, 'death');
+  const atDeath = game.levelTime;
+  play(game, IDLE, RULES.dyingTime + 1);
+  assert.ok(game.levelTime > atDeath + 0.9, `levelTime ${game.levelTime}, at death ${atDeath}`);
+});
+
+test('entering a level clears the checkpoint: the main menu, a new game and the next level start at C', () => {
+  const game = createGame([KEEP, EMPTY_RUN]);
+  start(game);
+  throughPortal(game);
+  assert.ok(game.checkpoint);
+  game.quitToTitle();
+  assert.equal(game.checkpoint, null);
+  game.confirm();
+  assert.equal(game.checkpoint, null);
+  assert.equal(game.world.player.x, 0.5 * TILE);
+  play(game, IDLE, RULES.introTime + STEP);
+  throughPortal(game);
+  game.world.player.x = game.world.goal.x;
+  playUntil(game, IDLE, 'levelComplete');
+  game.confirm();
+  assert.equal(game.checkpoint, null);
+});
+
+test('losing the last life after the checkpoint is game over, and Try again starts at C with the spider back', () => {
+  const game = createGame([KEEP]);
+  start(game);
+  throughPortal(game);
+  game.lives = 1;
+  playUntil(game, RIGHT, 'death');
+  playUntil(game, IDLE, 'gameOver', 2);
+  assert.equal(game.state, 'gameOver');
+  game.confirm();
+  assert.equal(game.checkpoint, null);
+  assert.equal(game.world.player.x, 0.5 * TILE);
+  assert.ok(game.world.enemies.some((e) => e.kind === 'spider'));
+  assert.equal(game.world.checkpointReached, false);
 });

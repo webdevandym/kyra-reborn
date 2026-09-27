@@ -14,6 +14,7 @@ export function createGame(levelDefs, { best = 0 } = {}) {
     lives: RULES.startLives,
     points: 0,
     collected: new Set(),
+    checkpoint: null,
     world: createWorld(levels[0]),
     timer: 0,
     levelTime: 0,
@@ -80,6 +81,7 @@ export function createGame(levelDefs, { best = 0 } = {}) {
   function showPickedLevel() {
     game.levelIndex = game.selectedIndex;
     game.collected = new Set();
+    game.checkpoint = null;
     game.world = createWorld(levels[game.selectedIndex]);
   }
 
@@ -87,6 +89,7 @@ export function createGame(levelDefs, { best = 0 } = {}) {
     game.levelIndex = index;
     game.levelTime = 0;
     game.collected = new Set();
+    game.checkpoint = null;
     game.world = createWorld(levels[index], game.collected);
     game.state = 'intro';
     game.timer = RULES.introTime;
@@ -107,6 +110,8 @@ export function createGame(levelDefs, { best = 0 } = {}) {
       game.state = 'dying';
       game.timer = RULES.dyingTime;
       queue.push({ type: 'death', livesLeft: game.lives });
+    } else if (event.type === 'portal') {
+      game.checkpoint = { ...event.to };
     } else if (event.type === 'goal') {
       if (game.levelIndex + 1 < levels.length) {
         game.state = 'levelComplete';
@@ -121,7 +126,7 @@ export function createGame(levelDefs, { best = 0 } = {}) {
 
   function finishDying() {
     if (game.lives > 0) {
-      game.world = createWorld(game.level, game.collected);
+      game.world = createWorld(game.level, game.collected, { start: game.checkpoint });
       game.state = 'playing';
       queue.push({ type: 'respawn' });
     } else {

@@ -267,6 +267,7 @@ test('a star needs two stomps and bounces the chicken both times', () => {
 });
 
 const LAIR = ['C.....m.......S.O.#K...c...G', '############################'];
+const lair = () => parseLevel({ id: 'lair', theme: 'castle', map: castleMap(LAIR, [18]) });
 const FLOOR = 11 * TILE;
 
 function fireballAt(x, height, vx = -FIREBALL.speed) {
@@ -395,4 +396,56 @@ test('a chicken behind the spider is shot at toward the wall, and those shots va
   }
   assert.equal(world.projectiles.includes(ball), false, 'the shot vanished');
   assert.ok(maxX + FIREBALL.size / 2 <= 24 * TILE + FIREBALL.speed * STEP, `it reached x ${maxX}, the wall starts at ${24 * TILE}`);
+});
+
+test('stomping the spider opens the portal once', () => {
+  const world = createWorld(lair());
+  const spider = world.enemies.find((e) => e.kind === 'spider');
+  dropOnto(world, spider);
+  const events = stepUntil(world, IDLE, 'stomp');
+  const open = events.find((e) => e.type === 'portalOpen');
+  assert.ok(open);
+  assert.deepEqual({ x: open.x, y: open.y }, { x: 16.5 * TILE, y: FLOOR });
+  assert.equal(world.portal.open, true);
+  assert.equal(world.portal.openedAt, world.time);
+});
+
+test('a closed portal does nothing, and an open one moves the chicken to the checkpoint', () => {
+  const world = createWorld(lair());
+  const p = world.player;
+  p.x = world.portal.x;
+  p.invuln = 0;
+  world.enemies = [];
+  assert.equal(types(world.step(STEP, IDLE)).includes('portal'), false);
+  world.portal.open = true;
+  world.projectiles.push(fireballAt(p.x - 4 * TILE, FIREBALL.highY));
+  const events = world.step(STEP, IDLE);
+  const portal = events.find((e) => e.type === 'portal');
+  assert.ok(portal);
+  assert.deepEqual(portal.to, { x: 19.5 * TILE, y: FLOOR });
+  assert.equal(portal.from.x, 16.5 * TILE);
+  assert.equal(p.x, 19.5 * TILE);
+  assert.equal(p.y, FLOOR);
+  assert.equal(p.vx, 0);
+  assert.equal(p.vy, 0);
+  assert.equal(p.invuln, PLAYER.spawnGrace);
+  assert.deepEqual(world.projectiles, []);
+  assert.equal(world.checkpointReached, true);
+});
+
+test('createWorld with a start places the chicken there with only that room\'s enemies', () => {
+  const level = lair();
+  const fresh = createWorld(level);
+  assert.equal(fresh.checkpointReached, false);
+  assert.deepEqual(fresh.enemies.map((e) => e.kind), ['rat', 'spider', 'carrot']);
+  assert.equal(fresh.portal.open, false);
+  const world = createWorld(level, new Set(), { start: level.checkpoint });
+  assert.equal(world.player.x, level.checkpoint.x);
+  assert.equal(world.player.y, level.checkpoint.y);
+  assert.deepEqual(world.enemies.map((e) => e.kind), ['carrot']);
+  assert.equal(world.checkpointReached, true);
+});
+
+test('a level without a portal has no portal in its world', () => {
+  assert.equal(createWorld(testLevel(['C...G', '#####'])).portal, null);
 });

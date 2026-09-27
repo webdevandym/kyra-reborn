@@ -1,22 +1,25 @@
-import { TILE, PLAYER, CRYSTAL, GOAL, RULES, FIREBALL } from '../config.js';
+import { TILE, PLAYER, CRYSTAL, GOAL, RULES, FIREBALL, PORTAL } from '../config.js';
 import { createPlayer, updatePlayer } from './player.js';
 import { createEnemy, updateEnemy, stompEnemy } from './enemies.js';
 import { classifyContact } from './combat.js';
 import { bodyRect, centeredRect, overlaps } from './rect.js';
 import { shiftX } from './physics.js';
-import { tileAt } from './level.js';
+import { roomAt, tileAt } from './level.js';
 import { createMover, updateMovers } from './platforms.js';
 import { createRainCloud, rainPhase, rainRect } from './hazards.js';
 
-export function createWorld(level, collected = new Set()) {
+export function createWorld(level, collected = new Set(), { start = null } = {}) {
+  const startRoom = start ? roomAt(level, start.x) : null;
   const world = {
     level,
-    player: createPlayer(level.spawn),
-    enemies: level.enemies.map(createEnemy),
+    player: createPlayer(start ?? level.spawn),
+    enemies: level.enemies.filter((spec) => !startRoom || roomAt(level, spec.x) === startRoom).map(createEnemy),
     movers: level.movers.map(createMover),
     rain: level.rainClouds.map((spec) => createRainCloud(spec, level)),
     crystals: level.crystals.filter((c) => !collected.has(c.id)).map((c) => ({ ...c })),
     projectiles: [],
+    portal: level.portal ? { x: level.portal.x, y: level.portal.y, w: PORTAL.w, h: PORTAL.h, open: false, openedAt: 0 } : null,
+    checkpointReached: Boolean(start),
     goal: { x: level.goal.x, y: level.goal.y, w: GOAL.w, h: GOAL.h },
     time: 0,
     done: false,
@@ -106,6 +109,8 @@ export function stepWorld(world, dt, input) {
 
   if (p.y > world.level.height + RULES.fallLimit) return die(world, events);
 
+  if (world.portal?.open && overlaps(bodyRect(p), bodyRect(world.portal))) enterPortal(world, events);
+
   if (overlaps(bodyRect(p), bodyRect(world.goal))) {
     world.done = true;
     p.won = true;
@@ -120,6 +125,29 @@ function onDefeat(world, e, events) {
     p.shield = true;
     events.push({ type: 'shieldUp', x: p.x, y: p.y - p.h });
   }
+  if (e.kind === 'spider' && world.portal && !world.portal.open) {
+    world.portal.open = true;
+    world.portal.openedAt = world.time;
+    events.push({ type: 'portalOpen', x: world.portal.x, y: world.portal.y });
+  }
+}
+
+function enterPortal(world, events) {
+  const p = world.player;
+  const from = { x: p.x, y: p.y };
+  const to = { x: world.level.checkpoint.x, y: world.level.checkpoint.y };
+  p.x = to.x;
+  p.y = to.y;
+  p.prevBottom = to.y;
+  p.vx = 0;
+  p.vy = 0;
+  p.onGround = true;
+  p.jumping = false;
+  p.ride = null;
+  p.invuln = Math.max(p.invuln, PLAYER.spawnGrace);
+  world.projectiles = [];
+  world.checkpointReached = true;
+  events.push({ type: 'portal', from, to });
 }
 
 function die(world, events) {
