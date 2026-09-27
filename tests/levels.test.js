@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { ROWS, MOVER, BAT } from '../src/config.js';
-import { parseLevel } from '../src/core/level.js';
+import { ROWS, MOVER, TILE, BAT, GHOST, SPIDER } from '../src/config.js';
+import { parseLevel, roomAt } from '../src/core/level.js';
 import levels from '../src/levels/index.js';
 import { LANGS } from '../src/i18n/index.js';
 
@@ -11,17 +11,23 @@ const DICTS = Object.fromEntries(LANGS.map((lang) => [lang, JSON.parse(readFileS
 const standable = (ch) => ch === '#' || ch === '=';
 const surfaceLike = (ch) => standable(ch) || ch === '~';
 
+const NONE = { rat: 0, ghost: 0, skeleton: 0, spider: 0 };
 const EXPECTED_COUNTS = {
-  level1: { crystals: 15, carrot: 5, zombie: 0, propeller: 0, bee: 0, star: 0, bat: 0, rain: 0, movers: 0 },
-  level2: { crystals: 20, carrot: 6, zombie: 3, propeller: 0, bee: 0, star: 0, bat: 0, rain: 0, movers: 0 },
-  level3: { crystals: 22, carrot: 7, zombie: 5, propeller: 0, bee: 0, star: 0, bat: 0, rain: 0, movers: 0 },
-  level4: { crystals: 22, carrot: 4, zombie: 2, propeller: 4, bee: 4, star: 0, bat: 0, rain: 0, movers: 0 },
-  level5: { crystals: 25, carrot: 7, zombie: 4, propeller: 4, bee: 5, star: 0, bat: 0, rain: 0, movers: 0 },
-  level6: { crystals: 20, carrot: 0, zombie: 0, propeller: 0, bee: 0, star: 6, bat: 0, rain: 2, movers: 0 },
-  level7: { crystals: 22, carrot: 0, zombie: 0, propeller: 0, bee: 0, star: 5, bat: 4, rain: 4, movers: 3 },
-  level8: { crystals: 25, carrot: 0, zombie: 0, propeller: 0, bee: 0, star: 7, bat: 5, rain: 6, movers: 4 },
+  level1: { crystals: 15, carrot: 5, zombie: 0, propeller: 0, bee: 0, star: 0, bat: 0, rain: 0, movers: 0, ...NONE },
+  level2: { crystals: 20, carrot: 6, zombie: 3, propeller: 0, bee: 0, star: 0, bat: 0, rain: 0, movers: 0, ...NONE },
+  level3: { crystals: 22, carrot: 7, zombie: 5, propeller: 0, bee: 0, star: 0, bat: 0, rain: 0, movers: 0, ...NONE },
+  level4: { crystals: 22, carrot: 4, zombie: 2, propeller: 4, bee: 4, star: 0, bat: 0, rain: 0, movers: 0, ...NONE },
+  level5: { crystals: 25, carrot: 7, zombie: 4, propeller: 4, bee: 5, star: 0, bat: 0, rain: 0, movers: 0, ...NONE },
+  level6: { crystals: 20, carrot: 0, zombie: 0, propeller: 0, bee: 0, star: 6, bat: 0, rain: 2, movers: 0, ...NONE },
+  level7: { crystals: 22, carrot: 0, zombie: 0, propeller: 0, bee: 0, star: 5, bat: 4, rain: 4, movers: 3, ...NONE },
+  level8: { crystals: 25, carrot: 0, zombie: 0, propeller: 0, bee: 0, star: 7, bat: 5, rain: 6, movers: 4, ...NONE },
+  level9: { crystals: 20, carrot: 0, zombie: 0, propeller: 0, bee: 0, star: 0, bat: 0, rain: 0, movers: 0, rat: 6, ghost: 0, skeleton: 2, spider: 1 },
+  level10: { crystals: 22, carrot: 0, zombie: 0, propeller: 0, bee: 0, star: 0, bat: 0, rain: 0, movers: 0, rat: 6, ghost: 3, skeleton: 3, spider: 1 },
+  level11: { crystals: 25, carrot: 0, zombie: 0, propeller: 0, bee: 0, star: 0, bat: 0, rain: 0, movers: 0, rat: 7, ghost: 4, skeleton: 4, spider: 1 },
 };
-const ENEMY_KINDS = ['carrot', 'zombie', 'propeller', 'bee', 'star', 'bat'];
+const ENEMY_KINDS = ['carrot', 'zombie', 'propeller', 'bee', 'star', 'bat', 'rat', 'ghost', 'skeleton', 'spider'];
+const ENEMY_CHARS = 'cZpb*vmgsS';
+const BANNED = { meadow: '*vR~mgsSOK', sky: 'cZpbmgsSOK', castle: 'cZpb*vR~' };
 
 function cellsOf(map, chars) {
   const cells = [];
@@ -63,14 +69,25 @@ function gapsOf(map) {
   return gaps;
 }
 
+function floorRow(map, col) {
+  for (let row = 1; row < ROWS; row++) if (map[row][col] === '#') return row;
+  return ROWS;
+}
+
+function wallCols(map) {
+  const cols = [];
+  for (let col = 0; col < map[0].length; col++) if (map.every((line) => line[col] === '#')) cols.push(col);
+  return cols;
+}
+
 function firstStandableBelow(map, col, row) {
   for (let r = row + 1; r < ROWS; r++) if (standable(map[r][col])) return r;
   return ROWS;
 }
 
-test('the level list is level1 to level8, meadow then sky, with difficulty 1-3 that never goes down within a theme', () => {
-  assert.deepEqual(levels.map((def) => def.id), ['level1', 'level2', 'level3', 'level4', 'level5', 'level6', 'level7', 'level8']);
-  assert.deepEqual(levels.map((def) => def.theme ?? 'meadow'), ['meadow', 'meadow', 'meadow', 'meadow', 'meadow', 'sky', 'sky', 'sky']);
+test('the level list is level1 to level11, meadow then sky then castle, with difficulty 1-3 that never goes down within a theme', () => {
+  assert.deepEqual(levels.map((def) => def.id), ['level1', 'level2', 'level3', 'level4', 'level5', 'level6', 'level7', 'level8', 'level9', 'level10', 'level11']);
+  assert.deepEqual(levels.map((def) => def.theme ?? 'meadow'), ['meadow', 'meadow', 'meadow', 'meadow', 'meadow', 'sky', 'sky', 'sky', 'castle', 'castle', 'castle']);
   const last = {};
   for (const def of levels) {
     const theme = def.theme ?? 'meadow';
@@ -78,7 +95,7 @@ test('the level list is level1 to level8, meadow then sky, with difficulty 1-3 t
     assert.ok(def.difficulty >= (last[theme] ?? 1), `${def.id} is easier than the ${theme} level before it`);
     last[theme] = def.difficulty;
   }
-  assert.deepEqual(levels.map((def) => def.difficulty), [1, 1, 2, 2, 3, 2, 2, 3]);
+  assert.deepEqual(levels.map((def) => def.difficulty), [1, 1, 2, 2, 3, 2, 2, 3, 2, 3, 3]);
 });
 
 for (const def of levels) {
@@ -97,9 +114,14 @@ for (const def of levels) {
   });
 
   test(`${def.id}: uses only the cast of its theme`, () => {
-    const banned = theme === 'sky' ? 'cZpb' : '*vR~';
-    for (const { ch, col, row } of cellsOf(def.map, banned)) assert.fail(`'${ch}' at ${col},${row} does not belong on a ${theme} level`);
+    for (const { ch, col, row } of cellsOf(def.map, BANNED[theme])) assert.fail(`'${ch}' at ${col},${row} does not belong on a ${theme} level`);
   });
+
+  if (theme !== 'castle') {
+    test(`${def.id}: is a single room`, () => {
+      assert.equal(parseLevel(def).rooms.length, 1);
+    });
+  }
 
   if (theme === 'meadow') {
     test(`${def.id}: has no pits — every column has solid ground on the bottom row`, () => {
@@ -113,7 +135,7 @@ for (const def of levels) {
         assert.ok(diff <= 3, `step of ${diff} tiles between columns ${col - 1} and ${col}`);
       }
     });
-  } else {
+  } else if (theme === 'sky') {
     test(`${def.id}: neighbouring cloud heights differ by at most 3 tiles`, () => {
       for (let col = 1; col < cols; col++) {
         const a = surfaceRow(def.map, col - 1);
@@ -162,6 +184,71 @@ for (const def of levels) {
         assert.ok(Math.abs(col - spawn.col) >= 8, `${where}: too close to the chicken start`);
         for (const p of paths) assert.ok(!(p.row > row && col + 1 >= p.pathStart && col - 1 <= p.pathEnd), `${where}: rains on the path of the moving cloud at ${p.start},${p.row}`);
         for (const sign of def.signs) assert.ok(Math.abs(sign.col - col) > 1, `${where}: rains on the sign at column ${sign.col}`);
+      }
+    });
+  }
+
+  if (theme === 'castle') {
+    const level = parseLevel(def);
+    const walls = wallCols(def.map);
+    const [spawn] = cellsOf(def.map, 'C');
+    const [spider] = cellsOf(def.map, 'S');
+    const [portal] = cellsOf(def.map, 'O');
+    const [checkpoint] = cellsOf(def.map, 'K');
+    const [goal] = cellsOf(def.map, 'G');
+    const roomOf = (col) => level.rooms.indexOf(roomAt(level, (col + 0.5) * TILE));
+
+    test(`${def.id}: has a stone ceiling and a solid bottom row, and neighbouring floors differ by at most 3 tiles`, () => {
+      assert.equal(def.map[0], '#'.repeat(cols), 'row 0 is the ceiling');
+      assert.equal(def.map[ROWS - 1], '#'.repeat(cols), 'the bottom row is solid');
+      for (let col = 1; col < cols; col++) {
+        if (walls.includes(col) || walls.includes(col - 1)) continue;
+        const diff = Math.abs(floorRow(def.map, col) - floorRow(def.map, col - 1));
+        assert.ok(diff <= 3, `step of ${diff} tiles between columns ${col - 1} and ${col}`);
+      }
+    });
+
+    test(`${def.id}: has two rooms at least 22 columns wide split by one wall 1-2 columns thick`, () => {
+      assert.equal(level.rooms.length, 2);
+      assert.ok(walls.length >= 1 && walls.length <= 2 && walls[walls.length - 1] - walls[0] === walls.length - 1, `wall columns ${walls}`);
+      for (const room of level.rooms) assert.ok((room.right - room.left) / TILE >= 22, `room ${room.left / TILE}-${room.right / TILE - 1} is too narrow`);
+    });
+
+    test(`${def.id}: the start, spider and portal are in room 1; the checkpoint and princess are in room 2, the checkpoint at its door`, () => {
+      for (const [name, cell, room] of [['C', spawn, 0], ['S', spider, 0], ['O', portal, 0], ['K', checkpoint, 1], ['G', goal, 1]]) {
+        assert.equal(roomOf(cell.col), room, `'${name}' at column ${cell.col}`);
+      }
+      assert.ok(checkpoint.col - level.rooms[1].left / TILE <= 3, `checkpoint at column ${checkpoint.col}`);
+    });
+
+    test(`${def.id}: the spider guards a flat lane of ${SPIDER.maxRange} columns with at least 2 rats in it, and the portal stands just behind it`, () => {
+      const side = spawn.col < spider.col ? -1 : 1;
+      const floor = spider.row + 1;
+      let rats = 0;
+      for (let k = 1; k <= SPIDER.maxRange; k++) {
+        const col = spider.col + side * k;
+        assert.equal(floorRow(def.map, col), floor, `lane column ${col} is not flat`);
+        for (const row of [spider.row, spider.row - 1]) assert.notEqual(def.map[row][col], '#', `block in the fireball lane at ${col},${row}`);
+        for (let row = 0; row < ROWS; row++) if (def.map[row][col] === 'm') rats++;
+      }
+      assert.ok(rats >= 2, `${rats} rats in the spider lane`);
+      const behind = (portal.col - spider.col) * -side;
+      assert.ok(behind >= 1 && behind <= 4, `portal ${behind} columns behind the spider`);
+      assert.equal(def.map[portal.row + 1][portal.col], '#', 'the portal stands on the floor');
+    });
+
+    test(`${def.id}: every ghost floats in open air with its leash inside its room, well away from the spider`, () => {
+      for (const { col, row } of cellsOf(def.map, 'g')) {
+        const room = roomAt(level, (col + 0.5) * TILE);
+        assert.ok(row >= 1 && row <= ROWS - 3, `ghost at ${col},${row} is too high or low`);
+        assert.ok((col - GHOST.leash) * TILE >= room.left && (col + GHOST.leash + 1) * TILE <= room.right, `ghost at ${col},${row}: its leash leaves the room`);
+        assert.ok(Math.abs(col - spider.col) > SPIDER.maxRange + GHOST.leash, `ghost at ${col},${row} is too close to the spider`);
+      }
+    });
+
+    test(`${def.id}: no enemy starts within 5 columns of the checkpoint`, () => {
+      for (const { ch, col } of cellsOf(def.map, ENEMY_CHARS)) {
+        assert.ok(Math.abs(col - checkpoint.col) > 5, `'${ch}' at column ${col}, checkpoint at ${checkpoint.col}`);
       }
     });
   }
@@ -221,16 +308,16 @@ for (const def of levels) {
 
   test(`${def.id}: no enemy starts within 5 columns of the chicken`, () => {
     const [spawn] = cellsOf(def.map, 'C');
-    for (const { ch, col } of cellsOf(def.map, 'cZpb*v')) {
+    for (const { ch, col } of cellsOf(def.map, ENEMY_CHARS)) {
       assert.ok(Math.abs(col - spawn.col) > 5, `'${ch}' at column ${col}, chicken at ${spawn.col}`);
     }
   });
 
-  test(`${def.id}: the chicken, walkers and the goal stand on a fixed surface, and every sign has ground under it`, () => {
-    for (const { ch, col, row } of cellsOf(def.map, 'CcZ*G')) {
+  test(`${def.id}: the chicken, walkers, spider, checkpoint and goal stand on a fixed surface, and every sign has ground under it`, () => {
+    for (const { ch, col, row } of cellsOf(def.map, 'CcZ*GmsSK')) {
       assert.ok(row + 1 < ROWS && standable(def.map[row + 1][col]), `'${ch}' at ${col},${row} is floating`);
     }
-    for (const sign of def.signs) assert.ok(surfaceRow(def.map, sign.col) < ROWS, `sign at column ${sign.col} stands over a gap`);
+    for (const sign of def.signs) assert.ok((theme === 'castle' ? floorRow : surfaceRow)(def.map, sign.col) < ROWS, `sign at column ${sign.col} stands over a gap`);
   });
 }
 

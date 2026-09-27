@@ -76,6 +76,23 @@
     },
     "level8": {
       "name": "Sleeping Moon",
+      "signs": { "lastSky": "Last cloud path —\ngood luck!" }
+    },
+    "level9": {
+      "name": "Castle Hall",
+      "signs": {
+        "rat": "Jump on a rat —\nget a shield!",
+        "skeleton": "A skeleton has 2 lives —\njump on it twice!",
+        "fireball": "Low fire — jump!\nHigh fire — stay down!",
+        "princess": "Touch the\nprincess!"
+      }
+    },
+    "level10": {
+      "name": "Dungeon",
+      "signs": { "ghost": "A ghost! Look at it\nand it stops" }
+    },
+    "level11": {
+      "name": "Princess Tower",
       "signs": { "final": "Final level —\ngood luck!" }
     }
   }

@@ -76,6 +76,23 @@
     },
     "level8": {
       "name": "Śpiący Księżyc",
+      "signs": { "lastSky": "Ostatnia chmurkowa ścieżka —\npowodzenia!" }
+    },
+    "level9": {
+      "name": "Sala zamkowa",
+      "signs": {
+        "rat": "Skocz na szczura —\ndostaniesz tarczę!",
+        "skeleton": "Szkielet ma 2 życia —\nskocz na niego dwa razy!",
+        "fireball": "Nisko ogień — skacz!\nWysoko — zostań na dole!",
+        "princess": "Dotknij\nksiężniczki!"
+      }
+    },
+    "level10": {
+      "name": "Lochy",
+      "signs": { "ghost": "Duch! Patrz na niego,\na się zatrzyma" }
+    },
+    "level11": {
+      "name": "Wieża księżniczki",
       "signs": { "final": "Ostatni poziom —\npowodzenia!" }
     }
   }
