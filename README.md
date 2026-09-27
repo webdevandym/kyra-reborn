@@ -1,6 +1,6 @@
 # Kyra Reborn
 
-A notebook-doodle platformer for kids aged 8–10. Kyra the chicken («кура») walks, jumps, collects red crystals and stomps carrots, zombies, propeller carrots and bees across five meadow levels, crosses a cloud track in the evening sky, past two-life stars, bats and rain clouds, to the sleeping Moon, and then walks through the rooms of a castle, past rats, skeletons, shy ghosts and a fire-spitting spider, to the princess. There are eleven levels. The game design and the characters come from a young designer's voice note and notebook drawing.
+A notebook-doodle platformer for kids aged 8–10. Kyra the chicken («кура») walks, jumps, collects red crystals and stomps carrots, zombies, propeller carrots and bees across five meadow levels, crosses a cloud track in the evening sky, past two-life stars, bats and rain clouds, to the sleeping Moon, and then walks through four rooms of each castle level — halls, kitchens, libraries, dungeons and a throne room — past rats, bone-throwing skeletons, shy ghosts and a fire-spitting spider, to the princess. There are eleven levels. The game design and the characters come from a young designer's voice note and notebook drawing.
 
 ## Play
 
@@ -35,10 +35,10 @@ Open <http://localhost:8123> in Chrome. ES modules need a local server, so openi
 - A star has two lives: jump on it twice. A bat swoops like a swing: high at both ends, where you can run under it, and low in the middle, where you jump over it or on it.
 - Rain clouds rain on and off. Run under one while it is dry: a single drop costs a life.
 - Touch the sleeping Moon to finish a sky level.
-- In the castle, a rat has one life and a skeleton has two. Jumping on a rat gives you a shield, a blue bubble that stops one fireball.
+- In the castle, a rat has one life and a skeleton has two. Skeletons throw bones in an arc: step aside. Only the rats in red helmets, near the spider, give you a shield: a blue bubble that stops one fireball, but not a bone.
 - A ghost creeps closer while you look away and freezes when you face it. It floats through walls but never leaves its room.
-- Each castle level has one spider. It spits fireballs, low and high in turn: jump over a low one, and stay on the ground under a high one.
-- Jump on the spider to open a portal to the next room. Going through it is a checkpoint: losing a life after that restarts from there.
+- Each castle level has one spider with three lives. It spits volleys of one, two or three fireballs, low and high in turn: jump over a low volley, and stay on the ground under a high one. Each time you jump on it, it gets dizzy and throws you back.
+- Defeat the spider to open a portal. Going through it is a checkpoint: losing a life after that restarts from there. The other rooms are joined by doors: walk into one to go to the next room.
 - Touch the princess to finish a castle level.
 - The level-complete and victory cards show how long the level took (only time spent playing counts).
 
