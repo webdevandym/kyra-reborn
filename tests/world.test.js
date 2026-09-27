@@ -358,6 +358,7 @@ test('a shield takes one fireball: it pops, the chicken lives and gets stomp gra
   run(world, IDLE, PLAYER.stompGrace + STEP);
   world.projectiles.push(fireballAt(p.x + 20, FIREBALL.lowY));
   assert.deepEqual(types(world.step(STEP, IDLE)), ['hit']);
+  assert.deepEqual(world.projectiles, []);
 });
 
 test('the shield does not help against walking into an enemy', () => {
@@ -376,6 +377,7 @@ test('two fireballs reaching a shielded chicken in the same step pop the shield 
   assert.deepEqual(types(world.step(STEP, IDLE)), ['shieldPop']);
   assert.equal(world.done, false);
   assert.equal(p.shield, false);
+  assert.equal(world.projectiles.length, 1, 'the second ball flies on through the grace period');
 });
 
 test('a chicken behind the spider is shot at toward the wall, and those shots vanish at the wall', () => {

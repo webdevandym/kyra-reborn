@@ -402,8 +402,8 @@ test('a ghost never leaves its leash or its room, and floats through walls', () 
     assert.ok(e.x + e.w / 2 <= room.right + 1e-9, 'stays in its room');
   }
   assert.ok(e.x > 14 * TILE, 'passed through the block at column 14');
-  runSteps(20 * 120, () => updateEnemy(e, STEP, level, chickenAt(e.x, -1, 12 * TILE)));
-  assert.ok(e.y <= level.height - 2 * TILE + 1e-9, 'never sinks below the floor line');
+  runSteps(20 * 120, () => updateEnemy(e, STEP, level, chickenAt(e.x - TILE, -1, 12 * TILE)));
+  assert.equal(e.y, level.height - 2 * TILE, 'stops at the floor line');
 });
 
 test('a ghost floats home when the chicken leaves its room or is out of sight', () => {

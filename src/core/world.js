@@ -154,6 +154,7 @@ function die(world, events) {
   const p = world.player;
   world.done = true;
   world.enemies = world.enemies.filter((e) => e.alive);
+  world.projectiles = world.projectiles.filter((f) => !f.spent);
   p.dead = true;
   events.push({ type: 'hit', x: p.x, y: Math.min(p.y - p.h / 2, world.level.height - 30) });
   return events;
