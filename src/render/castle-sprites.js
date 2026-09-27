@@ -1,4 +1,4 @@
-import { COLORS, GHOST } from '../config.js';
+import { COLORS, GHOST, DOOR } from '../config.js';
 import { inkShape, inkEllipse, inkLine, inkPoly, inkRect } from './ink.js';
 import { drawChicken, drawHeart, drawStar } from './sprites.js';
 
@@ -25,7 +25,7 @@ function dizzyStars(ctx, y, time, seed) {
 }
 
 export function drawRat(ctx, rat, time, seed = 471) {
-  const { x, y, dir = -1, anim = 0 } = rat;
+  const { x, y, dir = -1, anim = 0, guard = false } = rat;
   const step = Math.sin(anim * 2.2) * 3;
   ctx.save();
   ctx.translate(x, y);
@@ -42,6 +42,10 @@ export function drawRat(ctx, rat, time, seed = 471) {
   dot(ctx, 12, -13, 1.8);
   inkLine(ctx, [[18, -10], [25, -12]], { stroke: COLORS.inkSoft, width: 1, seed: seed + 7 });
   inkLine(ctx, [[18, -9], [25, -7]], { stroke: COLORS.inkSoft, width: 1, seed: seed + 8 });
+  if (guard) {
+    inkShape(ctx, [[2, -19], [4, -27], [11, -30], [18, -26], [19, -19]], { fill: COLORS.banner, width: 1.8, seed: seed + 9, smooth: false });
+    inkLine(ctx, [[11, -30], [11, -36]], { width: 1.8, seed: seed + 10 });
+  }
   ctx.restore();
 }
 
@@ -100,7 +104,12 @@ export function drawSkeleton(ctx, skeleton, time, seed = 511) {
   inkRect(ctx, -9, -32, 18, 16, { fill: COLORS.bone, width: 2.2, seed: seed + 5 });
   for (const ry of [-27, -22]) inkLine(ctx, [[-7, ry], [7, ry]], { width: 1.3, seed: seed + ry });
   inkLine(ctx, [[-9, -30], [-15, -20 - step]], { width: 2, seed: seed + 6 });
-  inkLine(ctx, [[9, -30], [15, -20 + step]], { width: 2, seed: seed + 7 });
+  if (skeleton.winding) {
+    inkLine(ctx, [[9, -30], [12, -52]], { width: 2, seed: seed + 7 });
+    drawBoneShape(ctx, 12, -56, 0.6, seed + 40);
+  } else {
+    inkLine(ctx, [[9, -30], [15, -20 + step]], { width: 2, seed: seed + 7 });
+  }
   ctx.save();
   ctx.translate(1, -42);
   ctx.rotate(dizzy > 0 ? Math.sin(time * 10) * 0.3 : 0);
@@ -131,7 +140,7 @@ function drawWeb(ctx, cx, cy, seed) {
 }
 
 export function drawSpider(ctx, spider, time, seed = 541) {
-  const { x, y, dir = -1, winding = false } = spider;
+  const { x, y, dir = -1, winding = false, lives = 1, dizzy = 0 } = spider;
   drawWeb(ctx, x, y - 84, seed + 40);
   inkLine(ctx, [[x, y - 50], [x, y - 84]], { stroke: COLORS.inkSoft, width: 1.2, seed: seed + 50 });
   const rear = winding ? 6 : 0;
@@ -163,6 +172,11 @@ export function drawSpider(ctx, spider, time, seed = 541) {
   inkPoly(ctx, [[15, 10], [17, 17], [19, 10]], { fill: COLORS.teeth, width: 1.2, seed: seed + 21, jitter: 0.3 });
   inkPoly(ctx, [[20, 9], [22, 16], [24, 9]], { fill: COLORS.teeth, width: 1.2, seed: seed + 22, jitter: 0.3 });
   ctx.restore();
+  ctx.restore();
+  ctx.save();
+  ctx.translate(x, y);
+  hearts(ctx, lives, -66 - rear, time, seed + 60);
+  if (dizzy > 0) dizzyStars(ctx, -50, time, seed + 70);
   ctx.restore();
 }
 
@@ -235,4 +249,38 @@ export function drawPrincess(ctx, goal, time, awake = false, seed = 661) {
     ctx.globalAlpha = 1;
   }
   ctx.restore();
+}
+
+function drawBoneShape(ctx, x, y, angle, seed) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  inkLine(ctx, [[-7, 0], [7, 0]], { stroke: COLORS.bone, width: 4, seed });
+  for (const ex of [-8, 8]) {
+    inkEllipse(ctx, ex, -2.5, 2.8, 2.8, { fill: COLORS.bone, width: 1.2, seed: seed + ex });
+    inkEllipse(ctx, ex, 2.5, 2.8, 2.8, { fill: COLORS.bone, width: 1.2, seed: seed + ex + 1 });
+  }
+  inkLine(ctx, [[-6, -1.8], [6, -1.8]], { width: 1.1, seed: seed + 3 });
+  inkLine(ctx, [[-6, 1.8], [6, 1.8]], { width: 1.1, seed: seed + 4 });
+  ctx.restore();
+}
+
+export function drawBone(ctx, bone, time, seed = 711) {
+  drawBoneShape(ctx, bone.x, bone.y, time * 14 * Math.sign(bone.vx || 1), seed);
+}
+
+export function drawDoor(ctx, door, time, seed = 731) {
+  const { x, y } = door;
+  const w = DOOR.w;
+  const h = DOOR.h;
+  const points = [[x - w / 2, y], [x - w / 2, y - h + w / 2]];
+  for (let i = 1; i < 8; i++) {
+    const a = Math.PI + (i / 8) * Math.PI;
+    points.push([x + Math.cos(a) * (w / 2), y - h + w / 2 + Math.sin(a) * (w / 2)]);
+  }
+  points.push([x + w / 2, y - h + w / 2], [x + w / 2, y]);
+  inkShape(ctx, points, { fill: COLORS.wood, width: 2.6, seed, smooth: false });
+  for (const dx of [-w / 6, w / 6]) inkLine(ctx, [[x + dx, y - h + 8], [x + dx, y]], { width: 1.3, seed: seed + dx });
+  for (const dy of [h * 0.35, h * 0.7]) inkLine(ctx, [[x - w / 2, y - dy], [x + w / 2, y - dy]], { stroke: COLORS.spider, width: 2.4, seed: seed + dy });
+  inkEllipse(ctx, x + w / 4, y - h * 0.45, 4, 4, { fill: null, stroke: COLORS.spider, width: 2, seed: seed + 9 });
 }

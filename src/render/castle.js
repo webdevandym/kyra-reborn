@@ -1,9 +1,9 @@
 import { TILE, VIEW_W, COLORS } from '../config.js';
-import { tileAt } from '../core/level.js';
-import { mulberry32, inkShape, inkLine, inkPoly, inkRect } from './ink.js';
+import { tileAt, roomAt } from '../core/level.js';
+import { mulberry32, inkShape, inkLine, inkRect } from './ink.js';
 import { hashString, visibleCols } from './layout.js';
-import { drawStar } from './sprites.js';
 import { drawPrincess } from './castle-sprites.js';
+import { ROOM_PROPS, ROOM_TINTS } from './castle-props.js';
 
 export function createCastleTheme(ctx) {
   const doodleCache = new Map();
@@ -11,54 +11,28 @@ export function createCastleTheme(ctx) {
   function doodlesFor(level) {
     if (doodleCache.has(level.id)) return doodleCache.get(level.id);
     const rand = mulberry32(hashString(level.id) ^ 0x2545f491);
-    const items = [];
-    let kind = 0;
-    for (let x = 120; x < level.width * 0.3 + VIEW_W; x += 150 + rand() * 90) {
-      items.push({ kind: ['window', 'torch', 'banner', 'torch'][kind % 4], x, seed: Math.floor(rand() * 1e5) });
-      kind++;
-    }
-    doodleCache.set(level.id, items);
-    return items;
+    const perRoom = level.rooms.map((room) => {
+      const props = ROOM_PROPS[room.kind ?? 'hall'];
+      const start = room.left * 0.3 + 70;
+      const end = Math.max(room.left, room.right - VIEW_W) * 0.3 + VIEW_W - 70;
+      const items = [];
+      for (let x = start, i = 0; x < end; x += 150 + rand() * 90, i++) {
+        items.push({ draw: props[i % props.length], x, seed: Math.floor(rand() * 1e5) });
+      }
+      return items;
+    });
+    doodleCache.set(level.id, perRoom);
+    return perRoom;
   }
 
-  function archPoints(cx, top, w, h) {
-    const points = [[cx - w / 2, top + h], [cx - w / 2, top + w / 2]];
-    for (let i = 1; i < 8; i++) {
-      const a = Math.PI + (i / 8) * Math.PI;
-      points.push([cx + Math.cos(a) * (w / 2), top + w / 2 + Math.sin(a) * (w / 2)]);
-    }
-    points.push([cx + w / 2, top + w / 2], [cx + w / 2, top + h]);
-    return points;
-  }
-
-  function drawWindow(cx, seed) {
-    inkPoly(ctx, archPoints(cx, 110, 56, 96), { fill: COLORS.windowSky, stroke: COLORS.inkSoft, width: 2.2, seed });
-    inkLine(ctx, [[cx, 110], [cx, 206]], { stroke: COLORS.inkSoft, width: 1.6, seed: seed + 1 });
-    inkLine(ctx, [[cx - 28, 160], [cx + 28, 160]], { stroke: COLORS.inkSoft, width: 1.6, seed: seed + 2 });
-    drawStar(ctx, cx - 13, 138, 3.5, COLORS.star, seed + 3);
-    drawStar(ctx, cx + 12, 180, 3, COLORS.star, seed + 4);
-  }
-
-  function drawTorch(cx, time, seed) {
-    inkRect(ctx, cx - 4, 190, 8, 22, { fill: COLORS.wood, stroke: COLORS.inkSoft, width: 1.8, seed });
-    const flicker = Math.sin(time * 13 + seed) * 2;
-    inkPoly(ctx, [[cx - 8, 190], [cx, 166 + flicker], [cx + 8, 190]], { fill: COLORS.torch, stroke: COLORS.inkSoft, width: 1.6, seed: seed + 1, jitter: 1.4 });
-    inkPoly(ctx, [[cx - 3, 190], [cx, 178 + flicker], [cx + 3, 190]], { fill: COLORS.fireCore, stroke: null, seed: seed + 2, jitter: 1 });
-  }
-
-  function drawBanner(cx, seed) {
-    inkLine(ctx, [[cx - 24, 96], [cx + 24, 96]], { stroke: COLORS.inkSoft, width: 2.2, seed });
-    inkPoly(ctx, [[cx - 18, 96], [cx + 18, 96], [cx + 18, 200], [cx, 184], [cx - 18, 200]], { fill: COLORS.banner, stroke: COLORS.inkSoft, width: 2, seed: seed + 1 });
-    drawStar(ctx, cx, 136, 7, COLORS.crown, seed + 2);
-  }
+  const viewRoom = (level, camX) => roomAt(level, camX + VIEW_W / 2);
 
   function drawBackdrop(level, camX, time) {
-    for (const item of doodlesFor(level)) {
+    const items = doodlesFor(level)[level.rooms.indexOf(viewRoom(level, camX))];
+    for (const item of items) {
       const x = item.x - camX * 0.3;
-      if (x < -60 || x > VIEW_W + 60) continue;
-      if (item.kind === 'window') drawWindow(x, item.seed);
-      else if (item.kind === 'torch') drawTorch(x, time, item.seed);
-      else drawBanner(x, item.seed);
+      if (x < -120 || x > VIEW_W + 120) continue;
+      item.draw(ctx, x, time, item.seed);
     }
   }
 
@@ -129,10 +103,22 @@ export function createCastleTheme(ctx) {
     for (const bx of [x0 + 10, x1 - 10]) inkLine(ctx, [[bx, top + 12], [bx, top + 24], [bx + (bx < (x0 + x1) / 2 ? -8 : 8), top + 12]], { width: 1.8, seed: seed + bx, smooth: false });
   }
 
+  function drawThrone(goal, seed) {
+    const { x, y } = goal;
+    inkShape(ctx, [[x - 90, y - 4], [x + 30, y - 4], [x + 30, y], [x - 90, y]], { fill: COLORS.carpet, stroke: null, seed, offset: 0, smooth: false });
+    inkRect(ctx, x + 6, y - 110, 44, 110, { fill: COLORS.carpet, width: 2.4, seed: seed + 1 });
+    inkRect(ctx, x - 4, y - 44, 64, 14, { fill: COLORS.crown, width: 2.2, seed: seed + 2 });
+    inkShape(ctx, [[x + 6, y - 110], [x + 16, y - 128], [x + 28, y - 114], [x + 40, y - 128], [x + 50, y - 110]], { fill: COLORS.crown, width: 2, seed: seed + 3, smooth: false });
+  }
+
   return {
     paper: COLORS.castleWash,
+    paperAt: (level, camX) => ROOM_TINTS[viewRoom(level, camX).kind] ?? COLORS.castleWash,
     drawBackdrop,
     drawTiles,
-    drawGoal: (goal, time, awake) => drawPrincess(ctx, goal, time, awake),
+    drawGoal: (goal, time, awake) => {
+      drawThrone(goal, 691);
+      drawPrincess(ctx, goal, time, awake);
+    },
   };
 }

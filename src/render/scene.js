@@ -8,7 +8,7 @@ import { createMeadowTheme } from './meadow.js';
 import { createSkyTheme } from './sky.js';
 import { createCastleTheme } from './castle.js';
 import { drawStarEnemy, drawBat, drawRainCloud, drawMovingCloud } from './sky-sprites.js';
-import { drawRat, drawGhost, drawSkeleton, drawSpider, drawFireball, drawPortal, drawCheckpoint, drawShield } from './castle-sprites.js';
+import { drawRat, drawGhost, drawSkeleton, drawSpider, drawFireball, drawBone, drawPortal, drawCheckpoint, drawShield, drawDoor } from './castle-sprites.js';
 import {
   drawChicken,
   drawCarrot,
@@ -105,6 +105,7 @@ export function createScene(ctx) {
     });
     world.projectiles.forEach((f) => box(projectileRect(f)));
     if (world.portal) box(bodyRect(world.portal));
+    world.doors.forEach((d) => box(bodyRect(d)));
     ctx.setLineDash([6, 6]);
     world.level.rooms.forEach((room) => ctx.strokeRect(room.left, 0, room.right - room.left, VIEW_H));
     ctx.setLineDash([]);
@@ -118,7 +119,7 @@ export function createScene(ctx) {
     const theme = themes[level.theme];
     const camX = camera.x;
 
-    ctx.fillStyle = theme.paper;
+    ctx.fillStyle = theme.paperAt?.(level, camX) ?? theme.paper;
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
     drawGrid(Math.round(camX));
     theme.drawBackdrop(level, camX, time);
@@ -128,6 +129,7 @@ export function createScene(ctx) {
     drawFinishLine(world.goal);
     theme.drawTiles(level, camX);
     if (level.checkpoint) drawCheckpoint(ctx, level.checkpoint, world.checkpointReached, time);
+    world.doors.forEach((d, i) => drawDoor(ctx, d, time, 731 + i * 11));
     if (world.portal?.open) drawPortal(ctx, world.portal, (world.time - world.portal.openedAt) / PORTAL.grow, time);
     world.movers.forEach((m, i) => drawMovingCloud(ctx, m, 391 + i * 13));
     level.signs.forEach((sign, i) => drawSign(ctx, sign, t(sign.textKey, lang), 61 + i * 7));
@@ -136,7 +138,7 @@ export function createScene(ctx) {
     world.enemies.forEach((e, i) => {
       if (e.alive) ENEMY_DRAWERS[e.kind](ctx, e, time, 200 + i * 37);
     });
-    world.projectiles.forEach((f, i) => drawFireball(ctx, f, time, 581 + i * 7));
+    world.projectiles.forEach((f, i) => (f.kind === 'bone' ? drawBone : drawFireball)(ctx, f, time, 581 + i * 7));
 
     const p = world.player;
     if (!p.dead) {

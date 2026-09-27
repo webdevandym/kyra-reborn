@@ -73,6 +73,11 @@ export function createAudio({ muted = false } = {}) {
       noise({ dur: 0.12, vol: 0.25, freq: 3200 });
       tone({ type: 'sine', from: 1200, to: 300, dur: 0.2, vol: 0.25 });
     },
+    throw: () => {
+      tone({ type: 'square', from: 700, to: 300, dur: 0.08, vol: 0.14 });
+      noise({ dur: 0.06, vol: 0.12, freq: 1800, delay: 0.02 });
+    },
+    door: () => tone({ type: 'sawtooth', from: 160, to: 90, dur: 0.35, vol: 0.12 }),
     portal: () => {
       tone({ type: 'sine', from: 300, to: 1200, dur: 0.5, vol: 0.25 });
       tone({ type: 'triangle', from: 450, to: 1500, dur: 0.5, vol: 0.12, delay: 0.05 });

@@ -204,6 +204,16 @@ function handleEvents(events) {
         if (e.result === 'hurt') particles.text(e.x, e.y - 14, '♥', COLORS.heart);
         if (e.result === 'defeated') particles.poof(e.x, e.y + 12);
         break;
+      case 'throw':
+        if (e.x > camera.x - 100 && e.x < camera.x + VIEW_W + 100) audio.sfx.throw();
+        break;
+      case 'boneBreak':
+        particles.poof(e.x, e.y - 6);
+        break;
+      case 'door':
+        audio.sfx.door();
+        snapCamera(camera, game.world.player, game.world.level);
+        break;
       case 'fire':
         if (e.x > camera.x - 100 && e.x < camera.x + VIEW_W + 100) audio.sfx.fire();
         break;

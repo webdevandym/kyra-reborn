@@ -16,7 +16,9 @@ import { mapFromBottom, castleMap } from './helpers.js';
 import { createSkyTheme } from '../src/render/sky.js';
 import { drawStarEnemy, drawBat, drawRainCloud, drawMovingCloud, drawMoon } from '../src/render/sky-sprites.js';
 import { createCastleTheme } from '../src/render/castle.js';
-import { drawRat, drawGhost, drawSkeleton, drawSpider, drawFireball, drawPortal, drawCheckpoint, drawShield, drawPrincess } from '../src/render/castle-sprites.js';
+import { drawRat, drawGhost, drawSkeleton, drawSpider, drawFireball, drawBone, drawPortal, drawCheckpoint, drawShield, drawPrincess, drawDoor } from '../src/render/castle-sprites.js';
+import { ROOM_PROPS, ROOM_TINTS } from '../src/render/castle-props.js';
+import { ROOM_KINDS } from '../src/core/level.js';
 
 before(async () => {
   for (const lang of LANGS) await loadLang(lang, { fetchJson: (url) => JSON.parse(readFileSync(url, 'utf8')) });
@@ -242,4 +244,41 @@ test('the scene renders a castle level with the spider firing, the shield, a gho
   game.world.player.won = true;
   scene.render({ game, camera, particles, time: 9, lang: 'en', muted: false, debug: true });
   assert.ok(calls.get('stroke') > 50);
+});
+
+test('the new castle sprites draw with finite coordinates: door, bone, guard rat, throwing skeleton, hurt and dizzy spider', () => {
+  const { ctx, calls } = mockContext();
+  drawDoor(ctx, { x: 300, y: 450 }, 0.4);
+  drawBone(ctx, { x: 200, y: 300, vx: 150 }, 0.3);
+  drawBone(ctx, { x: 200, y: 300, vx: -150 }, 1.7);
+  drawRat(ctx, { x: 100, y: 450, dir: -1, anim: 1, guard: true }, 0.2);
+  drawSkeleton(ctx, { x: 300, y: 450, dir: 1, anim: 1, lives: 2, dizzy: 0, winding: true }, 0.3);
+  drawSpider(ctx, { x: 400, y: 450, dir: -1, winding: false, lives: 3, dizzy: 0 }, 0.5);
+  drawSpider(ctx, { x: 400, y: 450, dir: 1, winding: false, lives: 1, dizzy: 0.5 }, 0.9);
+  assert.ok(calls.get('stroke') > 30);
+  assert.ok(calls.get('fill') > 10);
+});
+
+test('every room kind has props and a tint, and every prop draws with finite coordinates', () => {
+  assert.deepEqual(Object.keys(ROOM_PROPS).sort(), [...ROOM_KINDS].sort());
+  assert.deepEqual(Object.keys(ROOM_TINTS).sort(), [...ROOM_KINDS].sort());
+  const { ctx, calls } = mockContext();
+  for (const kind of ROOM_KINDS) ROOM_PROPS[kind].forEach((draw, i) => draw(ctx, 200 + i * 40, 1.3 + i, 900 + i));
+  assert.ok(calls.get('stroke') > 50);
+});
+
+test('the castle theme tints and decorates each room by its kind, and draws the throne behind the princess', () => {
+  const { ctx, calls } = mockContext();
+  const theme = createCastleTheme(ctx);
+  const row = 'C' + '.'.repeat(24) + '#' + '.'.repeat(24) + 'G';
+  const level = parseLevel({ id: 'kinds', map: castleMap([row, '#'.repeat(row.length)], [25]), rooms: ['dungeon', 'throne'] });
+  assert.equal(theme.paperAt(level, 0), COLORS.dungeonWash);
+  assert.equal(theme.paperAt(level, 26 * TILE), COLORS.throneWash);
+  const plain = parseLevel({ id: 'plain', map: castleMap(['C....G', '######']) });
+  assert.equal(theme.paperAt(plain, 0), COLORS.castleWash);
+  theme.drawBackdrop(level, 0, 0.5);
+  theme.drawBackdrop(level, 26 * TILE, 0.5);
+  theme.drawBackdrop(plain, 0, 0.5);
+  theme.drawGoal({ x: 45 * TILE, y: 11 * TILE }, 1, true);
+  assert.ok(calls.get('stroke') > 20);
 });
