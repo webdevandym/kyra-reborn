@@ -614,7 +614,7 @@ test('a far chicken gets a short throw capped at BONE.maxSpeed', () => {
 test('a skeleton throws nothing at a chicken out of range, in another room or dead, and not while dizzy', () => {
   const cases = [
     ['out of range', skeletonSetup(29), (p, e) => ({ ...p, x: e.x + (SKELETON.throwRange + 1) * TILE })],
-    ['another room', skeletonSetup(20, [17]), (p) => ({ ...p, x: 20.5 * TILE })],
+    ['another room', skeletonSetup(14, [12]), (p) => p],
     ['dead', skeletonSetup(13), (p) => ({ ...p, dead: true })],
   ];
   for (const [name, { level, e, player }, who] of cases) {
