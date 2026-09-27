@@ -109,6 +109,9 @@ export function parseLevel(def) {
     signs: [],
   };
   markGuards(level);
+  for (const door of doors) {
+    if (roomIndex(level, door.x) === level.rooms.length - 1) throw new Error(`${id}: the door at column ${Math.floor(door.x / TILE)} has no room after it`);
+  }
   level.signs = (def.signs ?? []).map((sign) => ({
     col: sign.col,
     key: sign.key,

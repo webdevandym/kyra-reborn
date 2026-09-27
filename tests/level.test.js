@@ -214,3 +214,13 @@ test('rats in the spider lane on the start side are guards; other rats are not',
   const rats = level.enemies.filter((e) => e.kind === 'rat').map((e) => [e.x / TILE - 0.5, Boolean(e.guard)]);
   assert.deepEqual(rats, [[3, false], [9, true], [13, true], [22, false], [30, false]]);
 });
+
+test('a door in the last room is rejected, since it has nowhere to lead', () => {
+  assert.throws(() => parseLevel({ id: 'dead-end', map: castleMap(['C.....#....D.G', '##############'], [6]) }), /the door at column 11 has no room after it/);
+});
+
+test('a rat on the start side within the lane distance but behind a wall is not a guard', () => {
+  const level = parseLevel({ id: 'walled', map: castleMap(['C.m.#......S...O#K..G', '#'.repeat(21)], [4, 16]) });
+  const rat = level.enemies.find((e) => e.kind === 'rat');
+  assert.equal(rat.guard, undefined);
+});
