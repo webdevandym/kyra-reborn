@@ -435,7 +435,7 @@ test('a closed portal does nothing, and an open one moves the chicken to the che
   assert.equal(world.checkpointReached, true);
 });
 
-test('createWorld with a start places the chicken there with only that room\'s enemies', () => {
+test('createWorld with a start places the chicken there with the enemies of its room and every later room', () => {
   const level = lair();
   const fresh = createWorld(level);
   assert.equal(fresh.checkpointReached, false);
@@ -446,6 +446,40 @@ test('createWorld with a start places the chicken there with only that room\'s e
   assert.equal(world.player.y, level.checkpoint.y);
   assert.deepEqual(world.enemies.map((e) => e.kind), ['carrot']);
   assert.equal(world.checkpointReached, true);
+  const four = parseLevel({ id: 'four', theme: 'castle', map: castleMap(['C.c...D#.m..S.O#K.z..D#..c..G'.replace('z', 's'), '#'.repeat(29)], [7, 15, 22]) });
+  assert.deepEqual(createWorld(four, new Set(), { start: four.checkpoint }).enemies.map((e) => e.kind), ['skeleton', 'carrot']);
+});
+
+const FOUR = ['C.....D#.m..S.O#K....D#.....G', '#############################'];
+const fourRooms = () => parseLevel({ id: 'four', theme: 'castle', map: castleMap(FOUR, [7, 15, 22]) });
+
+test('a door moves the chicken to the next room entrance on the floor, clears projectiles and is not a checkpoint', () => {
+  const world = createWorld(fourRooms());
+  const p = world.player;
+  p.invuln = 0;
+  world.enemies = [];
+  world.projectiles.push(fireballAt(p.x + 3 * TILE, FIREBALL.highY));
+  p.x = world.doors[0].x;
+  const events = world.step(STEP, IDLE);
+  const door = events.find((e) => e.type === 'door');
+  assert.ok(door);
+  assert.deepEqual(door.to, { x: 8 * TILE + 1.5 * TILE, y: 11 * TILE });
+  assert.equal(door.from.x, 6.5 * TILE);
+  assert.equal(p.x, 9.5 * TILE);
+  assert.equal(p.y, 11 * TILE);
+  assert.equal(p.vx, 0);
+  assert.equal(p.invuln, PLAYER.spawnGrace);
+  assert.deepEqual(world.projectiles, []);
+  assert.equal(world.checkpointReached, false);
+  assert.equal(types(events).includes('portal'), false);
+});
+
+test('the second door leads from the checkpoint room into the throne room', () => {
+  const world = createWorld(fourRooms());
+  world.enemies = [];
+  world.player.x = world.doors[1].x;
+  const door = world.step(STEP, IDLE).find((e) => e.type === 'door');
+  assert.deepEqual(door.to, { x: 23 * TILE + 1.5 * TILE, y: 11 * TILE });
 });
 
 test('a level without a portal has no portal in its world', () => {

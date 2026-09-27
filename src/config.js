@@ -51,6 +51,7 @@ export const GHOST = { w: 36, h: 36, speed: 60, leash: 5, sight: 12, trail: 0.8 
 export const SPIDER = { w: 64, h: 44, fireEvery: 1.6, windup: 0.4, minRange: 2, maxRange: 12 };
 export const FIREBALL = { size: 22, speed: 220, lowY: 14, highY: 64 };
 export const PORTAL = { w: 50, h: 70, grow: 0.5 };
+export const DOOR = { w: 44, h: 72 };
 export const MOVER = { range: 2, period: 5, phasePerCol: 1.3 };
 export const RAIN = { dry: 2.4, warn: 0.8, rain: 1.6, dropSpeed: 600, width: 2, phasePerCol: 0.7 };
 

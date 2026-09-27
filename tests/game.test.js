@@ -439,3 +439,18 @@ test('losing the last life after the checkpoint is game over, and Try again star
   assert.ok(game.world.enemies.some((e) => e.kind === 'spider'));
   assert.equal(game.world.checkpointReached, false);
 });
+
+const FOUR = { id: 'four', theme: 'castle', map: castleMap(['C.....D#.m..S.O#K....D#..c..G', '#'.repeat(29)], [7, 15, 22]) };
+
+test('a door is not a checkpoint: dying after a door but before the portal restarts at C', () => {
+  const game = createGame([FOUR]);
+  start(game);
+  game.world.player.x = game.world.doors[0].x;
+  playUntil(game, IDLE, 'door', 1);
+  assert.equal(game.checkpoint, null);
+  game.world.player.invuln = 0;
+  game.world.player.y = 2000;
+  playUntil(game, IDLE, 'death');
+  play(game, IDLE, RULES.dyingTime + STEP);
+  assert.equal(game.world.player.x, 0.5 * TILE);
+});

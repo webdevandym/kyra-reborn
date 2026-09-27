@@ -1,24 +1,25 @@
-import { TILE, PLAYER, CRYSTAL, GOAL, RULES, FIREBALL, PORTAL } from '../config.js';
+import { TILE, PLAYER, CRYSTAL, GOAL, RULES, FIREBALL, PORTAL, DOOR } from '../config.js';
 import { createPlayer, updatePlayer } from './player.js';
 import { createEnemy, updateEnemy, stompEnemy } from './enemies.js';
 import { classifyContact } from './combat.js';
 import { bodyRect, centeredRect, overlaps } from './rect.js';
 import { shiftX } from './physics.js';
-import { roomAt, tileAt } from './level.js';
+import { roomIndex, solidTop, tileAt } from './level.js';
 import { createMover, updateMovers } from './platforms.js';
 import { createRainCloud, rainPhase, rainRect } from './hazards.js';
 
 export function createWorld(level, collected = new Set(), { start = null } = {}) {
-  const startRoom = start ? roomAt(level, start.x) : null;
+  const firstRoom = start ? roomIndex(level, start.x) : 0;
   const world = {
     level,
     player: createPlayer(start ?? level.spawn),
-    enemies: level.enemies.filter((spec) => !startRoom || roomAt(level, spec.x) === startRoom).map(createEnemy),
+    enemies: level.enemies.filter((spec) => roomIndex(level, spec.x) >= firstRoom).map(createEnemy),
     movers: level.movers.map(createMover),
     rain: level.rainClouds.map((spec) => createRainCloud(spec, level)),
     crystals: level.crystals.filter((c) => !collected.has(c.id)).map((c) => ({ ...c })),
     projectiles: [],
     portal: level.portal ? { x: level.portal.x, y: level.portal.y, w: PORTAL.w, h: PORTAL.h, open: false, openedAt: 0 } : null,
+    doors: level.doors.map((d) => ({ x: d.x, y: d.y, w: DOOR.w, h: DOOR.h })),
     checkpointReached: Boolean(start),
     goal: { x: level.goal.x, y: level.goal.y, w: GOAL.w, h: GOAL.h },
     time: 0,
@@ -109,7 +110,18 @@ export function stepWorld(world, dt, input) {
 
   if (p.y > world.level.height + RULES.fallLimit) return die(world, events);
 
-  if (world.portal?.open && overlaps(bodyRect(p), bodyRect(world.portal))) enterPortal(world, events);
+  if (world.portal?.open && overlaps(bodyRect(p), bodyRect(world.portal))) {
+    const to = world.level.checkpoint;
+    events.push({ type: 'portal', ...moveTo(world, to.x, to.y) });
+    world.checkpointReached = true;
+  }
+
+  const door = world.doors.find((d) => overlaps(bodyRect(p), bodyRect(d)));
+  if (door) {
+    const next = world.level.rooms[roomIndex(world.level, door.x) + 1];
+    const x = next.left + 1.5 * TILE;
+    events.push({ type: 'door', ...moveTo(world, x, solidTop(world.level, Math.floor(x / TILE))) });
+  }
 
   if (overlaps(bodyRect(p), bodyRect(world.goal))) {
     world.done = true;
@@ -132,13 +144,12 @@ function onDefeat(world, e, events) {
   }
 }
 
-function enterPortal(world, events) {
+function moveTo(world, x, y) {
   const p = world.player;
   const from = { x: p.x, y: p.y };
-  const to = { x: world.level.checkpoint.x, y: world.level.checkpoint.y };
-  p.x = to.x;
-  p.y = to.y;
-  p.prevBottom = to.y;
+  p.x = x;
+  p.y = y;
+  p.prevBottom = y;
   p.vx = 0;
   p.vy = 0;
   p.onGround = true;
@@ -146,8 +157,7 @@ function enterPortal(world, events) {
   p.ride = null;
   p.invuln = Math.max(p.invuln, PLAYER.spawnGrace);
   world.projectiles = [];
-  world.checkpointReached = true;
-  events.push({ type: 'portal', from, to });
+  return { from, to: { x, y } };
 }
 
 function die(world, events) {

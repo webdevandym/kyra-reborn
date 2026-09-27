@@ -13,8 +13,9 @@ const ENEMY_CHARS = {
   s: 'skeleton',
   S: 'spider',
 };
-const KNOWN_CHARS = new Set(['.', '#', '=', 'C', 'c', 'Z', 'p', 'b', 'r', 'G', '*', 'v', 'R', '~', 'm', 'g', 's', 'S', 'O', 'K']);
+const KNOWN_CHARS = new Set(['.', '#', '=', 'C', 'c', 'Z', 'p', 'b', 'r', 'G', '*', 'v', 'R', '~', 'm', 'g', 's', 'S', 'O', 'K', 'D']);
 const THEMES = new Set(['meadow', 'sky', 'castle']);
+export const ROOM_KINDS = ['hall', 'library', 'kitchen', 'dungeon', 'throne'];
 
 export function parseLevel(def) {
   const { id, map } = def;
@@ -33,6 +34,7 @@ export function parseLevel(def) {
   let goal = null;
   let portal = null;
   let checkpoint = null;
+  const doors = [];
 
   map.forEach((line, row) => {
     if (line.length !== cols) {
@@ -55,6 +57,8 @@ export function parseLevel(def) {
       } else if (ch === 'K') {
         if (checkpoint) throw new Error(`${id}: more than one checkpoint 'K'`);
         checkpoint = feet;
+      } else if (ch === 'D') {
+        doors.push(feet);
       } else if (ENEMY_CHARS[ch]) {
         enemies.push({ kind: ENEMY_CHARS[ch], ...feet });
       } else if (ch === 'r') {
@@ -92,11 +96,12 @@ export function parseLevel(def) {
     width: cols * TILE,
     height: ROWS * TILE,
     tiles,
-    rooms: roomsOf(tiles, cols),
+    rooms: roomsOf(tiles, cols, def.rooms, id),
     spawn,
     goal,
     portal,
     checkpoint,
+    doors,
     enemies,
     crystals,
     rainClouds,
@@ -113,16 +118,27 @@ export function parseLevel(def) {
   return level;
 }
 
-function roomsOf(tiles, cols) {
+function roomsOf(tiles, cols, kinds, id) {
   const wall = (col) => tiles.every((row) => row[col] === 'solid');
   const rooms = [];
   for (let col = 0; col < cols; col++) {
     if (wall(col)) continue;
     const start = col;
     while (col < cols && !wall(col)) col++;
-    rooms.push({ left: start * TILE, right: col * TILE });
+    rooms.push({ left: start * TILE, right: col * TILE, kind: null });
   }
+  if (kinds === undefined) return rooms;
+  if (!Array.isArray(kinds) || kinds.length !== rooms.length) throw new Error(`${id}: 'rooms' must name one kind for each of the ${rooms.length} rooms`);
+  kinds.forEach((kind, i) => {
+    if (!ROOM_KINDS.includes(kind)) throw new Error(`${id}: unknown room kind '${kind}'`);
+    rooms[i].kind = kind;
+  });
+  if (kinds[kinds.length - 1] !== 'throne') throw new Error(`${id}: the last room must be the 'throne' room`);
   return rooms;
+}
+
+export function roomIndex(level, x) {
+  return level.rooms.indexOf(roomAt(level, x));
 }
 
 export function roomAt(level, x) {

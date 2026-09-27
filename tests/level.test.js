@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TILE, ROWS } from '../src/config.js';
-import { parseLevel, tileAt, solidTop, roomAt } from '../src/core/level.js';
+import { parseLevel, tileAt, solidTop, roomAt, roomIndex } from '../src/core/level.js';
 import { mapFromBottom, testLevel, castleMap } from './helpers.js';
 
 const CASTLE_ROWS = ['C.m.g.s.S.O#K..r..G', '###################'];
@@ -150,11 +150,11 @@ test('a level without O or K has no portal and no checkpoint', () => {
 });
 
 test('full-height wall columns split a map into rooms, and a map without them is one room', () => {
-  assert.deepEqual(castle().rooms, [{ left: 0, right: 11 * TILE }, { left: 12 * TILE, right: 19 * TILE }]);
+  assert.deepEqual(castle().rooms, [{ left: 0, right: 11 * TILE, kind: null }, { left: 12 * TILE, right: 19 * TILE, kind: null }]);
   const open = testLevel(['C...G', '#####']);
-  assert.deepEqual(open.rooms, [{ left: 0, right: open.width }]);
+  assert.deepEqual(open.rooms, [{ left: 0, right: open.width, kind: null }]);
   const thick = parseLevel({ id: 'thick', map: castleMap(['C....##....G', '############'], [5, 6]) });
-  assert.deepEqual(thick.rooms, [{ left: 0, right: 5 * TILE }, { left: 7 * TILE, right: 12 * TILE }]);
+  assert.deepEqual(thick.rooms, [{ left: 0, right: 5 * TILE, kind: null }, { left: 7 * TILE, right: 12 * TILE, kind: null }]);
 });
 
 test('roomAt finds the room holding x, and the nearest room for an x inside a wall', () => {
@@ -180,4 +180,30 @@ test('a castle level needs exactly one spider, one portal and one checkpoint', (
   assert.throws(() => castle(['C.m.....S.O#...r..G', '###################']), /needs a checkpoint 'K'/);
   assert.throws(() => testLevel(['C.O.O.G', '#######']), /more than one portal 'O'/);
   assert.throws(() => testLevel(['C.K.K.G', '#######']), /more than one checkpoint 'K'/);
+});
+
+const FOUR_ROOMS = ['C.....D#.m..S.O#K....D#.....G', '#############################'];
+const fourRooms = (extra = {}) => parseLevel({ id: 'four', theme: 'castle', map: castleMap(FOUR_ROOMS, [7, 15, 22]), ...extra });
+
+test('parseLevel reads D as a door standing on the floor, in map order', () => {
+  const level = fourRooms();
+  assert.deepEqual(level.doors, [{ x: 6.5 * TILE, y: 11 * TILE }, { x: 21.5 * TILE, y: 11 * TILE }]);
+  assert.equal(tileAt(level, 6, 10), 'empty');
+  assert.deepEqual(testLevel(['C...G', '#####']).doors, []);
+});
+
+test('rooms may name a kind each; the last must be the throne room', () => {
+  const level = fourRooms({ rooms: ['hall', 'dungeon', 'library', 'throne'] });
+  assert.deepEqual(level.rooms.map((r) => r.kind), ['hall', 'dungeon', 'library', 'throne']);
+  assert.throws(() => fourRooms({ rooms: ['hall', 'throne'] }), /one kind for each of the 4 rooms/);
+  assert.throws(() => fourRooms({ rooms: ['hall', 'cellar', 'library', 'throne'] }), /unknown room kind 'cellar'/);
+  assert.throws(() => fourRooms({ rooms: ['hall', 'kitchen', 'library', 'hall'] }), /last room must be the 'throne' room/);
+});
+
+test('roomIndex gives the position of the room holding x', () => {
+  const level = fourRooms();
+  assert.equal(roomIndex(level, 3 * TILE), 0);
+  assert.equal(roomIndex(level, 12 * TILE), 1);
+  assert.equal(roomIndex(level, 18 * TILE), 2);
+  assert.equal(roomIndex(level, 26 * TILE), 3);
 });
