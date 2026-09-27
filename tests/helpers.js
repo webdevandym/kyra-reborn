@@ -14,3 +14,9 @@ export function testLevel(bottomRows, extra = {}) {
 export function runSteps(n, fn) {
   for (let i = 0; i < n; i++) fn(i);
 }
+
+export function castleMap(bottomRows, walls = []) {
+  const cols = bottomRows[0].length;
+  const rows = ['#'.repeat(cols), ...Array(ROWS - 1 - bottomRows.length).fill('.'.repeat(cols)), ...bottomRows];
+  return rows.map((line) => [...line].map((ch, col) => (walls.includes(col) ? '#' : ch)).join(''));
+}

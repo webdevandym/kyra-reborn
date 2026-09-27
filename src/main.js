@@ -136,7 +136,7 @@ function syncScreens() {
 
 function pickLevel(index) {
   if (!game.selectLevel(index)) return false;
-  snapCamera(camera, game.world.player, game.world.level.width);
+  snapCamera(camera, game.world.player, game.world.level);
   syncPicker();
   fillStats();
   return true;
@@ -213,10 +213,10 @@ function handleEvents(events) {
         break;
       case 'levelStart':
         particles.clear();
-        snapCamera(camera, game.world.player, game.world.level.width);
+        snapCamera(camera, game.world.player, game.world.level);
         break;
       case 'respawn':
-        snapCamera(camera, game.world.player, game.world.level.width);
+        snapCamera(camera, game.world.player, game.world.level);
         break;
       case 'levelComplete':
         audio.sfx.levelComplete();
@@ -239,7 +239,7 @@ function onStateChange() {
   if (game.state === 'playing') input.clearPressed();
   if (game.state === 'title') {
     particles.clear();
-    snapCamera(camera, game.world.player, game.world.level.width);
+    snapCamera(camera, game.world.player, game.world.level);
   }
   syncScreens();
 }
@@ -305,7 +305,7 @@ if (debug) {
       p.vx = 0;
       p.vy = 0;
       p.onGround = false;
-      snapCamera(camera, p, game.world.level.width);
+      snapCamera(camera, p, game.world.level);
     },
   };
 }
@@ -335,7 +335,7 @@ function frame(now) {
     const gameInput = game.state === 'playing' ? input.snapshot() : NO_INPUT;
     handleEvents(game.tick(STEP, gameInput));
     particles.update(STEP);
-    updateCamera(camera, game.world.player, game.world.level.width, STEP);
+    updateCamera(camera, game.world.player, game.world.level, STEP);
     shakeTime = Math.max(0, shakeTime - STEP);
     acc -= STEP;
   }
@@ -349,5 +349,5 @@ function frame(now) {
 
 buildPicker();
 applyStrings();
-snapCamera(camera, game.world.player, game.world.level.width);
+snapCamera(camera, game.world.player, game.world.level);
 requestAnimationFrame(frame);

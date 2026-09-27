@@ -89,7 +89,7 @@ test('the scene renders every game state of every level without errors', () => {
     game.world = createWorld(game.levels[index]);
     for (let col = 0; col < game.level.cols; col += 20) {
       game.world.player.x = col * TILE;
-      snapCamera(camera, game.world.player, game.level.width);
+      snapCamera(camera, game.world.player, game.level);
       frame(col * 0.37);
       scene.render({ game, camera, particles, time: col, lang: 'en', muted: false });
     }

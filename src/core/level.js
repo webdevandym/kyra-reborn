@@ -1,9 +1,20 @@
 import { TILE, ROWS } from '../config.js';
 
 const TILE_KINDS = { '#': 'solid', '=': 'oneway' };
-const ENEMY_CHARS = { c: 'carrot', Z: 'zombie', p: 'propeller', b: 'bee', '*': 'star', v: 'bat' };
-const KNOWN_CHARS = new Set(['.', '#', '=', 'C', 'c', 'Z', 'p', 'b', 'r', 'G', '*', 'v', 'R', '~']);
-const THEMES = new Set(['meadow', 'sky']);
+const ENEMY_CHARS = {
+  c: 'carrot',
+  Z: 'zombie',
+  p: 'propeller',
+  b: 'bee',
+  '*': 'star',
+  v: 'bat',
+  m: 'rat',
+  g: 'ghost',
+  s: 'skeleton',
+  S: 'spider',
+};
+const KNOWN_CHARS = new Set(['.', '#', '=', 'C', 'c', 'Z', 'p', 'b', 'r', 'G', '*', 'v', 'R', '~', 'm', 'g', 's', 'S', 'O', 'K']);
+const THEMES = new Set(['meadow', 'sky', 'castle']);
 
 export function parseLevel(def) {
   const { id, map } = def;
@@ -20,6 +31,8 @@ export function parseLevel(def) {
   const movers = [];
   let spawn = null;
   let goal = null;
+  let portal = null;
+  let checkpoint = null;
 
   map.forEach((line, row) => {
     if (line.length !== cols) {
@@ -36,6 +49,12 @@ export function parseLevel(def) {
       } else if (ch === 'G') {
         if (goal) throw new Error(`${id}: more than one green crystal 'G'`);
         goal = feet;
+      } else if (ch === 'O') {
+        if (portal) throw new Error(`${id}: more than one portal 'O'`);
+        portal = feet;
+      } else if (ch === 'K') {
+        if (checkpoint) throw new Error(`${id}: more than one checkpoint 'K'`);
+        checkpoint = feet;
       } else if (ENEMY_CHARS[ch]) {
         enemies.push({ kind: ENEMY_CHARS[ch], ...feet });
       } else if (ch === 'r') {
@@ -57,6 +76,11 @@ export function parseLevel(def) {
 
   if (!spawn) throw new Error(`${id}: missing chicken start 'C'`);
   if (!goal) throw new Error(`${id}: missing green crystal 'G'`);
+  if (theme === 'castle') {
+    if (enemies.filter((e) => e.kind === 'spider').length !== 1) throw new Error(`${id}: a castle level needs exactly one spider 'S'`);
+    if (!portal) throw new Error(`${id}: a castle level needs a portal 'O'`);
+    if (!checkpoint) throw new Error(`${id}: a castle level needs a checkpoint 'K'`);
+  }
 
   const level = {
     id,
@@ -68,8 +92,11 @@ export function parseLevel(def) {
     width: cols * TILE,
     height: ROWS * TILE,
     tiles,
+    rooms: roomsOf(tiles, cols),
     spawn,
     goal,
+    portal,
+    checkpoint,
     enemies,
     crystals,
     rainClouds,
@@ -86,6 +113,32 @@ export function parseLevel(def) {
   return level;
 }
 
+function roomsOf(tiles, cols) {
+  const wall = (col) => tiles.every((row) => row[col] === 'solid');
+  const rooms = [];
+  for (let col = 0; col < cols; col++) {
+    if (wall(col)) continue;
+    const start = col;
+    while (col < cols && !wall(col)) col++;
+    rooms.push({ left: start * TILE, right: col * TILE });
+  }
+  return rooms;
+}
+
+export function roomAt(level, x) {
+  let nearest = level.rooms[0];
+  let best = Infinity;
+  for (const room of level.rooms) {
+    if (x >= room.left && x < room.right) return room;
+    const dist = x < room.left ? room.left - x : x - room.right;
+    if (dist < best) {
+      best = dist;
+      nearest = room;
+    }
+  }
+  return nearest;
+}
+
 export function tileAt(level, col, row) {
   if (col < 0 || col >= level.cols) return 'solid';
   if (row < 0) return 'empty';
@@ -94,8 +147,11 @@ export function tileAt(level, col, row) {
 }
 
 export function solidTop(level, col) {
+  let open = false;
   for (let row = 0; row < level.rows; row++) {
-    if (tileAt(level, col, row) === 'solid') return row * TILE;
+    const solid = tileAt(level, col, row) === 'solid';
+    if (solid && open) return row * TILE;
+    if (!solid) open = true;
   }
   return level.height;
 }

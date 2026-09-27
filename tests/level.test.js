@@ -1,8 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TILE, ROWS } from '../src/config.js';
-import { parseLevel, tileAt, solidTop } from '../src/core/level.js';
-import { mapFromBottom, testLevel } from './helpers.js';
+import { parseLevel, tileAt, solidTop, roomAt } from '../src/core/level.js';
+import { mapFromBottom, testLevel, castleMap } from './helpers.js';
+
+const CASTLE_ROWS = ['C.m.g.s.S.O#K..r..G', '###################'];
+const castle = (rows = CASTLE_ROWS, extra = {}) => parseLevel({ id: 'keep', theme: 'castle', map: castleMap(rows, [11]), ...extra });
 
 test('parseLevel reads size, tiles, spawn, goal, enemies and crystals', () => {
   const level = testLevel([
@@ -110,6 +113,7 @@ test('parseLevel gives the level a name key and each sign a text key, a world x 
 test('parseLevel passes theme through, defaults it to meadow and rejects unknown themes', () => {
   assert.equal(testLevel(['C.G', '###']).theme, 'meadow');
   assert.equal(testLevel(['C.G', '###'], { theme: 'sky' }).theme, 'sky');
+  assert.equal(castle().theme, 'castle');
   assert.throws(() => testLevel(['C.G', '###'], { theme: 'space' }), /unknown theme 'space'/);
 });
 
@@ -122,4 +126,58 @@ test('parseLevel rejects malformed maps with a message naming the problem', () =
   assert.throws(() => parseLevel({ ...base, map: mapFromBottom(['C...', '####']) }), /missing green crystal/);
   assert.throws(() => parseLevel({ ...base, map: mapFromBottom(['CC.G', '####']) }), /more than one chicken/);
   assert.throws(() => parseLevel({ ...base, map: mapFromBottom(['C.GG', '####']) }), /more than one green crystal/);
+});
+
+
+test('parseLevel reads the castle cast: m rat, g ghost, s skeleton, S spider, O portal and K checkpoint', () => {
+  const level = castle();
+  assert.equal(level.theme, 'castle');
+  assert.deepEqual(level.enemies, [
+    { kind: 'rat', x: 2.5 * TILE, y: 11 * TILE },
+    { kind: 'ghost', x: 4.5 * TILE, y: 11 * TILE },
+    { kind: 'skeleton', x: 6.5 * TILE, y: 11 * TILE },
+    { kind: 'spider', x: 8.5 * TILE, y: 11 * TILE },
+  ]);
+  assert.deepEqual(level.portal, { x: 10.5 * TILE, y: 11 * TILE });
+  assert.deepEqual(level.checkpoint, { x: 12.5 * TILE, y: 11 * TILE });
+  for (const col of [2, 4, 6, 8, 10, 12]) assert.equal(tileAt(level, col, 10), 'empty');
+});
+
+test('a level without O or K has no portal and no checkpoint', () => {
+  const level = testLevel(['C...G', '#####']);
+  assert.equal(level.portal, null);
+  assert.equal(level.checkpoint, null);
+});
+
+test('full-height wall columns split a map into rooms, and a map without them is one room', () => {
+  assert.deepEqual(castle().rooms, [{ left: 0, right: 11 * TILE }, { left: 12 * TILE, right: 19 * TILE }]);
+  const open = testLevel(['C...G', '#####']);
+  assert.deepEqual(open.rooms, [{ left: 0, right: open.width }]);
+  const thick = parseLevel({ id: 'thick', map: castleMap(['C....##....G', '############'], [5, 6]) });
+  assert.deepEqual(thick.rooms, [{ left: 0, right: 5 * TILE }, { left: 7 * TILE, right: 12 * TILE }]);
+});
+
+test('roomAt finds the room holding x, and the nearest room for an x inside a wall', () => {
+  const level = castle();
+  const [first, second] = level.rooms;
+  assert.equal(roomAt(level, 3 * TILE), first);
+  assert.equal(roomAt(level, 15 * TILE), second);
+  assert.equal(roomAt(level, 11.2 * TILE), first);
+  assert.equal(roomAt(level, 11.8 * TILE), second);
+});
+
+test('a castle sign stands on the floor, not on the ceiling', () => {
+  const level = castle(CASTLE_ROWS, { signs: [{ col: 1, key: 'hi' }] });
+  assert.equal(level.signs[0].y, 11 * TILE);
+  assert.equal(solidTop(level, 1), 11 * TILE);
+  assert.equal(solidTop(level, 11), level.height, 'a full-height wall has no open space above it');
+});
+
+test('a castle level needs exactly one spider, one portal and one checkpoint', () => {
+  assert.throws(() => castle(['C.m.......O#K..r..G', '###################']), /exactly one spider 'S'/);
+  assert.throws(() => castle(['C.m.S...S.O#K..r..G', '###################']), /exactly one spider 'S'/);
+  assert.throws(() => castle(['C.m.....S..#K..r..G', '###################']), /needs a portal 'O'/);
+  assert.throws(() => castle(['C.m.....S.O#...r..G', '###################']), /needs a checkpoint 'K'/);
+  assert.throws(() => testLevel(['C.O.O.G', '#######']), /more than one portal 'O'/);
+  assert.throws(() => testLevel(['C.K.K.G', '#######']), /more than one checkpoint 'K'/);
 });
