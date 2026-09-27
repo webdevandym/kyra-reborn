@@ -1,9 +1,10 @@
-import { PLAYER, CRYSTAL, GOAL, RULES } from '../config.js';
+import { TILE, PLAYER, CRYSTAL, GOAL, RULES, FIREBALL } from '../config.js';
 import { createPlayer, updatePlayer } from './player.js';
 import { createEnemy, updateEnemy, stompEnemy } from './enemies.js';
 import { classifyContact } from './combat.js';
 import { bodyRect, centeredRect, overlaps } from './rect.js';
 import { shiftX } from './physics.js';
+import { tileAt } from './level.js';
 import { createMover, updateMovers } from './platforms.js';
 import { createRainCloud, rainPhase, rainRect } from './hazards.js';
 
@@ -15,12 +16,23 @@ export function createWorld(level, collected = new Set()) {
     movers: level.movers.map(createMover),
     rain: level.rainClouds.map((spec) => createRainCloud(spec, level)),
     crystals: level.crystals.filter((c) => !collected.has(c.id)).map((c) => ({ ...c })),
+    projectiles: [],
     goal: { x: level.goal.x, y: level.goal.y, w: GOAL.w, h: GOAL.h },
     time: 0,
     done: false,
     step: (dt, input) => stepWorld(world, dt, input),
   };
   return world;
+}
+
+export function fireballRect(f) {
+  return centeredRect(f.x, f.y, FIREBALL.size, FIREBALL.size);
+}
+
+function moveFireball(f, dt, level) {
+  f.x += f.vx * dt;
+  const lead = f.x + Math.sign(f.vx) * (FIREBALL.size / 2);
+  return tileAt(level, Math.floor(lead / TILE), Math.floor(f.y / TILE)) !== 'solid';
 }
 
 export function stepWorld(world, dt, input) {
@@ -42,7 +54,13 @@ export function stepWorld(world, dt, input) {
   if (jumped) events.push({ type: 'jump', x: p.x, y: p.y });
   if (landed) events.push({ type: 'land', x: p.x, y: p.y });
 
-  for (const e of world.enemies) updateEnemy(e, dt, world.level, p);
+  for (const e of world.enemies) {
+    const shot = updateEnemy(e, dt, world.level, p);
+    if (!shot) continue;
+    world.projectiles.push(shot);
+    events.push({ type: 'fire', x: shot.x, y: shot.y });
+  }
+  world.projectiles = world.projectiles.filter((f) => moveFireball(f, dt, world.level));
 
   const playerBox = bodyRect(p);
   world.crystals = world.crystals.filter((c) => {
@@ -61,11 +79,22 @@ export function stepWorld(world, dt, input) {
       p.onGround = false;
       p.invuln = Math.max(p.invuln, PLAYER.stompGrace);
       events.push({ type: 'stomp', kind: e.kind, result, x: e.x, y: top });
+      if (result === 'defeated') onDefeat(world, e, events);
     } else if (contact === 'hit' && p.invuln <= 0) {
       return die(world, events);
     }
   }
   world.enemies = world.enemies.filter((e) => e.alive);
+
+  for (const f of world.projectiles) {
+    if (p.invuln > 0 || !overlaps(bodyRect(p), fireballRect(f))) continue;
+    f.spent = true;
+    if (!p.shield) return die(world, events);
+    p.shield = false;
+    p.invuln = Math.max(p.invuln, PLAYER.stompGrace);
+    events.push({ type: 'shieldPop', x: p.x, y: p.y - p.h / 2 });
+  }
+  world.projectiles = world.projectiles.filter((f) => !f.spent);
 
   if (p.invuln <= 0) {
     const box = bodyRect(p);
@@ -77,12 +106,20 @@ export function stepWorld(world, dt, input) {
 
   if (p.y > world.level.height + RULES.fallLimit) return die(world, events);
 
-  if (overlaps(playerBox, bodyRect(world.goal))) {
+  if (overlaps(bodyRect(p), bodyRect(world.goal))) {
     world.done = true;
     p.won = true;
     events.push({ type: 'goal', x: world.goal.x, y: world.goal.y });
   }
   return events;
+}
+
+function onDefeat(world, e, events) {
+  const p = world.player;
+  if (e.kind === 'rat' && !p.shield) {
+    p.shield = true;
+    events.push({ type: 'shieldUp', x: p.x, y: p.y - p.h });
+  }
 }
 
 function die(world, events) {

@@ -1,9 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TILE, STEP, PLAYER, RAIN } from '../src/config.js';
-import { createWorld } from '../src/core/world.js';
+import { TILE, STEP, PLAYER, RAIN, FIREBALL, SPIDER } from '../src/config.js';
+import { createWorld, fireballRect } from '../src/core/world.js';
+import { parseLevel } from '../src/core/level.js';
+import { bodyRect, overlaps } from '../src/core/rect.js';
 import { rainPhase } from '../src/core/hazards.js';
-import { testLevel } from './helpers.js';
+import { testLevel, castleMap } from './helpers.js';
 
 const IDLE = { left: false, right: false, jumpHeld: false, jumpPressed: false };
 const RIGHT = { ...IDLE, right: true };
@@ -262,4 +264,135 @@ test('a star needs two stomps and bounces the chicken both times', () => {
   assert.equal(second[0].result, 'defeated');
   assert.equal(world.enemies.length, 0);
   assert.equal(world.done, false);
+});
+
+const LAIR = ['C.....m.......S.O.#K...c...G', '############################'];
+const FLOOR = 11 * TILE;
+
+function fireballAt(x, height, vx = -FIREBALL.speed) {
+  return { x, y: FLOOR - height, vx };
+}
+
+function stepUntil(world, input, type, maxSeconds = 10) {
+  const events = [];
+  for (let i = 0; i < Math.round(maxSeconds / STEP); i++) {
+    const batch = world.step(STEP, input);
+    events.push(...batch);
+    if (batch.some((e) => e.type === type)) return events;
+  }
+  assert.fail(`no '${type}' event within ${maxSeconds}s`);
+}
+
+test('a spider in range fires, and its low fireball flies to a standing chicken and hits it', () => {
+  const level = parseLevel({ id: 'lair', theme: 'castle', map: castleMap(['...C..........S.O.#K...c...G', LAIR[1]], [18]) });
+  const world = createWorld(level);
+  const events = stepUntil(world, IDLE, 'hit');
+  const fire = events.find((e) => e.type === 'fire');
+  assert.ok(fire, 'the spider fired');
+  assert.equal(fire.y, FLOOR - FIREBALL.lowY);
+  assert.ok(types(events).indexOf('fire') < types(events).indexOf('hit'));
+});
+
+test('a low fireball overlaps a standing chicken; a high one clears it but catches a chicken 30 px up', () => {
+  const standing = bodyRect({ x: 100, y: FLOOR, w: PLAYER.w, h: PLAYER.h });
+  const hopping = bodyRect({ x: 100, y: FLOOR - 30, w: PLAYER.w, h: PLAYER.h });
+  assert.equal(overlaps(standing, fireballRect(fireballAt(100, FIREBALL.lowY))), true);
+  assert.equal(overlaps(standing, fireballRect(fireballAt(100, FIREBALL.highY))), false);
+  assert.equal(overlaps(hopping, fireballRect(fireballAt(100, FIREBALL.highY))), true);
+});
+
+test('a high fireball flies over a standing chicken and vanishes at the level edge', () => {
+  const world = createWorld(testLevel(['.....C..........G', '#################']));
+  world.player.invuln = 0;
+  world.projectiles.push(fireballAt(world.player.x + 3 * TILE, FIREBALL.highY));
+  run(world, IDLE, 2);
+  assert.equal(world.done, false);
+  assert.deepEqual(world.projectiles, []);
+});
+
+test('fireballs fly at FIREBALL.speed, pass through enemies and vanish at a wall', () => {
+  const world = createWorld(testLevel(['C...#.....c........G', '####################']));
+  const carrot = world.enemies[0];
+  const ball = fireballAt(carrot.x + TILE, FIREBALL.lowY);
+  world.projectiles.push(ball);
+  const x = ball.x;
+  world.step(STEP, IDLE);
+  assert.ok(Math.abs(x - ball.x - FIREBALL.speed * STEP) < 1e-9);
+  let minX = ball.x;
+  for (let i = 0; i < 240 && world.projectiles.length; i++) {
+    world.step(STEP, IDLE);
+    if (world.projectiles.length) minX = Math.min(minX, world.projectiles[0].x);
+  }
+  assert.equal(carrot.alive, true, 'the carrot is not hurt');
+  assert.deepEqual(world.projectiles, []);
+  assert.ok(minX >= 5 * TILE + FIREBALL.size / 2 - FIREBALL.speed * STEP, `stopped at ${minX}`);
+});
+
+test('stomping a rat gives the chicken a shield once, even after a second rat', () => {
+  const world = createWorld(testLevel(['C.......m.......m......G', '########################']));
+  const [first, second] = world.enemies;
+  dropOnto(world, first);
+  const one = stepUntil(world, IDLE, 'stomp');
+  assert.deepEqual(types(one).filter((t) => t === 'shieldUp'), ['shieldUp']);
+  assert.equal(world.player.shield, true);
+  run(world, IDLE, 1);
+  dropOnto(world, second);
+  const two = stepUntil(world, IDLE, 'stomp');
+  assert.equal(types(two).includes('shieldUp'), false);
+  assert.equal(world.player.shield, true);
+});
+
+test('a shield takes one fireball: it pops, the chicken lives and gets stomp grace; the next fireball hits', () => {
+  const world = createWorld(testLevel(['C...............G', '#################']));
+  const p = world.player;
+  p.shield = true;
+  p.invuln = 0;
+  world.projectiles.push(fireballAt(p.x + 20, FIREBALL.lowY));
+  const events = world.step(STEP, IDLE);
+  assert.deepEqual(types(events), ['shieldPop']);
+  assert.equal(p.shield, false);
+  assert.equal(p.invuln, PLAYER.stompGrace);
+  assert.equal(world.done, false);
+  assert.deepEqual(world.projectiles, []);
+  run(world, IDLE, PLAYER.stompGrace + STEP);
+  world.projectiles.push(fireballAt(p.x + 20, FIREBALL.lowY));
+  assert.deepEqual(types(world.step(STEP, IDLE)), ['hit']);
+});
+
+test('the shield does not help against walking into an enemy', () => {
+  const world = createWorld(testLevel(['C.....c.........G', '#################']));
+  world.player.shield = true;
+  world.player.invuln = 0;
+  assert.ok(types(run(world, RIGHT, 2)).includes('hit'));
+});
+
+test('two fireballs reaching a shielded chicken in the same step pop the shield once and do not kill', () => {
+  const world = createWorld(testLevel(['C...............G', '#################']));
+  const p = world.player;
+  p.shield = true;
+  p.invuln = 0;
+  world.projectiles.push(fireballAt(p.x + 20, FIREBALL.lowY), fireballAt(p.x + 24, FIREBALL.lowY));
+  assert.deepEqual(types(world.step(STEP, IDLE)), ['shieldPop']);
+  assert.equal(world.done, false);
+  assert.equal(p.shield, false);
+});
+
+test('a chicken behind the spider is shot at toward the wall, and those shots vanish at the wall', () => {
+  const level = parseLevel({ id: 'lair', theme: 'castle', map: castleMap(['C.............S...O.....#K..G', '#############################'], [24]) });
+  const world = createWorld(level);
+  const spider = world.enemies[0];
+  const p = world.player;
+  p.x = spider.x + (SPIDER.minRange + 0.5) * TILE;
+  p.invuln = 99;
+  stepUntil(world, IDLE, 'fire');
+  assert.equal(spider.dir, 1, 'it turned to face the chicken');
+  const [ball] = world.projectiles;
+  assert.ok(ball.vx > 0);
+  let maxX = ball.x;
+  for (let i = 0; i < 360 && world.projectiles.includes(ball); i++) {
+    world.step(STEP, IDLE);
+    maxX = Math.max(maxX, ball.x);
+  }
+  assert.equal(world.projectiles.includes(ball), false, 'the shot vanished');
+  assert.ok(maxX + FIREBALL.size / 2 <= 24 * TILE + FIREBALL.speed * STEP, `it reached x ${maxX}, the wall starts at ${24 * TILE}`);
 });

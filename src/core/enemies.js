@@ -1,4 +1,4 @@
-import { TILE, CARROT, ZOMBIE, PROPELLER, BEE, FLYER, RULES, STAR, BAT, RAT, SKELETON, GHOST } from '../config.js';
+import { TILE, STEP, CARROT, ZOMBIE, PROPELLER, BEE, FLYER, RULES, STAR, BAT, RAT, SKELETON, GHOST, SPIDER, FIREBALL } from '../config.js';
 import { applyGravity, moveAndCollide } from './physics.js';
 import { tileAt, roomAt } from './level.js';
 
@@ -224,6 +224,37 @@ const ghost = {
   onStomp: defeat,
 };
 
+const spider = {
+  create: (spec) => ({ ...baseEnemy(spec, SPIDER.w, SPIDER.h, 0), cooldown: SPIDER.fireEvery, winding: false, nextHigh: false, room: null }),
+  update(e, dt, level, player) {
+    e.room ??= roomAt(level, e.x);
+    e.anim += dt;
+    if (!player) return null;
+    const dx = player.x - e.x;
+    if (dx !== 0) e.dir = Math.sign(dx);
+    const reach = Math.abs(dx);
+    const inRange = !player.dead && roomAt(level, player.x) === e.room && reach >= SPIDER.minRange * TILE && reach <= SPIDER.maxRange * TILE;
+    if (!inRange) {
+      e.winding = false;
+      e.cooldown = Math.max(e.cooldown, SPIDER.windup + STEP);
+      return null;
+    }
+    e.cooldown -= dt;
+    e.winding = e.cooldown <= SPIDER.windup;
+    if (e.cooldown > 0) return null;
+    e.cooldown += SPIDER.fireEvery;
+    e.winding = false;
+    const shot = {
+      x: e.x + e.dir * (e.w / 2 + FIREBALL.size / 2),
+      y: e.y - (e.nextHigh ? FIREBALL.highY : FIREBALL.lowY),
+      vx: e.dir * FIREBALL.speed,
+    };
+    e.nextHigh = !e.nextHigh;
+    return shot;
+  },
+  onStomp: defeat,
+};
+
 export const ENEMY_KINDS = {
   carrot,
   zombie,
@@ -234,6 +265,7 @@ export const ENEMY_KINDS = {
   rat,
   skeleton: twoLife(SKELETON),
   ghost,
+  spider,
 };
 
 export function createEnemy(spec) {

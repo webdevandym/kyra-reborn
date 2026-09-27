@@ -13,6 +13,7 @@ export function createPlayer(spawn) {
     hitWall: 0,
     prevBottom: spawn.y,
     ride: null,
+    shield: false,
     facing: 1,
     coyote: 0,
     buffer: 0,

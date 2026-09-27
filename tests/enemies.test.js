@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TILE, STEP, GRAVITY, CARROT, ZOMBIE, PROPELLER, BEE, FLYER, PLAYER, STAR, BAT, RAT, SKELETON, GHOST } from '../src/config.js';
+import { TILE, STEP, GRAVITY, CARROT, ZOMBIE, PROPELLER, BEE, FLYER, PLAYER, STAR, BAT, RAT, SKELETON, GHOST, SPIDER, FIREBALL } from '../src/config.js';
 import { createEnemy, updateEnemy, stompEnemy, ENEMY_KINDS } from '../src/core/enemies.js';
 import { bodyRect, overlaps } from '../src/core/rect.js';
 import { parseLevel } from '../src/core/level.js';
@@ -24,7 +24,7 @@ function track(e, level, steps) {
 }
 
 test('the registry knows every ground and flying kind and rejects unknown kinds', () => {
-  assert.deepEqual(Object.keys(ENEMY_KINDS).sort(), ['bat', 'bee', 'carrot', 'ghost', 'propeller', 'rat', 'skeleton', 'star', 'zombie']);
+  assert.deepEqual(Object.keys(ENEMY_KINDS).sort(), ['bat', 'bee', 'carrot', 'ghost', 'propeller', 'rat', 'skeleton', 'spider', 'star', 'zombie']);
   assert.throws(() => createEnemy({ kind: 'dragon', x: 0, y: 0 }), /unknown enemy kind 'dragon'/);
 });
 
@@ -439,4 +439,77 @@ test('a ghost leaves a trail of at most GHOST.trail seconds, which fades once it
   runSteps(Math.ceil(GHOST.trail / STEP) + 1, () => updateEnemy(e, STEP, level, chickenAt(e.homeX - 5 * TILE, 1)));
   assert.equal(e.shy, true);
   assert.deepEqual(e.trail, []);
+});
+
+function spiderSetup(chickenCol) {
+  const row = 'C' + '.'.repeat(18) + 'S' + '.'.repeat(4) + '#' + '.'.repeat(5) + 'G';
+  const level = parseLevel({ id: 'lair', map: castleMap([row, '#'.repeat(row.length)], [24]) });
+  const spec = level.enemies[0];
+  const e = createEnemy(spec);
+  const player = chickenAt((chickenCol + 0.5) * TILE, 1);
+  return { level, e, player };
+}
+
+function shotsWithin(e, level, player, seconds) {
+  const shots = [];
+  runSteps(Math.round(seconds / STEP), (i) => {
+    const shot = updateEnemy(e, STEP, level, player);
+    if (shot) shots.push({ ...shot, at: (i + 1) * STEP });
+  });
+  return shots;
+}
+
+test('a spider faces the chicken and fires every fireEvery seconds, low first and then alternating', () => {
+  const { level, e, player } = spiderSetup(10);
+  const shots = shotsWithin(e, level, player, SPIDER.fireEvery * 4 + STEP);
+  assert.equal(e.dir, -1);
+  assert.equal(shots.length, 4);
+  assert.ok(Math.abs(shots[0].at - SPIDER.fireEvery) < STEP * 1.5, `first shot at ${shots[0].at}`);
+  assert.ok(Math.abs(shots[1].at - shots[0].at - SPIDER.fireEvery) < STEP * 1.5);
+  assert.deepEqual(shots.map((s) => e.y - s.y), [FIREBALL.lowY, FIREBALL.highY, FIREBALL.lowY, FIREBALL.highY]);
+  for (const s of shots) {
+    assert.equal(s.vx, -FIREBALL.speed);
+    assert.equal(s.x, e.x - (e.w / 2 + FIREBALL.size / 2));
+  }
+});
+
+test('a spider winds up for the last windup seconds before each shot', () => {
+  const { level, e, player } = spiderSetup(10);
+  const steps = Math.round((SPIDER.fireEvery - SPIDER.windup) / STEP) - 2;
+  runSteps(steps, () => updateEnemy(e, STEP, level, player));
+  assert.equal(e.winding, false);
+  runSteps(4, () => updateEnemy(e, STEP, level, player));
+  assert.equal(e.winding, true);
+});
+
+test('a spider only fires at a chicken in its room between minRange and maxRange tiles away', () => {
+  for (const [col, expected] of [[19 - SPIDER.minRange + 1, 0], [19 - SPIDER.maxRange - 2, 0], [27, 0], [19 - SPIDER.maxRange, 2]]) {
+    const { level, e, player } = spiderSetup(col);
+    assert.equal(shotsWithin(e, level, player, SPIDER.fireEvery * 2 + STEP).length, expected, `chicken at column ${col}`);
+  }
+  const { level, e, player } = spiderSetup(10);
+  player.dead = true;
+  assert.equal(shotsWithin(e, level, player, SPIDER.fireEvery * 2).length, 0, 'never at a dead chicken');
+});
+
+test('stepping out of range cancels the wind-up, so the next shot waits for a full wind-up', () => {
+  const { level, e, player } = spiderSetup(10);
+  runSteps(Math.round((SPIDER.fireEvery - 0.1) / STEP), () => updateEnemy(e, STEP, level, player));
+  assert.equal(e.winding, true);
+  updateEnemy(e, STEP, level, { ...player, x: e.x - (SPIDER.maxRange + 1) * TILE });
+  assert.equal(e.winding, false);
+  assert.ok(e.cooldown > SPIDER.windup);
+  const shots = shotsWithin(e, level, player, SPIDER.windup);
+  assert.equal(shots.length, 0, 'no shot before a full wind-up');
+});
+
+test('a spider stands still and one stomp defeats it', () => {
+  const { level, e, player } = spiderSetup(10);
+  const x = e.x;
+  const y = e.y;
+  shotsWithin(e, level, player, 3);
+  assert.equal(e.x, x);
+  assert.equal(e.y, y);
+  assert.equal(stompEnemy(e), 'defeated');
+  assert.equal(e.alive, false);
 });
