@@ -40,10 +40,14 @@ export const ZOMBIE = {
 
 export const STAR = { w: 36, h: 36, speed: 70, hurtSpeed: 110, dizzyTime: 0.6 };
 
+export const RAT = { w: 34, h: 26, speed: 90 };
+export const SKELETON = { w: 34, h: 52, speed: 60, hurtSpeed: 100, dizzyTime: 0.6 };
+
 export const PROPELLER = { w: 30, h: 36, speed: 60, range: 3, bob: 6, bobPeriod: 1.0, lift: 16 };
 export const BEE = { w: 32, h: 28, speed: 120, range: 4, bob: 30, bobPeriod: 1.6, lift: 0 };
-export const BAT = { w: 36, h: 26, speed: 120, range: 4, bob: 30, bobPeriod: 1.6, lift: 0 };
+export const BAT = { w: 36, h: 26, range: 4, dip: 70, period: 3.2 };
 export const FLYER = { phasePerCol: 1.3 };
+export const GHOST = { w: 36, h: 36, speed: 60, leash: 5, sight: 12, trail: 0.8 };
 export const MOVER = { range: 2, period: 5, phasePerCol: 1.3 };
 export const RAIN = { dry: 2.4, warn: 0.8, rain: 1.6, dropSpeed: 600, width: 2, phasePerCol: 0.7 };
 

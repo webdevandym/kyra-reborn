@@ -42,7 +42,7 @@ export function stepWorld(world, dt, input) {
   if (jumped) events.push({ type: 'jump', x: p.x, y: p.y });
   if (landed) events.push({ type: 'land', x: p.x, y: p.y });
 
-  for (const e of world.enemies) updateEnemy(e, dt, world.level);
+  for (const e of world.enemies) updateEnemy(e, dt, world.level, p);
 
   const playerBox = bodyRect(p);
   world.crystals = world.crystals.filter((c) => {

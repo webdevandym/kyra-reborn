@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { ROWS, MOVER } from '../src/config.js';
+import { ROWS, MOVER, BAT } from '../src/config.js';
 import { parseLevel } from '../src/core/level.js';
 import levels from '../src/levels/index.js';
 import { LANGS } from '../src/i18n/index.js';
@@ -195,11 +195,27 @@ for (const def of levels) {
     }
   });
 
-  test(`${def.id}: every bee and bat has open air above and below it and a fixed surface two rows down`, () => {
-    for (const { ch, col, row } of cellsOf(def.map, 'bv')) {
-      assert.ok(row === 0 || def.map[row - 1][col] !== '#', `ground above the '${ch}' at ${col},${row}`);
-      assert.ok(row + 1 < ROWS && !standable(def.map[row + 1][col]), `surface right under the '${ch}' at ${col},${row}`);
-      assert.ok(row + 2 < ROWS && standable(def.map[row + 2][col]), `no fixed surface two rows under the '${ch}' at ${col},${row}`);
+  test(`${def.id}: every bee has open air above and below it and a fixed surface two rows down`, () => {
+    for (const { col, row } of cellsOf(def.map, 'b')) {
+      assert.ok(row === 0 || def.map[row - 1][col] !== '#', `ground above the bee at ${col},${row}`);
+      assert.ok(row + 1 < ROWS && !standable(def.map[row + 1][col]), `surface right under the bee at ${col},${row}`);
+      assert.ok(row + 2 < ROWS && standable(def.map[row + 2][col]), `no fixed surface two rows under the bee at ${col},${row}`);
+    }
+  });
+
+  test(`${def.id}: every bat has a clear swoop box, a fixed surface three rows down and no moving cloud under its swing`, () => {
+    const paths = moverPaths(def.map);
+    for (const { col, row } of cellsOf(def.map, 'v')) {
+      const where = `bat at ${col},${row}`;
+      assert.ok(row + 3 < ROWS && standable(def.map[row + 3][col]), `${where}: no fixed surface three rows down`);
+      assert.ok(col - BAT.range >= 0 && col + BAT.range < cols, `${where}: swings off the level`);
+      for (let c = col - BAT.range; c <= col + BAT.range; c++) {
+        for (let r = row; r <= row + 2; r++) assert.ok(!standable(def.map[r][c]), `${where}: its swoop hits ${c},${r}`);
+      }
+      for (const p of paths) {
+        const shares = p.row >= row && p.row <= row + 3 && p.pathStart <= col + BAT.range && p.pathEnd >= col - BAT.range;
+        assert.ok(!shares, `${where}: swoops over the moving cloud at ${p.start},${p.row}`);
+      }
     }
   });
 

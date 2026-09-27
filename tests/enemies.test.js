@@ -1,9 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TILE, STEP, GRAVITY, CARROT, ZOMBIE, PROPELLER, BEE, FLYER, PLAYER, STAR, BAT } from '../src/config.js';
+import { TILE, STEP, GRAVITY, CARROT, ZOMBIE, PROPELLER, BEE, FLYER, PLAYER, STAR, BAT, RAT, SKELETON, GHOST } from '../src/config.js';
 import { createEnemy, updateEnemy, stompEnemy, ENEMY_KINDS } from '../src/core/enemies.js';
 import { bodyRect, overlaps } from '../src/core/rect.js';
-import { testLevel, runSteps } from './helpers.js';
+import { parseLevel } from '../src/core/level.js';
+import { testLevel, runSteps, castleMap } from './helpers.js';
 
 function track(e, level, steps) {
   let minX = e.x;
@@ -23,7 +24,7 @@ function track(e, level, steps) {
 }
 
 test('the registry knows every ground and flying kind and rejects unknown kinds', () => {
-  assert.deepEqual(Object.keys(ENEMY_KINDS).sort(), ['bat', 'bee', 'carrot', 'propeller', 'star', 'zombie']);
+  assert.deepEqual(Object.keys(ENEMY_KINDS).sort(), ['bat', 'bee', 'carrot', 'ghost', 'propeller', 'rat', 'skeleton', 'star', 'zombie']);
   assert.throws(() => createEnemy({ kind: 'dragon', x: 0, y: 0 }), /unknown enemy kind 'dragon'/);
 });
 
@@ -271,26 +272,171 @@ test('a hurt star stops being dizzy after dizzyTime and walks at its hurt speed'
   assert.equal(Math.abs(e.vx), STAR.hurtSpeed);
 });
 
-test('a bat hovers like a bee: no gravity, inside its bob, patrolling its range, one stomp defeats it', () => {
-  const level = testLevel(['....................', '..........v.........', '....................', 'C..................G', '####################']);
+test('a rat walks left at rat speed, patrols like a carrot and one stomp defeats it', () => {
+  const level = testLevel(['C#....m...#G', '############']);
   const e = createEnemy(level.enemies[0]);
-  assert.equal(e.w, BAT.w);
-  assert.equal(e.h, BAT.h);
-  let minX = e.x;
-  let maxX = e.x;
-  let minY = e.y;
-  let maxY = e.y;
+  assert.equal(e.w, RAT.w);
+  assert.equal(e.h, RAT.h);
+  updateEnemy(e, STEP, level);
+  assert.equal(e.vx, -RAT.speed);
+  const { minX, maxX, turns } = track(e, level, 60 * 120);
+  assert.ok(minX >= 2 * TILE + e.w / 2 - 0.01 && maxX <= 10 * TILE - e.w / 2 + 0.01, `patrolled ${minX}..${maxX}`);
+  assert.ok(turns >= 4);
+  assert.equal(stompEnemy(e), 'defeated');
+  assert.equal(e.alive, false);
+});
+
+for (const [kind, cfg] of [['star', STAR], ['skeleton', SKELETON]]) {
+  test(`a ${kind} has two lives: the first stomp hurts it (dizzy, then faster), the second defeats it`, () => {
+    const level = testLevel(['C...s.....G'.replace('s', kind === 'star' ? '*' : 's'), '###########']);
+    const e = createEnemy(level.enemies[0]);
+    assert.equal(e.kind, kind);
+    assert.equal(e.w, cfg.w);
+    assert.equal(e.h, cfg.h);
+    assert.equal(e.lives, 2);
+    assert.equal(stompEnemy(e), 'hurt');
+    assert.equal(e.lives, 1);
+    assert.equal(e.dizzy, cfg.dizzyTime);
+    assert.equal(e.speed, cfg.hurtSpeed);
+    runSteps(Math.ceil(cfg.dizzyTime / STEP) + 1, () => updateEnemy(e, STEP, level));
+    assert.equal(e.dizzy, 0);
+    assert.equal(Math.abs(e.vx), cfg.hurtSpeed);
+    assert.equal(stompEnemy(e), 'defeated');
+    assert.equal(e.alive, false);
+  });
+}
+
+const BAT_MAP = ['..........v.........', '....................', 'C..................G', '####################'];
+
+function batAt(phase) {
+  const level = testLevel(BAT_MAP);
+  const [spec] = level.enemies;
+  const e = createEnemy(spec);
+  e.phase = phase - (2 * Math.PI * STEP) / BAT.period;
+  updateEnemy(e, STEP, level);
+  return { e, spec };
+}
+
+test('a bat swoops: at the middle of its swing it is low and fastest, at both ends it is high and slow', () => {
+  const { e: middle, spec } = batAt(0);
+  const topFeet = spec.y - TILE / 2 + BAT.h / 2;
+  assert.ok(Math.abs(middle.x - spec.x) < 1e-6);
+  assert.ok(Math.abs(middle.y - (topFeet + BAT.dip)) < 1e-6, 'lowest in the middle');
+  assert.ok(Math.abs(middle.vx - BAT.range * TILE * (2 * Math.PI / BAT.period)) < 1e-6, 'fastest in the middle');
+  assert.equal(middle.dir, 1);
+
+  const { e: right } = batAt(Math.PI / 2);
+  assert.ok(Math.abs(right.x - (spec.x + BAT.range * TILE)) < 1e-6);
+  assert.ok(Math.abs(right.y - topFeet) < 1e-6, 'highest at the end');
+  assert.ok(Math.abs(right.vx) < 1e-6);
+
+  const { e: back } = batAt(Math.PI);
+  assert.ok(Math.abs(back.x - spec.x) < 1e-6);
+  assert.equal(back.dir, -1, 'flies back the other way');
+});
+
+test('a bat starts its swing at its map column times the phase step and never falls', () => {
+  const level = testLevel(BAT_MAP);
+  const [spec] = level.enemies;
+  const e = createEnemy(spec);
+  assert.ok(Math.abs(e.phase - 10 * FLYER.phasePerCol) < 1e-9);
+  const topFeet = spec.y - TILE / 2 + BAT.h / 2;
   runSteps(10 * 120, () => {
     updateEnemy(e, STEP, level);
-    minX = Math.min(minX, e.x);
-    maxX = Math.max(maxX, e.x);
-    minY = Math.min(minY, e.y);
-    maxY = Math.max(maxY, e.y);
+    assert.ok(e.y >= topFeet - 1e-9 && e.y <= topFeet + BAT.dip + 1e-9, `feet ${e.y}`);
+    assert.ok(Math.abs(e.x - spec.x) <= BAT.range * TILE + 1e-9, `x ${e.x}`);
   });
-  assert.ok(minX >= e.homeX - BAT.range * TILE - 1e-9, `minX ${minX}`);
-  assert.ok(maxX <= e.homeX + BAT.range * TILE + 1e-9, `maxX ${maxX}`);
-  assert.ok(maxX - minX > BAT.range * TILE, 'it patrols');
-  assert.ok(minY >= e.homeY - BAT.bob + BAT.h / 2 - 1e-9, `minY ${minY}`);
-  assert.ok(maxY <= e.homeY + BAT.bob + BAT.h / 2 + 1e-9, `maxY ${maxY}`);
-  assert.equal(stompEnemy(e), 'defeated');
+  assert.equal(e.alive, true);
+});
+
+test('a chicken can run under a bat at the end of its swing but not in the middle, and a bat in the middle is below a full jump', () => {
+  const ground = 11 * TILE;
+  const { e: middle } = batAt(0);
+  const { e: end } = batAt(Math.PI / 2);
+  const chicken = (x) => bodyRect({ x, y: ground, w: PLAYER.w, h: PLAYER.h });
+  assert.equal(overlaps(chicken(end.x), bodyRect(end)), false, 'safe under the end of the swing');
+  assert.equal(overlaps(chicken(middle.x), bodyRect(middle)), true, 'blocked in the middle');
+  const apex = PLAYER.jumpVelocity ** 2 / (2 * GRAVITY);
+  assert.ok(ground - apex < middle.y - middle.h - 40, 'a full jump clears the low bat');
+  assert.equal(stompEnemy(middle), 'defeated');
+});
+
+function ghostSetup(ghostCol = 10) {
+  const row = '.'.repeat(ghostCol) + 'g' + '.'.repeat(29 - ghostCol);
+  const level = parseLevel({ id: 'ghosts', map: castleMap([row, '.'.repeat(30), '.'.repeat(30), 'C' + '.'.repeat(28) + 'G', '#'.repeat(30)]) });
+  const e = createEnemy(level.enemies[0]);
+  return { level, e };
+}
+
+const chickenAt = (x, facing, y = 11 * TILE) => ({ x, y, h: PLAYER.h, facing, dead: false });
+
+test('a ghost freezes and hides while the chicken faces it', () => {
+  const { level, e } = ghostSetup();
+  const x = e.x;
+  const y = e.y;
+  runSteps(120, () => updateEnemy(e, STEP, level, chickenAt(x - 4 * TILE, 1)));
+  assert.equal(e.shy, true);
+  assert.equal(e.x, x);
+  assert.equal(e.y, y);
+});
+
+test('a ghost creeps toward the chicken at ghost speed while the chicken looks away', () => {
+  const { level, e } = ghostSetup();
+  const player = chickenAt(e.x - 4 * TILE, -1);
+  const before = Math.hypot(player.x - e.x, player.y - player.h / 2 - (e.y - e.h / 2));
+  updateEnemy(e, STEP, level, player);
+  const after = Math.hypot(player.x - e.x, player.y - player.h / 2 - (e.y - e.h / 2));
+  assert.equal(e.shy, false);
+  assert.ok(Math.abs(before - after - GHOST.speed * STEP) < 1e-6, `moved ${before - after}`);
+  assert.equal(e.dir, -1, 'faces where it floats');
+});
+
+test('a ghost never leaves its leash or its room, and floats through walls', () => {
+  const row = '..........g...#' + '.'.repeat(15);
+  const level = parseLevel({ id: 'ghosts', map: castleMap([row, '.'.repeat(30), 'C' + '.'.repeat(28) + 'G', '#'.repeat(30)], [22]) });
+  const e = createEnemy(level.enemies[0]);
+  const [room] = level.rooms;
+  for (const x of [0, 21 * TILE]) {
+    runSteps(20 * 120, () => updateEnemy(e, STEP, level, chickenAt(x, x === 0 ? -1 : 1)));
+    assert.ok(e.x >= e.homeX - GHOST.leash * TILE - 1e-9 && e.x <= e.homeX + GHOST.leash * TILE + 1e-9, `x ${e.x}`);
+    assert.ok(e.x + e.w / 2 <= room.right + 1e-9, 'stays in its room');
+  }
+  assert.ok(e.x > 14 * TILE, 'passed through the block at column 14');
+  runSteps(20 * 120, () => updateEnemy(e, STEP, level, chickenAt(e.x, -1, 12 * TILE)));
+  assert.ok(e.y <= level.height - 2 * TILE + 1e-9, 'never sinks below the floor line');
+});
+
+test('a ghost floats home when the chicken leaves its room or is out of sight', () => {
+  const { level, e } = ghostSetup();
+  runSteps(3 * 120, () => updateEnemy(e, STEP, level, chickenAt(e.homeX - 3 * TILE, -1)));
+  assert.ok(Math.abs(e.x - e.homeX) > 1, 'it crept away from home');
+  runSteps(20 * 120, () => updateEnemy(e, STEP, level, chickenAt(e.homeX + (GHOST.sight + 6) * TILE, 1)));
+  assert.equal(e.x, e.homeX);
+  assert.equal(e.y, e.homeY);
+  runSteps(3 * 120, () => updateEnemy(e, STEP, level, null));
+  assert.equal(e.x, e.homeX, 'with no chicken it stays home');
+});
+
+test('a ghost ignores a dead chicken and floats home', () => {
+  const { level, e } = ghostSetup();
+  const player = chickenAt(e.homeX - 3 * TILE, -1);
+  runSteps(3 * 120, () => updateEnemy(e, STEP, level, player));
+  assert.ok(Math.abs(e.x - e.homeX) > 1, 'it crept toward the chicken');
+  player.dead = true;
+  runSteps(20 * 120, () => updateEnemy(e, STEP, level, player));
+  assert.equal(e.x, e.homeX);
+  assert.equal(e.y, e.homeY);
+  assert.equal(e.shy, false);
+});
+
+test('a ghost leaves a trail of at most GHOST.trail seconds, which fades once it freezes', () => {
+  const { level, e } = ghostSetup();
+  runSteps(120, () => {
+    updateEnemy(e, STEP, level, chickenAt(e.homeX - 5 * TILE, -1));
+    for (const point of e.trail) assert.ok(e.clock - point.t <= GHOST.trail + 1e-9);
+  });
+  assert.ok(e.trail.length > 10, 'moving leaves a trail');
+  runSteps(Math.ceil(GHOST.trail / STEP) + 1, () => updateEnemy(e, STEP, level, chickenAt(e.homeX - 5 * TILE, 1)));
+  assert.equal(e.shy, true);
+  assert.deepEqual(e.trail, []);
 });

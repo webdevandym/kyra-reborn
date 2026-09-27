@@ -1,6 +1,6 @@
-import { TILE, CARROT, ZOMBIE, PROPELLER, BEE, FLYER, RULES, STAR, BAT } from '../config.js';
+import { TILE, CARROT, ZOMBIE, PROPELLER, BEE, FLYER, RULES, STAR, BAT, RAT, SKELETON, GHOST } from '../config.js';
 import { applyGravity, moveAndCollide } from './physics.js';
-import { tileAt } from './level.js';
+import { tileAt, roomAt } from './level.js';
 
 function baseEnemy(spec, w, h, speed) {
   return {
@@ -19,6 +19,11 @@ function baseEnemy(spec, w, h, speed) {
     alive: true,
     anim: 0,
   };
+}
+
+function defeat(e) {
+  e.alive = false;
+  return 'defeated';
 }
 
 function patrol(e, dt, level) {
@@ -42,10 +47,13 @@ function dizzyPatrol(e, dt, level) {
 const carrot = {
   create: (spec) => baseEnemy(spec, CARROT.w, CARROT.h, CARROT.speed),
   update: patrol,
-  onStomp(e) {
-    e.alive = false;
-    return 'defeated';
-  },
+  onStomp: defeat,
+};
+
+const rat = {
+  create: (spec) => baseEnemy(spec, RAT.w, RAT.h, RAT.speed),
+  update: patrol,
+  onStomp: defeat,
 };
 
 const zombie = {
@@ -60,25 +68,25 @@ const zombie = {
       e.dizzy = ZOMBIE.dizzyTime;
       return 'shrunk';
     }
-    e.alive = false;
-    return 'defeated';
+    return defeat(e);
   },
 };
 
-const star = {
-  create: (spec) => ({ ...baseEnemy(spec, STAR.w, STAR.h, STAR.speed), lives: 2, dizzy: 0 }),
-  update: dizzyPatrol,
-  onStomp(e) {
-    if (e.lives > 1) {
-      e.lives -= 1;
-      e.dizzy = STAR.dizzyTime;
-      e.speed = STAR.hurtSpeed;
-      return 'hurt';
-    }
-    e.alive = false;
-    return 'defeated';
-  },
-};
+function twoLife(cfg) {
+  return {
+    create: (spec) => ({ ...baseEnemy(spec, cfg.w, cfg.h, cfg.speed), lives: 2, dizzy: 0 }),
+    update: dizzyPatrol,
+    onStomp(e) {
+      if (e.lives > 1) {
+        e.lives -= 1;
+        e.dizzy = cfg.dizzyTime;
+        e.speed = cfg.hurtSpeed;
+        return 'hurt';
+      }
+      return defeat(e);
+    },
+  };
+}
 
 const EPS = 0.001;
 
@@ -131,14 +139,102 @@ function flyer(cfg) {
       return e;
     },
     update: hover,
-    onStomp(e) {
-      e.alive = false;
-      return 'defeated';
-    },
+    onStomp: defeat,
   };
 }
 
-export const ENEMY_KINDS = { carrot, zombie, propeller: flyer(PROPELLER), bee: flyer(BEE), star, bat: flyer(BAT) };
+function placeSwoop(e) {
+  const c = Math.cos(e.phase);
+  e.x = e.homeX + BAT.range * TILE * Math.sin(e.phase);
+  e.y = e.topFeet + BAT.dip * c * c;
+  e.vx = BAT.range * TILE * ((2 * Math.PI) / BAT.period) * c;
+  if (e.vx !== 0) e.dir = Math.sign(e.vx);
+}
+
+const bat = {
+  create(spec) {
+    const e = {
+      ...baseEnemy(spec, BAT.w, BAT.h, 0),
+      onGround: false,
+      homeX: spec.x,
+      topFeet: spec.y - TILE / 2 + BAT.h / 2,
+      phase: Math.floor(spec.x / TILE) * FLYER.phasePerCol,
+    };
+    placeSwoop(e);
+    e.prevBottom = e.y;
+    return e;
+  },
+  update(e, dt) {
+    e.phase += (2 * Math.PI * dt) / BAT.period;
+    e.prevBottom = e.y;
+    placeSwoop(e);
+    e.anim += dt * 6;
+  },
+  onStomp: defeat,
+};
+
+const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
+
+function moveToward(e, tx, ty, step) {
+  const dx = tx - e.x;
+  const dy = ty - e.y;
+  const dist = Math.hypot(dx, dy);
+  if (dist <= step) {
+    e.x = tx;
+    e.y = ty;
+  } else {
+    e.x += (dx / dist) * step;
+    e.y += (dy / dist) * step;
+  }
+}
+
+function shyFloat(e, dt, level, player) {
+  e.room ??= roomAt(level, e.homeX);
+  e.clock += dt;
+  const x0 = e.x;
+  const y0 = e.y;
+  const active = Boolean(player) && !player.dead && roomAt(level, player.x) === e.room && Math.abs(player.x - e.x) <= GHOST.sight * TILE;
+  const lookedAt = active && player.facing === (Math.sign(e.x - player.x) || player.facing);
+  e.shy = lookedAt;
+  if (active && !lookedAt) moveToward(e, player.x, player.y - player.h / 2 + e.h / 2, e.speed * dt);
+  else if (!active) moveToward(e, e.homeX, e.homeY, e.speed * dt);
+  e.x = clamp(e.x, Math.max(e.homeX - GHOST.leash * TILE, e.room.left + e.w / 2), Math.min(e.homeX + GHOST.leash * TILE, e.room.right - e.w / 2));
+  e.y = clamp(e.y, TILE + e.h, level.height - 2 * TILE);
+  e.prevBottom = y0;
+  if (e.x !== x0) e.dir = Math.sign(e.x - x0);
+  if (e.x !== x0 || e.y !== y0) e.trail.push({ x: e.x, y: e.y, t: e.clock });
+  while (e.trail.length && e.clock - e.trail[0].t > GHOST.trail) e.trail.shift();
+  e.anim += dt;
+}
+
+const ghost = {
+  create: (spec) => ({
+    ...baseEnemy(spec, GHOST.w, GHOST.h, GHOST.speed),
+    onGround: false,
+    homeX: spec.x,
+    homeY: spec.y - TILE / 2 + GHOST.h / 2,
+    y: spec.y - TILE / 2 + GHOST.h / 2,
+    prevBottom: spec.y - TILE / 2 + GHOST.h / 2,
+    shy: false,
+    clock: 0,
+    trail: [],
+    room: null,
+  }),
+  update: shyFloat,
+  onStomp: defeat,
+};
+
+export const ENEMY_KINDS = {
+  carrot,
+  zombie,
+  propeller: flyer(PROPELLER),
+  bee: flyer(BEE),
+  star: twoLife(STAR),
+  bat,
+  rat,
+  skeleton: twoLife(SKELETON),
+  ghost,
+};
 
 export function createEnemy(spec) {
   const kind = ENEMY_KINDS[spec.kind];
@@ -146,9 +242,10 @@ export function createEnemy(spec) {
   return kind.create(spec);
 }
 
-export function updateEnemy(e, dt, level) {
-  ENEMY_KINDS[e.kind].update(e, dt, level);
+export function updateEnemy(e, dt, level, player = null) {
+  const shot = ENEMY_KINDS[e.kind].update(e, dt, level, player) ?? null;
   if (e.y > level.height + RULES.fallLimit) e.alive = false;
+  return shot;
 }
 
 export function stompEnemy(e) {
