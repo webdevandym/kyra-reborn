@@ -64,6 +64,19 @@ export function createAudio({ muted = false } = {}) {
       tone({ type: 'square', from: 440, to: 110, dur: 0.45, vol: 0.22 });
     },
     rain: () => noise({ dur: 0.6, vol: 0.12, freq: 2600 }),
+    fire: () => {
+      noise({ dur: 0.18, vol: 0.18, freq: 700 });
+      tone({ type: 'sawtooth', from: 420, to: 160, dur: 0.18, vol: 0.12 });
+    },
+    shieldUp: () => notes([660, 880, 1320], { type: 'triangle', dur: 0.1, vol: 0.25, gap: 0.06 }),
+    shieldPop: () => {
+      noise({ dur: 0.12, vol: 0.25, freq: 3200 });
+      tone({ type: 'sine', from: 1200, to: 300, dur: 0.2, vol: 0.25 });
+    },
+    portal: () => {
+      tone({ type: 'sine', from: 300, to: 1200, dur: 0.5, vol: 0.25 });
+      tone({ type: 'triangle', from: 450, to: 1500, dur: 0.5, vol: 0.12, delay: 0.05 });
+    },
     life: () => notes([523, 659, 784, 1046], { type: 'square', dur: 0.1, vol: 0.18, gap: 0.08 }),
     levelComplete: () => notes([523, 659, 784, 659, 784, 1046], { type: 'triangle', dur: 0.16, vol: 0.32, gap: 0.11 }),
     gameOver: () => notes([392, 370, 349, 262], { type: 'triangle', dur: 0.32, vol: 0.32, gap: 0.28 }),

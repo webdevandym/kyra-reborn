@@ -28,7 +28,8 @@
     "sound": "звук",
     "language": "мова",
     "confirm": "далі",
-    "controls": "Керування"
+    "controls": "Керування",
+    "checkpoint": "Контрольна точка!"
   },
   "levels": {
     "level1": {

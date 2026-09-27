@@ -14,6 +14,7 @@
   --wobbly: 255px 15px 225px 15px / 15px 225px 15px 255px;
   --dot-meadow: #3fae49;
   --dot-sky: #9b8ad6;
+  --dot-castle: #8f8799;
   color-scheme: light;
 }
 
@@ -321,6 +322,10 @@ canvas {
 
 .carousel__dot[data-theme="sky"] {
   color: var(--dot-sky);
+}
+
+.carousel__dot[data-theme="castle"] {
+  color: var(--dot-castle);
 }
 
 .carousel__dot[data-picked] {

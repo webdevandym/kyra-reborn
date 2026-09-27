@@ -15,6 +15,7 @@ const ARROWS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
 const WORLD_ICONS = {
   meadow: '<svg class="level-card__world" viewBox="0 0 24 16" aria-hidden="true"><path d="M1 15h22M4 15c1-4 2-7 4-10M10 15c1-4 3-7 5-9M16 15c1-3 3-6 6-7"/></svg>',
   sky: '<svg class="level-card__world" viewBox="0 0 30 18" aria-hidden="true"><path d="M26 2a5 5 0 1 0 3 8a4 4 0 1 1-3-8z"/><path d="M4 16a4 4 0 0 1 1-8a5 5 0 0 1 9-2a4 4 0 0 1 6 3a3.5 3.5 0 0 1 0 7z"/></svg>',
+  castle: '<svg class="level-card__world" viewBox="0 0 24 18" aria-hidden="true"><path d="M5 17V5h3v2h2V5h4v2h2V5h3v12z"/><path d="M10 17v-4a2 2 0 0 1 4 0v4"/></svg>',
 };
 
 const canvas = document.getElementById('game');
@@ -202,6 +203,28 @@ function handleEvents(events) {
         particles.stars(e.x, e.y);
         if (e.result === 'hurt') particles.text(e.x, e.y - 14, '♥', COLORS.heart);
         if (e.result === 'defeated') particles.poof(e.x, e.y + 12);
+        break;
+      case 'fire':
+        if (e.x > camera.x - 100 && e.x < camera.x + VIEW_W + 100) audio.sfx.fire();
+        break;
+      case 'shieldUp':
+        audio.sfx.shieldUp();
+        particles.sparkle(e.x, e.y, COLORS.shieldInk);
+        break;
+      case 'shieldPop':
+        audio.sfx.shieldPop();
+        particles.sparkle(e.x, e.y, COLORS.shieldInk);
+        break;
+      case 'portalOpen':
+        audio.sfx.portal();
+        particles.sparkle(e.x, e.y - 35, COLORS.portal);
+        break;
+      case 'portal':
+        audio.sfx.portal();
+        particles.sparkle(e.from.x, e.from.y - 35, COLORS.portal);
+        particles.sparkle(e.to.x, e.to.y - 35, COLORS.portal);
+        particles.text(e.to.x + 120, e.to.y - 90, t('checkpoint', prefs.lang), COLORS.ink);
+        snapCamera(camera, game.world.player, game.world.level);
         break;
       case 'rainStart':
         if (e.x > camera.x - 100 && e.x < camera.x + VIEW_W + 100) audio.sfx.rain();

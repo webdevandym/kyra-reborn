@@ -1,11 +1,14 @@
-import { TILE, VIEW_W, VIEW_H, COLORS, RULES, CRYSTAL } from '../config.js';
+import { TILE, VIEW_W, VIEW_H, COLORS, RULES, CRYSTAL, PORTAL } from '../config.js';
 import { bodyRect, centeredRect } from '../core/rect.js';
 import { rainPhase, rainRect } from '../core/hazards.js';
+import { fireballRect } from '../core/world.js';
 import { t } from '../i18n/index.js';
 import { setBoilTime, inkEllipse, inkLine } from './ink.js';
 import { createMeadowTheme } from './meadow.js';
 import { createSkyTheme } from './sky.js';
+import { createCastleTheme } from './castle.js';
 import { drawStarEnemy, drawBat, drawRainCloud, drawMovingCloud } from './sky-sprites.js';
+import { drawRat, drawGhost, drawSkeleton, drawSpider, drawFireball, drawPortal, drawCheckpoint, drawShield } from './castle-sprites.js';
 import {
   drawChicken,
   drawCarrot,
@@ -19,10 +22,21 @@ import {
   drawMutedIcon,
 } from './sprites.js';
 
-const ENEMY_DRAWERS = { carrot: drawCarrot, zombie: drawZombie, propeller: drawPropellerCarrot, bee: drawBee, star: drawStarEnemy, bat: drawBat };
+const ENEMY_DRAWERS = {
+  carrot: drawCarrot,
+  zombie: drawZombie,
+  propeller: drawPropellerCarrot,
+  bee: drawBee,
+  star: drawStarEnemy,
+  bat: drawBat,
+  rat: drawRat,
+  ghost: drawGhost,
+  skeleton: drawSkeleton,
+  spider: drawSpider,
+};
 
 export function createScene(ctx) {
-  const themes = { meadow: createMeadowTheme(ctx), sky: createSkyTheme(ctx) };
+  const themes = { meadow: createMeadowTheme(ctx), sky: createSkyTheme(ctx), castle: createCastleTheme(ctx) };
 
   function drawGrid(camX) {
     ctx.lineWidth = 1;
@@ -89,6 +103,11 @@ export function createScene(ctx) {
       const wet = rainRect(cloud, world.time);
       if (wet) box(wet);
     });
+    world.projectiles.forEach((f) => box(fireballRect(f)));
+    if (world.portal) box(bodyRect(world.portal));
+    ctx.setLineDash([6, 6]);
+    world.level.rooms.forEach((room) => ctx.strokeRect(room.left, 0, room.right - room.left, VIEW_H));
+    ctx.setLineDash([]);
     ctx.restore();
   }
 
@@ -108,6 +127,8 @@ export function createScene(ctx) {
     ctx.translate(-Math.round(camX) + shake.x, shake.y);
     drawFinishLine(world.goal);
     theme.drawTiles(level, camX);
+    if (level.checkpoint) drawCheckpoint(ctx, level.checkpoint, world.checkpointReached, time);
+    if (world.portal?.open) drawPortal(ctx, world.portal, (world.time - world.portal.openedAt) / PORTAL.grow, time);
     world.movers.forEach((m, i) => drawMovingCloud(ctx, m, 391 + i * 13));
     level.signs.forEach((sign, i) => drawSign(ctx, sign, t(sign.textKey, lang), 61 + i * 7));
     world.crystals.forEach((c, i) => drawRedCrystal(ctx, c, time, 41 + i));
@@ -115,6 +136,7 @@ export function createScene(ctx) {
     world.enemies.forEach((e, i) => {
       if (e.alive) ENEMY_DRAWERS[e.kind](ctx, e, time, 200 + i * 37);
     });
+    world.projectiles.forEach((f, i) => drawFireball(ctx, f, time, 581 + i * 7));
 
     const p = world.player;
     if (!p.dead) {
@@ -122,6 +144,7 @@ export function createScene(ctx) {
       ctx.globalAlpha = blink ? 0.35 : 1;
       drawChicken(ctx, { ...p, celebrate: p.won }, time);
       ctx.globalAlpha = 1;
+      if (p.shield) drawShield(ctx, p, time);
     }
     world.rain.forEach((cloud, i) => drawRainCloud(ctx, cloud, { phase: rainPhase(cloud, world.time), wet: rainRect(cloud, world.time), time }, 361 + i * 11));
     particles.drawWorld(ctx);

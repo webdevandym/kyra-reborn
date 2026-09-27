@@ -12,9 +12,11 @@ import { createMeadowTheme } from '../src/render/meadow.js';
 import { createParticles } from '../src/render/particles.js';
 import { drawChicken, drawCarrot, drawPropellerCarrot, drawZombie, drawBee, drawRedCrystal, drawGreenCrystal, drawSign, drawHeart } from '../src/render/sprites.js';
 import { LANGS, loadLang } from '../src/i18n/index.js';
-import { mapFromBottom } from './helpers.js';
+import { mapFromBottom, castleMap } from './helpers.js';
 import { createSkyTheme } from '../src/render/sky.js';
 import { drawStarEnemy, drawBat, drawRainCloud, drawMovingCloud, drawMoon } from '../src/render/sky-sprites.js';
+import { createCastleTheme } from '../src/render/castle.js';
+import { drawRat, drawGhost, drawSkeleton, drawSpider, drawFireball, drawPortal, drawCheckpoint, drawShield, drawPrincess } from '../src/render/castle-sprites.js';
 
 before(async () => {
   for (const lang of LANGS) await loadLang(lang, { fetchJson: (url) => JSON.parse(readFileSync(url, 'utf8')) });
@@ -170,5 +172,74 @@ test('the scene renders a sky level with moving clouds, rain, a star, a bat and 
   }
   game.world.player.won = true;
   scene.render({ game, camera, particles, time: 9, lang: 'en', muted: false });
+  assert.ok(calls.get('stroke') > 50);
+});
+
+test('every castle sprite draws without errors and with finite coordinates', () => {
+  const { ctx, calls } = mockContext();
+  drawRat(ctx, { x: 100, y: 450, dir: 1, anim: 2 }, 0.4);
+  drawRat(ctx, { x: 100, y: 450, dir: -1, anim: 0 }, 1.2);
+  const trail = Array.from({ length: 12 }, (_, i) => ({ x: 200 + i * 2, y: 300 - i, t: i * 0.02 }));
+  drawGhost(ctx, { x: 200, y: 300, h: 36, dir: -1, shy: false, trail }, 0.7);
+  drawGhost(ctx, { x: 200, y: 300, h: 36, dir: 1, shy: true, trail: [] }, 0.1);
+  drawSkeleton(ctx, { x: 300, y: 450, dir: 1, anim: 1, lives: 2, dizzy: 0 }, 0.3);
+  drawSkeleton(ctx, { x: 300, y: 450, dir: -1, anim: 3, lives: 1, dizzy: 0.4 }, 1.9);
+  drawSpider(ctx, { x: 400, y: 450, dir: -1, winding: false }, 0.5);
+  drawSpider(ctx, { x: 400, y: 450, dir: 1, winding: true }, 0.8);
+  drawFireball(ctx, { x: 450, y: 436, vx: -220 }, 0.2);
+  drawFireball(ctx, { x: 450, y: 386, vx: 220 }, 0.9);
+  const portal = { x: 500, y: 450, w: 50, h: 70 };
+  drawPortal(ctx, portal, 0, 0.1);
+  drawPortal(ctx, portal, 0.4, 0.3);
+  drawPortal(ctx, portal, 3, 2.1);
+  drawCheckpoint(ctx, { x: 600, y: 450 }, false, 0.2);
+  drawCheckpoint(ctx, { x: 600, y: 450 }, true, 1.4);
+  drawShield(ctx, { x: 650, y: 450, h: 40 }, 0.6);
+  drawPrincess(ctx, { x: 700, y: 450 }, 0.3, false);
+  drawPrincess(ctx, { x: 700, y: 450 }, 2.3, true);
+  assert.ok(calls.get('stroke') > 40);
+  assert.ok(calls.get('fill') > 20);
+});
+
+test('a closed portal draws nothing', () => {
+  const { ctx, calls } = mockContext();
+  drawPortal(ctx, { x: 500, y: 450, w: 50, h: 70 }, 0, 0.1);
+  assert.equal(calls.size, 0);
+});
+
+test('the castle theme paints the parchment wash and draws its backdrop, stone tiles, shelves and the princess', () => {
+  const { ctx, calls } = mockContext();
+  const theme = createCastleTheme(ctx);
+  const level = parseLevel({ id: 'castletheme', map: castleMap(['..====....', 'C...##...G', '##########'], [7]) });
+  assert.equal(theme.paper, COLORS.castleWash);
+  theme.drawBackdrop(level, 0, 0.5);
+  theme.drawTiles(level, 0);
+  theme.drawGoal({ x: 300, y: 450 }, 1.2, false);
+  theme.drawGoal({ x: 300, y: 450 }, 1.2, true);
+  assert.ok(calls.get('stroke') > 10);
+  assert.ok(calls.get('fill') > 10);
+});
+
+test('the scene renders a castle level with the spider firing, the shield, a ghost trail, the open portal and the checkpoint', () => {
+  const { ctx, calls } = mockContext();
+  const def = { id: 'castletest', theme: 'castle', map: castleMap(['...g......................', 'C...m...s..S.O......#K...G', '##########################'], [20]) };
+  const game = createGame([def]);
+  const camera = createCamera();
+  const particles = createParticles();
+  const scene = createScene(ctx);
+  game.confirm();
+  let fireballs = 0;
+  for (let i = 0; i < 720; i++) {
+    game.tick(STEP, IDLE);
+    game.world.player.invuln = 1;
+    game.world.player.shield = true;
+    fireballs = Math.max(fireballs, game.world.projectiles.length);
+    if (i === 400) game.world.portal.open = true;
+    if (i % 60 === 0) scene.render({ game, camera, particles, time: i * STEP, lang: 'pl', muted: false, debug: true });
+  }
+  assert.ok(fireballs > 0, 'the spider fired while the scene was drawn');
+  game.world.checkpointReached = true;
+  game.world.player.won = true;
+  scene.render({ game, camera, particles, time: 9, lang: 'en', muted: false, debug: true });
   assert.ok(calls.get('stroke') > 50);
 });

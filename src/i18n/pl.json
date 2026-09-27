@@ -28,7 +28,8 @@
     "sound": "dźwięk",
     "language": "język",
     "confirm": "dalej",
-    "controls": "Sterowanie"
+    "controls": "Sterowanie",
+    "checkpoint": "Punkt kontrolny!"
   },
   "levels": {
     "level1": {

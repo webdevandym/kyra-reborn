@@ -28,7 +28,8 @@
     "sound": "sound",
     "language": "language",
     "confirm": "next",
-    "controls": "Controls"
+    "controls": "Controls",
+    "checkpoint": "Checkpoint!"
   },
   "levels": {
     "level1": {
