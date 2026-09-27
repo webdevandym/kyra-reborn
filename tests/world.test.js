@@ -23,6 +23,7 @@ function dropOnto(world, enemy, height = 100) {
   const p = world.player;
   p.x = enemy.x;
   p.y = enemy.y - enemy.h - height;
+  p.vx = 0;
   p.vy = 0;
   p.onGround = false;
   p.invuln = 0;
@@ -329,9 +330,12 @@ test('fireballs fly at FIREBALL.speed, pass through enemies and vanish at a wall
   assert.ok(minX >= 5 * TILE + FIREBALL.size / 2 - FIREBALL.speed * STEP, `stopped at ${minX}`);
 });
 
-test('stomping a rat gives the chicken a shield once, even after a second rat', () => {
-  const world = createWorld(testLevel(['C.......m.......m......G', '########################']));
+test('stomping a guard rat gives the chicken a shield once, even after a second guard rat', () => {
+  const level = parseLevel({ id: 'guards', theme: 'castle', map: castleMap(['C....m...m.....S.O.#K..G', '#'.repeat(24)], [19]) });
+  const world = createWorld(level);
+  world.enemies = world.enemies.filter((e) => e.kind !== 'spider');
   const [first, second] = world.enemies;
+  assert.equal(first.guard && second.guard, true);
   dropOnto(world, first);
   const one = stepUntil(world, IDLE, 'stomp');
   assert.deepEqual(types(one).filter((t) => t === 'shieldUp'), ['shieldUp']);
@@ -341,6 +345,14 @@ test('stomping a rat gives the chicken a shield once, even after a second rat', 
   const two = stepUntil(world, IDLE, 'stomp');
   assert.equal(types(two).includes('shieldUp'), false);
   assert.equal(world.player.shield, true);
+});
+
+test('stomping a rat away from the spider gives no shield', () => {
+  const world = createWorld(testLevel(['C.......m.......G', '#################']));
+  dropOnto(world, world.enemies[0]);
+  const events = stepUntil(world, IDLE, 'stomp');
+  assert.equal(types(events).includes('shieldUp'), false);
+  assert.equal(world.player.shield, false);
 });
 
 test('a shield takes one fireball: it pops, the chicken lives and gets stomp grace; the next fireball hits', () => {
@@ -400,16 +412,40 @@ test('a chicken behind the spider is shot at toward the wall, and those shots va
   assert.ok(maxX + FIREBALL.size / 2 <= 24 * TILE + FIREBALL.speed * STEP, `it reached x ${maxX}, the wall starts at ${24 * TILE}`);
 });
 
-test('stomping the spider opens the portal once', () => {
+function stompSpider(world, spider) {
+  for (let i = 0; i < 240 && spider.dizzy > 0; i++) world.step(STEP, IDLE);
+  world.projectiles = [];
+  dropOnto(world, spider);
+  return stepUntil(world, IDLE, 'stomp');
+}
+
+test('the spider needs three stomps, each hurt knocks the chicken back, and the third opens the portal', () => {
   const world = createWorld(lair());
   const spider = world.enemies.find((e) => e.kind === 'spider');
-  dropOnto(world, spider);
-  const events = stepUntil(world, IDLE, 'stomp');
+  const first = stompSpider(world, spider).find((e) => e.type === 'stomp');
+  assert.equal(first.result, 'hurt');
+  assert.equal(world.player.vx, -SPIDER.knockback, 'knocked back away from the spider');
+  assert.equal(world.portal.open, false);
+  assert.equal(stompSpider(world, spider).find((e) => e.type === 'stomp').result, 'hurt');
+  const events = stompSpider(world, spider);
+  assert.equal(events.find((e) => e.type === 'stomp').result, 'defeated');
   const open = events.find((e) => e.type === 'portalOpen');
   assert.ok(open);
   assert.deepEqual({ x: open.x, y: open.y }, { x: 16.5 * TILE, y: FLOOR });
   assert.equal(world.portal.open, true);
   assert.equal(world.portal.openedAt, world.time);
+});
+
+test('a stomp on a dizzy spider only bounces and knocks back', () => {
+  const world = createWorld(lair());
+  const spider = world.enemies.find((e) => e.kind === 'spider');
+  stompSpider(world, spider);
+  dropOnto(world, spider, 20);
+  world.player.x = spider.x + 10;
+  const stomp = stepUntil(world, IDLE, 'stomp').find((e) => e.type === 'stomp');
+  assert.equal(stomp.result, 'bounce');
+  assert.equal(spider.lives, SPIDER.lives - 1);
+  assert.equal(world.player.vx, SPIDER.knockback, 'pushed to the far side');
 });
 
 test('a closed portal does nothing, and an open one moves the chicken to the checkpoint', () => {

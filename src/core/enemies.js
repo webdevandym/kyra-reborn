@@ -51,7 +51,7 @@ const carrot = {
 };
 
 const rat = {
-  create: (spec) => baseEnemy(spec, RAT.w, RAT.h, RAT.speed),
+  create: (spec) => ({ ...baseEnemy(spec, RAT.w, RAT.h, RAT.speed), guard: Boolean(spec.guard) }),
   update: patrol,
   onStomp: defeat,
 };
@@ -224,35 +224,79 @@ const ghost = {
   onStomp: defeat,
 };
 
+function spiderShot(e) {
+  return {
+    kind: 'fireball',
+    x: e.x + e.dir * (e.w / 2 + FIREBALL.size / 2),
+    y: e.y - (e.volleyHigh ? FIREBALL.highY : FIREBALL.lowY),
+    vx: e.dir * FIREBALL.speed,
+  };
+}
+
 const spider = {
-  create: (spec) => ({ ...baseEnemy(spec, SPIDER.w, SPIDER.h, 0), cooldown: SPIDER.fireEvery, winding: false, nextHigh: false, room: null }),
+  create: (spec) => ({
+    ...baseEnemy(spec, SPIDER.w, SPIDER.h, 0),
+    lives: SPIDER.lives,
+    dizzy: 0,
+    cooldown: SPIDER.fireEvery,
+    winding: false,
+    volleySize: 1,
+    volleyHigh: false,
+    nextHigh: false,
+    shotsLeft: 0,
+    gap: 0,
+    room: null,
+  }),
   update(e, dt, level, player) {
     e.room ??= roomAt(level, e.x);
     e.anim += dt;
+    if (player && player.x !== e.x) e.dir = Math.sign(player.x - e.x);
+    if (e.dizzy > 0) {
+      e.dizzy = Math.max(0, e.dizzy - dt);
+      e.winding = false;
+      return null;
+    }
     if (!player) return null;
-    const dx = player.x - e.x;
-    if (dx !== 0) e.dir = Math.sign(dx);
-    const reach = Math.abs(dx);
+    const reach = Math.abs(player.x - e.x);
     const inRange = !player.dead && roomAt(level, player.x) === e.room && reach >= SPIDER.minRange * TILE && reach <= SPIDER.maxRange * TILE;
     if (!inRange) {
       e.winding = false;
+      e.shotsLeft = 0;
       e.cooldown = Math.max(e.cooldown, SPIDER.windup + STEP);
       return null;
+    }
+    if (e.shotsLeft > 0) {
+      e.gap -= dt;
+      if (e.gap > 0) return null;
+      e.shotsLeft -= 1;
+      if (e.shotsLeft === 0) e.cooldown = SPIDER.fireEvery + e.gap;
+      else e.gap += SPIDER.volleyGap;
+      return spiderShot(e);
     }
     e.cooldown -= dt;
     e.winding = e.cooldown <= SPIDER.windup;
     if (e.cooldown > 0) return null;
-    e.cooldown += SPIDER.fireEvery;
     e.winding = false;
-    const shot = {
-      x: e.x + e.dir * (e.w / 2 + FIREBALL.size / 2),
-      y: e.y - (e.nextHigh ? FIREBALL.highY : FIREBALL.lowY),
-      vx: e.dir * FIREBALL.speed,
-    };
+    e.volleyHigh = e.nextHigh;
     e.nextHigh = !e.nextHigh;
-    return shot;
+    e.shotsLeft = e.volleySize - 1;
+    e.volleySize = (e.volleySize % 3) + 1;
+    if (e.shotsLeft === 0) e.cooldown += SPIDER.fireEvery;
+    else e.gap = SPIDER.volleyGap + e.cooldown;
+    return spiderShot(e);
   },
-  onStomp: defeat,
+  onStomp(e) {
+    if (e.dizzy > 0) return 'bounce';
+    if (e.lives > 1) {
+      e.lives -= 1;
+      e.dizzy = SPIDER.dizzyTime;
+      e.winding = false;
+      e.shotsLeft = 0;
+      e.cooldown = SPIDER.fireEvery;
+      return 'hurt';
+    }
+    return defeat(e);
+  },
 };
 
 export const ENEMY_KINDS = {

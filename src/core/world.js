@@ -1,4 +1,4 @@
-import { TILE, PLAYER, CRYSTAL, GOAL, RULES, FIREBALL, PORTAL, DOOR } from '../config.js';
+import { TILE, PLAYER, CRYSTAL, GOAL, RULES, FIREBALL, PORTAL, DOOR, SPIDER } from '../config.js';
 import { createPlayer, updatePlayer } from './player.js';
 import { createEnemy, updateEnemy, stompEnemy } from './enemies.js';
 import { classifyContact } from './combat.js';
@@ -82,6 +82,7 @@ export function stepWorld(world, dt, input) {
       p.jumping = false;
       p.onGround = false;
       p.invuln = Math.max(p.invuln, PLAYER.stompGrace);
+      if (e.kind === 'spider' && result !== 'defeated') p.vx = e.dir * SPIDER.knockback;
       events.push({ type: 'stomp', kind: e.kind, result, x: e.x, y: top });
       if (result === 'defeated') onDefeat(world, e, events);
     } else if (contact === 'hit' && p.invuln <= 0) {
@@ -133,7 +134,7 @@ export function stepWorld(world, dt, input) {
 
 function onDefeat(world, e, events) {
   const p = world.player;
-  if (e.kind === 'rat' && !p.shield) {
+  if (e.kind === 'rat' && e.guard && !p.shield) {
     p.shield = true;
     events.push({ type: 'shieldUp', x: p.x, y: p.y - p.h });
   }

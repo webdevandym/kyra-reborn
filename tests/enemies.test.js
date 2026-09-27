@@ -459,27 +459,49 @@ function shotsWithin(e, level, player, seconds) {
   return shots;
 }
 
-test('a spider faces the chicken and fires every fireEvery seconds, low first and then alternating', () => {
-  const { level, e, player } = spiderSetup(10);
-  const shots = shotsWithin(e, level, player, SPIDER.fireEvery * 4 + STEP);
-  assert.equal(e.dir, -1);
-  assert.equal(shots.length, 4);
-  assert.ok(Math.abs(shots[0].at - SPIDER.fireEvery) < STEP * 1.5, `first shot at ${shots[0].at}`);
-  assert.ok(Math.abs(shots[1].at - shots[0].at - SPIDER.fireEvery) < STEP * 1.5);
-  assert.deepEqual(shots.map((s) => e.y - s.y), [FIREBALL.lowY, FIREBALL.highY, FIREBALL.lowY, FIREBALL.highY]);
-  for (const s of shots) {
-    assert.equal(s.vx, -FIREBALL.speed);
-    assert.equal(s.x, e.x - (e.w / 2 + FIREBALL.size / 2));
+const near = (a, b) => Math.abs(a - b) < STEP * 1.5;
+
+function untilMidVolley(e, level, player) {
+  for (let i = 0; i < Math.round(6 / STEP); i++) {
+    updateEnemy(e, STEP, level, player);
+    if (e.shotsLeft > 0) return;
   }
+  assert.fail('the spider never started a multi-fireball volley');
+}
+
+test('a spider fires volleys of 1, 2 and 3 fireballs; each volley has one height and the heights alternate', () => {
+  const { level, e, player } = spiderSetup(10);
+  const shots = shotsWithin(e, level, player, 5.8);
+  assert.equal(e.dir, -1);
+  const f = SPIDER.fireEvery;
+  const g = SPIDER.volleyGap;
+  const expected = [
+    [f, FIREBALL.lowY],
+    [2 * f, FIREBALL.highY],
+    [2 * f + g, FIREBALL.highY],
+    [3 * f + g, FIREBALL.lowY],
+    [3 * f + 2 * g, FIREBALL.lowY],
+    [3 * f + 3 * g, FIREBALL.lowY],
+    [4 * f + 3 * g, FIREBALL.highY],
+  ];
+  assert.equal(shots.length, expected.length, `shots at ${shots.map((s) => s.at.toFixed(2))}`);
+  expected.forEach(([at, height], i) => {
+    assert.ok(near(shots[i].at, at), `shot ${i} at ${shots[i].at}, expected ${at}`);
+    assert.equal(e.y - shots[i].y, height, `shot ${i} height`);
+    assert.equal(shots[i].kind, 'fireball');
+    assert.equal(shots[i].vx, -FIREBALL.speed);
+    assert.equal(shots[i].x, e.x - (e.w / 2 + FIREBALL.size / 2));
+  });
 });
 
-test('a spider winds up for the last windup seconds before each shot', () => {
+test('a spider winds up before each volley but not between the fireballs of a volley', () => {
   const { level, e, player } = spiderSetup(10);
-  const steps = Math.round((SPIDER.fireEvery - SPIDER.windup) / STEP) - 2;
-  runSteps(steps, () => updateEnemy(e, STEP, level, player));
+  runSteps(Math.round((SPIDER.fireEvery - SPIDER.windup) / STEP) - 2, () => updateEnemy(e, STEP, level, player));
   assert.equal(e.winding, false);
   runSteps(4, () => updateEnemy(e, STEP, level, player));
   assert.equal(e.winding, true);
+  untilMidVolley(e, level, player);
+  assert.equal(e.winding, false, 'no wind-up between the fireballs of a volley');
 });
 
 test('a spider only fires at a chicken in its room between minRange and maxRange tiles away', () => {
@@ -492,24 +514,58 @@ test('a spider only fires at a chicken in its room between minRange and maxRange
   assert.equal(shotsWithin(e, level, player, SPIDER.fireEvery * 2).length, 0, 'never at a dead chicken');
 });
 
-test('stepping out of range cancels the wind-up, so the next shot waits for a full wind-up', () => {
+test('stepping out of range cancels the wind-up and the rest of a volley', () => {
   const { level, e, player } = spiderSetup(10);
   runSteps(Math.round((SPIDER.fireEvery - 0.1) / STEP), () => updateEnemy(e, STEP, level, player));
   assert.equal(e.winding, true);
-  updateEnemy(e, STEP, level, { ...player, x: e.x - (SPIDER.maxRange + 1) * TILE });
+  const away = { ...player, x: e.x - (SPIDER.maxRange + 1) * TILE };
+  updateEnemy(e, STEP, level, away);
   assert.equal(e.winding, false);
   assert.ok(e.cooldown > SPIDER.windup);
-  const shots = shotsWithin(e, level, player, SPIDER.windup);
-  assert.equal(shots.length, 0, 'no shot before a full wind-up');
+  assert.equal(shotsWithin(e, level, player, SPIDER.windup).length, 0, 'no shot before a full wind-up');
+  untilMidVolley(e, level, player);
+  updateEnemy(e, STEP, level, away);
+  assert.equal(e.shotsLeft, 0, 'the rest of the volley is dropped');
+  assert.equal(shotsWithin(e, level, player, SPIDER.windup).length, 0, 'and the next shot waits for a full wind-up');
 });
 
-test('a spider stands still and one stomp defeats it', () => {
+test('a spider has three lives: stomps hurt it and make it dizzy, a stomp while dizzy only bounces, the third defeats it', () => {
+  const { level, e, player } = spiderSetup(10);
+  assert.equal(e.lives, SPIDER.lives);
+  assert.equal(stompEnemy(e), 'hurt');
+  assert.equal(e.lives, 2);
+  assert.equal(e.dizzy, SPIDER.dizzyTime);
+  assert.equal(stompEnemy(e), 'bounce');
+  assert.equal(e.lives, 2);
+  assert.equal(shotsWithin(e, level, player, SPIDER.dizzyTime - STEP).length, 0, 'no fire while dizzy');
+  assert.equal(e.winding, false);
+  shotsWithin(e, level, player, 2 * STEP);
+  assert.equal(e.dizzy, 0);
+  assert.equal(stompEnemy(e), 'hurt');
+  assert.equal(e.lives, 1);
+  shotsWithin(e, level, player, SPIDER.dizzyTime + STEP);
+  assert.equal(stompEnemy(e), 'defeated');
+  assert.equal(e.alive, false);
+});
+
+test('after a hurt, the next volley waits a full fireEvery once the dizziness wears off', () => {
+  const { level, e, player } = spiderSetup(10);
+  stompEnemy(e);
+  const shots = shotsWithin(e, level, player, SPIDER.dizzyTime + SPIDER.fireEvery + 3 * STEP);
+  assert.equal(shots.length, 1);
+  assert.ok(shots[0].at >= SPIDER.dizzyTime + SPIDER.fireEvery - 1.5 * STEP, `fired at ${shots[0].at}`);
+});
+
+test('a spider stands still', () => {
   const { level, e, player } = spiderSetup(10);
   const x = e.x;
   const y = e.y;
-  shotsWithin(e, level, player, 3);
+  shotsWithin(e, level, player, 4);
   assert.equal(e.x, x);
   assert.equal(e.y, y);
-  assert.equal(stompEnemy(e), 'defeated');
-  assert.equal(e.alive, false);
+});
+
+test('a guard rat keeps its guard mark; other rats have none', () => {
+  assert.equal(createEnemy({ kind: 'rat', x: 100, y: 450, guard: true }).guard, true);
+  assert.equal(createEnemy({ kind: 'rat', x: 100, y: 450 }).guard, false);
 });

@@ -133,7 +133,7 @@ test('parseLevel reads the castle cast: m rat, g ghost, s skeleton, S spider, O 
   const level = castle();
   assert.equal(level.theme, 'castle');
   assert.deepEqual(level.enemies, [
-    { kind: 'rat', x: 2.5 * TILE, y: 11 * TILE },
+    { kind: 'rat', x: 2.5 * TILE, y: 11 * TILE, guard: true },
     { kind: 'ghost', x: 4.5 * TILE, y: 11 * TILE },
     { kind: 'skeleton', x: 6.5 * TILE, y: 11 * TILE },
     { kind: 'spider', x: 8.5 * TILE, y: 11 * TILE },
@@ -206,4 +206,11 @@ test('roomIndex gives the position of the room holding x', () => {
   assert.equal(roomIndex(level, 12 * TILE), 1);
   assert.equal(roomIndex(level, 18 * TILE), 2);
   assert.equal(roomIndex(level, 26 * TILE), 3);
+});
+
+test('rats in the spider lane on the start side are guards; other rats are not', () => {
+  const map = castleMap(['C..m.....m...m.....S..m.O#K...m..G', '#'.repeat(34)], [25]);
+  const level = parseLevel({ id: 'guards', theme: 'castle', map });
+  const rats = level.enemies.filter((e) => e.kind === 'rat').map((e) => [e.x / TILE - 0.5, Boolean(e.guard)]);
+  assert.deepEqual(rats, [[3, false], [9, true], [13, true], [22, false], [30, false]]);
 });

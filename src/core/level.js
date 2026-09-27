@@ -1,4 +1,4 @@
-import { TILE, ROWS } from '../config.js';
+import { TILE, ROWS, SPIDER } from '../config.js';
 
 const TILE_KINDS = { '#': 'solid', '=': 'oneway' };
 const ENEMY_CHARS = {
@@ -108,6 +108,7 @@ export function parseLevel(def) {
     movers,
     signs: [],
   };
+  markGuards(level);
   level.signs = (def.signs ?? []).map((sign) => ({
     col: sign.col,
     key: sign.key,
@@ -135,6 +136,19 @@ function roomsOf(tiles, cols, kinds, id) {
   });
   if (kinds[kinds.length - 1] !== 'throne') throw new Error(`${id}: the last room must be the 'throne' room`);
   return rooms;
+}
+
+function markGuards(level) {
+  const spider = level.enemies.find((e) => e.kind === 'spider');
+  if (!spider) return;
+  const room = roomAt(level, spider.x);
+  const side = level.spawn.x < spider.x ? -1 : 1;
+  for (const e of level.enemies) {
+    if (e.kind !== 'rat') continue;
+    const cols = (e.x - spider.x) / TILE;
+    const inLane = Math.sign(cols) === side && Math.abs(cols) <= SPIDER.maxRange;
+    if (inLane && roomAt(level, e.x) === room) e.guard = true;
+  }
 }
 
 export function roomIndex(level, x) {
