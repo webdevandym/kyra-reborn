@@ -1,6 +1,6 @@
 # Kyra Reborn
 
-A notebook-doodle platformer for kids aged 8–10. Kyra the chicken («кура») walks, jumps, collects red crystals and stomps carrots, zombies, propeller carrots and bees across five meadow levels, then crosses a cloud track in the evening sky, past two-life stars, bats and rain clouds, to the sleeping Moon. There are eight levels. The game design and the characters come from a young designer's voice note and notebook drawing.
+A notebook-doodle platformer for kids aged 8–10. Kyra the chicken («кура») walks, jumps, collects red crystals and stomps carrots, zombies, propeller carrots and bees across five meadow levels, crosses a cloud track in the evening sky, past two-life stars, bats and rain clouds, to the sleeping Moon, and then walks through the rooms of a castle, past rats, skeletons, shy ghosts and a fire-spitting spider, to the princess. There are eleven levels. The game design and the characters come from a young designer's voice note and notebook drawing.
 
 ## Play
 
@@ -29,12 +29,17 @@ Open <http://localhost:8123> in Chrome. ES modules need a local server, so openi
 - Each red crystal is 1 point; every 5 points give an extra life.
 - Jump on a carrot to remove it. A big zombie shrinks and speeds up on the first jump and disappears on the second.
 - Propeller carrots and bees fly back and forth; one jump from above removes them. You can run under a bee when it is at the top of its wave.
-- Touching an enemy any other way costs a life and restarts the level. Crystals you already collected stay collected.
+- Touching an enemy any other way costs a life and restarts the level (in the castle, from the checkpoint once you have reached it). Crystals you already collected stay collected.
 - Any level can be picked on the main screen. With no lives left, "Try again" restarts the level you picked, and "Main menu" goes back to the level picker.
 - On the sky levels the track has gaps: jump across, or fall and lose a life. Some clouds drift left and right; stand on one to ride it.
-- A star has two lives: jump on it twice. Bats fly like bees.
+- A star has two lives: jump on it twice. A bat swoops like a swing: high at both ends, where you can run under it, and low in the middle, where you jump over it or on it.
 - Rain clouds rain on and off. Run under one while it is dry: a single drop costs a life.
 - Touch the sleeping Moon to finish a sky level.
+- In the castle, a rat has one life and a skeleton has two. Jumping on a rat gives you a shield, a blue bubble that stops one fireball.
+- A ghost creeps closer while you look away and freezes when you face it. It floats through walls but never leaves its room.
+- Each castle level has one spider. It spits fireballs, low and high in turn: jump over a low one, and stay on the ground under a high one.
+- Jump on the spider to open a portal to the next room. Going through it is a checkpoint: losing a life after that restarts from there.
+- Touch the princess to finish a castle level.
 - The level-complete and victory cards show how long the level took (only time spent playing counts).
 
 ## Develop
