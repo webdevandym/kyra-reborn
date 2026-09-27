@@ -1,4 +1,4 @@
-import { TILE, PLAYER, CRYSTAL, GOAL, RULES, FIREBALL, PORTAL, DOOR, SPIDER } from '../config.js';
+import { TILE, PLAYER, CRYSTAL, GOAL, RULES, FIREBALL, BONE, PORTAL, DOOR, SPIDER } from '../config.js';
 import { createPlayer, updatePlayer } from './player.js';
 import { createEnemy, updateEnemy, stompEnemy } from './enemies.js';
 import { classifyContact } from './combat.js';
@@ -29,11 +29,20 @@ export function createWorld(level, collected = new Set(), { start = null } = {})
   return world;
 }
 
-export function fireballRect(f) {
-  return centeredRect(f.x, f.y, FIREBALL.size, FIREBALL.size);
+export function projectileRect(f) {
+  const size = f.kind === 'bone' ? BONE.size : FIREBALL.size;
+  return centeredRect(f.x, f.y, size, size);
 }
 
-function moveFireball(f, dt, level) {
+function moveProjectile(f, dt, level, events) {
+  if (f.kind === 'bone') {
+    f.vy += BONE.gravity * dt;
+    f.x += f.vx * dt;
+    f.y += f.vy * dt;
+    if (tileAt(level, Math.floor(f.x / TILE), Math.floor(f.y / TILE)) !== 'solid') return true;
+    events.push({ type: 'boneBreak', x: f.x, y: f.y });
+    return false;
+  }
   f.x += f.vx * dt;
   const lead = f.x + Math.sign(f.vx) * (FIREBALL.size / 2);
   return tileAt(level, Math.floor(lead / TILE), Math.floor(f.y / TILE)) !== 'solid';
@@ -62,9 +71,9 @@ export function stepWorld(world, dt, input) {
     const shot = updateEnemy(e, dt, world.level, p);
     if (!shot) continue;
     world.projectiles.push(shot);
-    events.push({ type: 'fire', x: shot.x, y: shot.y });
+    events.push({ type: shot.kind === 'bone' ? 'throw' : 'fire', x: shot.x, y: shot.y });
   }
-  world.projectiles = world.projectiles.filter((f) => moveFireball(f, dt, world.level));
+  world.projectiles = world.projectiles.filter((f) => moveProjectile(f, dt, world.level, events));
 
   const playerBox = bodyRect(p);
   world.crystals = world.crystals.filter((c) => {
@@ -92,9 +101,9 @@ export function stepWorld(world, dt, input) {
   world.enemies = world.enemies.filter((e) => e.alive);
 
   for (const f of world.projectiles) {
-    if (p.invuln > 0 || !overlaps(bodyRect(p), fireballRect(f))) continue;
+    if (p.invuln > 0 || !overlaps(bodyRect(p), projectileRect(f))) continue;
     f.spent = true;
-    if (!p.shield) return die(world, events);
+    if (f.kind === 'bone' || !p.shield) return die(world, events);
     p.shield = false;
     p.invuln = Math.max(p.invuln, PLAYER.stompGrace);
     events.push({ type: 'shieldPop', x: p.x, y: p.y - p.h / 2 });

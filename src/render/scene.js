@@ -1,7 +1,7 @@
 import { TILE, VIEW_W, VIEW_H, COLORS, RULES, CRYSTAL, PORTAL } from '../config.js';
 import { bodyRect, centeredRect } from '../core/rect.js';
 import { rainPhase, rainRect } from '../core/hazards.js';
-import { fireballRect } from '../core/world.js';
+import { projectileRect } from '../core/world.js';
 import { t } from '../i18n/index.js';
 import { setBoilTime, inkEllipse, inkLine } from './ink.js';
 import { createMeadowTheme } from './meadow.js';
@@ -103,7 +103,7 @@ export function createScene(ctx) {
       const wet = rainRect(cloud, world.time);
       if (wet) box(wet);
     });
-    world.projectiles.forEach((f) => box(fireballRect(f)));
+    world.projectiles.forEach((f) => box(projectileRect(f)));
     if (world.portal) box(bodyRect(world.portal));
     ctx.setLineDash([6, 6]);
     world.level.rooms.forEach((room) => ctx.strokeRect(room.left, 0, room.right - room.left, VIEW_H));

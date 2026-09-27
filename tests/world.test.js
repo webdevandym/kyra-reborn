@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TILE, STEP, PLAYER, RAIN, FIREBALL, SPIDER } from '../src/config.js';
-import { createWorld, fireballRect } from '../src/core/world.js';
+import { TILE, STEP, PLAYER, RAIN, FIREBALL, SPIDER, BONE } from '../src/config.js';
+import { createWorld, projectileRect } from '../src/core/world.js';
 import { parseLevel } from '../src/core/level.js';
 import { bodyRect, overlaps } from '../src/core/rect.js';
 import { rainPhase } from '../src/core/hazards.js';
@@ -272,7 +272,7 @@ const lair = () => parseLevel({ id: 'lair', theme: 'castle', map: castleMap(LAIR
 const FLOOR = 11 * TILE;
 
 function fireballAt(x, height, vx = -FIREBALL.speed) {
-  return { x, y: FLOOR - height, vx };
+  return { kind: 'fireball', x, y: FLOOR - height, vx };
 }
 
 function stepUntil(world, input, type, maxSeconds = 10) {
@@ -298,9 +298,9 @@ test('a spider in range fires, and its low fireball flies to a standing chicken 
 test('a low fireball overlaps a standing chicken; a high one clears it but catches a chicken 30 px up', () => {
   const standing = bodyRect({ x: 100, y: FLOOR, w: PLAYER.w, h: PLAYER.h });
   const hopping = bodyRect({ x: 100, y: FLOOR - 30, w: PLAYER.w, h: PLAYER.h });
-  assert.equal(overlaps(standing, fireballRect(fireballAt(100, FIREBALL.lowY))), true);
-  assert.equal(overlaps(standing, fireballRect(fireballAt(100, FIREBALL.highY))), false);
-  assert.equal(overlaps(hopping, fireballRect(fireballAt(100, FIREBALL.highY))), true);
+  assert.equal(overlaps(standing, projectileRect(fireballAt(100, FIREBALL.lowY))), true);
+  assert.equal(overlaps(standing, projectileRect(fireballAt(100, FIREBALL.highY))), false);
+  assert.equal(overlaps(hopping, projectileRect(fireballAt(100, FIREBALL.highY))), true);
 });
 
 test('a high fireball flies over a standing chicken and vanishes at the level edge', () => {
@@ -516,6 +516,48 @@ test('the second door leads from the checkpoint room into the throne room', () =
   world.player.x = world.doors[1].x;
   const door = world.step(STEP, IDLE).find((e) => e.type === 'door');
   assert.deepEqual(door.to, { x: 23 * TILE + 1.5 * TILE, y: 11 * TILE });
+});
+
+const BONEYARD = ['C........s.........G', '####################'];
+
+test('a skeleton throws a bone that arcs, emits throw, and breaks on the floor with boneBreak', () => {
+  const world = createWorld(testLevel(BONEYARD));
+  const p = world.player;
+  p.x = 14.5 * TILE;
+  p.invuln = 99;
+  const events = stepUntil(world, IDLE, 'throw', 4);
+  const [bone] = world.projectiles;
+  assert.equal(bone.kind, 'bone');
+  assert.ok(bone.vy < 0);
+  let apex = bone.y;
+  const after = [];
+  for (let i = 0; i < 240 && world.projectiles.includes(bone); i++) {
+    after.push(...world.step(STEP, IDLE));
+    apex = Math.min(apex, bone.y);
+  }
+  assert.ok(events.some((e) => e.type === 'throw'));
+  assert.equal(world.projectiles.includes(bone), false);
+  const breakEvent = after.find((e) => e.type === 'boneBreak');
+  assert.ok(breakEvent, 'the bone broke');
+  assert.ok(breakEvent.y >= 11 * TILE, 'on the floor');
+  assert.ok(apex < 11 * TILE - 120, `the arc rose to ${apex}`);
+});
+
+test('a bone costs a life even with a shield, which only stops fireballs', () => {
+  const world = createWorld(testLevel(['C...............G', '#################']));
+  const p = world.player;
+  p.shield = true;
+  p.invuln = 0;
+  world.projectiles.push({ kind: 'bone', x: p.x + 10, y: p.y - 20, vx: -100, vy: 0 });
+  assert.deepEqual(types(world.step(STEP, IDLE)), ['hit']);
+  assert.deepEqual(world.projectiles, []);
+});
+
+test('projectileRect sizes bones and fireballs by kind', () => {
+  const bone = projectileRect({ kind: 'bone', x: 100, y: 100 });
+  const ball = projectileRect({ kind: 'fireball', x: 100, y: 100 });
+  assert.equal(bone.right - bone.left, BONE.size);
+  assert.equal(ball.right - ball.left, FIREBALL.size);
 });
 
 test('a level without a portal has no portal in its world', () => {

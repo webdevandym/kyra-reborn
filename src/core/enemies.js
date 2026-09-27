@@ -1,4 +1,4 @@
-import { TILE, STEP, CARROT, ZOMBIE, PROPELLER, BEE, FLYER, RULES, STAR, BAT, RAT, SKELETON, GHOST, SPIDER, FIREBALL } from '../config.js';
+import { TILE, STEP, CARROT, ZOMBIE, PROPELLER, BEE, FLYER, RULES, STAR, BAT, RAT, SKELETON, GHOST, SPIDER, FIREBALL, BONE } from '../config.js';
 import { applyGravity, moveAndCollide } from './physics.js';
 import { tileAt, roomAt } from './level.js';
 
@@ -87,6 +87,52 @@ function twoLife(cfg) {
     },
   };
 }
+
+const skeletonLives = twoLife(SKELETON);
+
+function inThrowRange(e, level, player) {
+  return Boolean(player) && !player.dead && roomAt(level, player.x) === e.room && Math.abs(player.x - e.x) <= SKELETON.throwRange * TILE;
+}
+
+function boneToward(e, player) {
+  const x = e.x + e.dir * 12;
+  const y = e.y - e.h - 6;
+  const t = BONE.flight;
+  const vx = Math.max(-BONE.maxSpeed, Math.min(BONE.maxSpeed, (player.x - x) / t));
+  const vy = (player.y - y - 0.5 * BONE.gravity * t * t) / t;
+  return { kind: 'bone', x, y, vx, vy };
+}
+
+const skeleton = {
+  create: (spec) => ({ ...skeletonLives.create(spec), throwTimer: SKELETON.throwEvery, winding: false, room: null }),
+  update(e, dt, level, player) {
+    e.room ??= roomAt(level, e.x);
+    if (e.dizzy > 0 || !inThrowRange(e, level, player)) {
+      e.winding = false;
+      e.throwTimer = Math.max(e.throwTimer, SKELETON.throwWindup + STEP);
+      dizzyPatrol(e, dt, level);
+      return null;
+    }
+    e.throwTimer -= dt;
+    if (e.throwTimer > SKELETON.throwWindup) {
+      dizzyPatrol(e, dt, level);
+      return null;
+    }
+    e.winding = true;
+    e.vx = 0;
+    e.dir = Math.sign(player.x - e.x) || e.dir;
+    if (e.throwTimer > 0) return null;
+    e.throwTimer = SKELETON.throwEvery;
+    e.winding = false;
+    return boneToward(e, player);
+  },
+  onStomp(e) {
+    const result = skeletonLives.onStomp(e);
+    e.throwTimer = SKELETON.throwEvery;
+    e.winding = false;
+    return result;
+  },
+};
 
 const EPS = 0.001;
 
@@ -307,7 +353,7 @@ export const ENEMY_KINDS = {
   star: twoLife(STAR),
   bat,
   rat,
-  skeleton: twoLife(SKELETON),
+  skeleton,
   ghost,
   spider,
 };

@@ -41,15 +41,16 @@ export const ZOMBIE = {
 export const STAR = { w: 36, h: 36, speed: 70, hurtSpeed: 110, dizzyTime: 0.6 };
 
 export const RAT = { w: 34, h: 26, speed: 90 };
-export const SKELETON = { w: 34, h: 52, speed: 60, hurtSpeed: 100, dizzyTime: 0.6 };
+export const SKELETON = { w: 34, h: 52, speed: 60, hurtSpeed: 100, dizzyTime: 0.6, throwEvery: 2.5, throwWindup: 0.3, throwRange: 8 };
 
 export const PROPELLER = { w: 30, h: 36, speed: 60, range: 3, bob: 6, bobPeriod: 1.0, lift: 16 };
 export const BEE = { w: 32, h: 28, speed: 120, range: 4, bob: 30, bobPeriod: 1.6, lift: 0 };
 export const BAT = { w: 36, h: 26, range: 4, dip: 70, period: 3.2 };
 export const FLYER = { phasePerCol: 1.3 };
-export const GHOST = { w: 36, h: 36, speed: 60, leash: 5, sight: 12, trail: 0.8 };
+export const GHOST = { w: 36, h: 36, speed: 90, leash: 5, sight: 12, trail: 0.6 };
 export const SPIDER = { w: 64, h: 44, lives: 3, fireEvery: 1.2, windup: 0.4, volleyGap: 0.3, dizzyTime: 0.8, knockback: 520, minRange: 2, maxRange: 12 };
 export const FIREBALL = { size: 22, speed: 220, lowY: 14, highY: 64 };
+export const BONE = { size: 18, gravity: 1400, flight: 0.9, maxSpeed: 320 };
 export const PORTAL = { w: 50, h: 70, grow: 0.5 };
 export const DOOR = { w: 44, h: 72 };
 export const MOVER = { range: 2, period: 5, phasePerCol: 1.3 };

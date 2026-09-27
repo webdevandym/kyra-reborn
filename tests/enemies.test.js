@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TILE, STEP, GRAVITY, CARROT, ZOMBIE, PROPELLER, BEE, FLYER, PLAYER, STAR, BAT, RAT, SKELETON, GHOST, SPIDER, FIREBALL } from '../src/config.js';
+import { TILE, STEP, GRAVITY, CARROT, ZOMBIE, PROPELLER, BEE, FLYER, PLAYER, STAR, BAT, RAT, SKELETON, GHOST, SPIDER, FIREBALL, BONE } from '../src/config.js';
 import { createEnemy, updateEnemy, stompEnemy, ENEMY_KINDS } from '../src/core/enemies.js';
 import { bodyRect, overlaps } from '../src/core/rect.js';
 import { parseLevel } from '../src/core/level.js';
@@ -568,4 +568,63 @@ test('a spider stands still', () => {
 test('a guard rat keeps its guard mark; other rats have none', () => {
   assert.equal(createEnemy({ kind: 'rat', x: 100, y: 450, guard: true }).guard, true);
   assert.equal(createEnemy({ kind: 'rat', x: 100, y: 450 }).guard, false);
+});
+
+function skeletonSetup(chickenCol, walls = []) {
+  const row = 'C' + '.'.repeat(9) + 's' + '.'.repeat(19) + 'G';
+  const level = parseLevel({ id: 'bones', map: castleMap([row, '#'.repeat(row.length)], walls) });
+  const e = createEnemy(level.enemies[0]);
+  return { level, e, player: chickenAt((chickenCol + 0.5) * TILE, -1) };
+}
+
+test('a skeleton winds up, stands still facing the chicken, then lobs a bone that lands at the chicken\'s feet', () => {
+  const { level, e, player } = skeletonSetup(13);
+  let shot = null;
+  let at = 0;
+  let windingSeen = false;
+  for (let i = 0; i < Math.round(3 / STEP) && !shot; i++) {
+    const x = e.x;
+    shot = updateEnemy(e, STEP, level, player);
+    if (e.winding) {
+      windingSeen = true;
+      assert.equal(e.x, x, 'stands still while winding up');
+      assert.equal(e.dir, 1, 'faces the chicken');
+    }
+    at = (i + 1) * STEP;
+  }
+  assert.ok(shot, 'threw a bone');
+  assert.ok(windingSeen);
+  assert.ok(near(at, SKELETON.throwEvery), `threw at ${at}`);
+  assert.equal(shot.kind, 'bone');
+  const t = BONE.flight;
+  assert.ok(Math.abs(shot.x + shot.vx * t - player.x) < 1e-6, 'lands at the chicken x');
+  assert.ok(Math.abs(shot.y + shot.vy * t + 0.5 * BONE.gravity * t * t - player.y) < 1e-6, 'lands at the chicken feet');
+  assert.ok(shot.vy < 0, 'thrown upward');
+  assert.equal(e.winding, false);
+});
+
+test('a far chicken gets a short throw capped at BONE.maxSpeed', () => {
+  const { level, e, player } = skeletonSetup(10 + SKELETON.throwRange);
+  let shot = null;
+  for (let i = 0; i < Math.round(4 / STEP) && !shot; i++) shot = updateEnemy(e, STEP, level, { ...player, x: e.x + SKELETON.throwRange * TILE });
+  assert.ok(shot);
+  assert.equal(shot.vx, BONE.maxSpeed);
+});
+
+test('a skeleton throws nothing at a chicken out of range, in another room or dead, and not while dizzy', () => {
+  const cases = [
+    ['out of range', skeletonSetup(29), (p, e) => ({ ...p, x: e.x + (SKELETON.throwRange + 1) * TILE })],
+    ['another room', skeletonSetup(20, [17]), (p) => ({ ...p, x: 20.5 * TILE })],
+    ['dead', skeletonSetup(13), (p) => ({ ...p, dead: true })],
+  ];
+  for (const [name, { level, e, player }, who] of cases) {
+    let shots = 0;
+    runSteps(Math.round(6 / STEP), () => { if (updateEnemy(e, STEP, level, who(player, e))) shots++; });
+    assert.equal(shots, 0, name);
+  }
+  const { level, e, player } = skeletonSetup(13);
+  stompEnemy(e);
+  let shots = 0;
+  runSteps(Math.round((SKELETON.dizzyTime + SKELETON.throwEvery - 0.1) / STEP), () => { if (updateEnemy(e, STEP, level, player)) shots++; });
+  assert.equal(shots, 0, 'the throw timer restarts after a stomp and waits out the dizziness');
 });
