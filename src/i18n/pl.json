@@ -81,8 +81,9 @@
     "level9": {
       "name": "Sala zamkowa",
       "signs": {
-        "rat": "Skocz na szczura —\ndostaniesz tarczę!",
-        "skeleton": "Szkielet ma 2 życia —\nskocz na niego dwa razy!",
+        "rat": "Szczur w czerwonym hełmie —\nskocz, a dostaniesz tarczę!",
+        "skeleton": "Szkielet ma 2 życia\ni rzuca kośćmi!",
+        "door": "Drzwi —\nwejdź do środka!",
         "fireball": "Nisko ogień — skacz!\nWysoko — zostań na dole!",
         "princess": "Dotknij\nksiężniczki!"
       }

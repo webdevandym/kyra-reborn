@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { ROWS, MOVER, TILE, BAT, GHOST, SPIDER } from '../src/config.js';
-import { parseLevel, roomAt } from '../src/core/level.js';
+import { parseLevel, roomAt, ROOM_KINDS } from '../src/core/level.js';
 import levels from '../src/levels/index.js';
 import { LANGS } from '../src/i18n/index.js';
 
@@ -21,13 +21,13 @@ const EXPECTED_COUNTS = {
   level6: { crystals: 20, carrot: 0, zombie: 0, propeller: 0, bee: 0, star: 6, bat: 0, rain: 2, movers: 0, ...NONE },
   level7: { crystals: 22, carrot: 0, zombie: 0, propeller: 0, bee: 0, star: 5, bat: 4, rain: 4, movers: 3, ...NONE },
   level8: { crystals: 25, carrot: 0, zombie: 0, propeller: 0, bee: 0, star: 7, bat: 5, rain: 6, movers: 4, ...NONE },
-  level9: { crystals: 20, carrot: 0, zombie: 0, propeller: 0, bee: 0, star: 0, bat: 0, rain: 0, movers: 0, rat: 6, ghost: 0, skeleton: 2, spider: 1 },
-  level10: { crystals: 22, carrot: 0, zombie: 0, propeller: 0, bee: 0, star: 0, bat: 0, rain: 0, movers: 0, rat: 6, ghost: 3, skeleton: 3, spider: 1 },
-  level11: { crystals: 25, carrot: 0, zombie: 0, propeller: 0, bee: 0, star: 0, bat: 0, rain: 0, movers: 0, rat: 7, ghost: 4, skeleton: 4, spider: 1 },
+  level9: { crystals: 24, carrot: 0, zombie: 0, propeller: 0, bee: 0, star: 0, bat: 0, rain: 0, movers: 0, rat: 9, ghost: 0, skeleton: 4, spider: 1 },
+  level10: { crystals: 26, carrot: 0, zombie: 0, propeller: 0, bee: 0, star: 0, bat: 0, rain: 0, movers: 0, rat: 9, ghost: 3, skeleton: 5, spider: 1 },
+  level11: { crystals: 28, carrot: 0, zombie: 0, propeller: 0, bee: 0, star: 0, bat: 0, rain: 0, movers: 0, rat: 10, ghost: 4, skeleton: 6, spider: 1 },
 };
 const ENEMY_KINDS = ['carrot', 'zombie', 'propeller', 'bee', 'star', 'bat', 'rat', 'ghost', 'skeleton', 'spider'];
 const ENEMY_CHARS = 'cZpb*vmgsS';
-const BANNED = { meadow: '*vR~mgsSOK', sky: 'cZpbmgsSOK', castle: 'cZpb*vR~' };
+const BANNED = { meadow: '*vR~mgsSOKD', sky: 'cZpbmgsSOKD', castle: 'cZpb*vR~' };
 
 function cellsOf(map, chars) {
   const cells = [];
@@ -208,30 +208,51 @@ for (const def of levels) {
       }
     });
 
-    test(`${def.id}: has two rooms at least 22 columns wide split by one wall 1-2 columns thick`, () => {
-      assert.equal(level.rooms.length, 2);
-      assert.ok(walls.length >= 1 && walls.length <= 2 && walls[walls.length - 1] - walls[0] === walls.length - 1, `wall columns ${walls}`);
+    test(`${def.id}: has four rooms at least 22 columns wide split by walls 1-2 columns thick, each with a kind and the throne room last`, () => {
+      assert.equal(level.rooms.length, 4);
+      const runs = [];
+      for (const col of walls) {
+        if (runs.length && col === runs[runs.length - 1].end + 1) runs[runs.length - 1].end = col;
+        else runs.push({ start: col, end: col });
+      }
+      assert.equal(runs.length, 3, `wall runs ${JSON.stringify(runs)}`);
+      for (const run of runs) assert.ok(run.end - run.start + 1 <= 2, `wall ${run.start}-${run.end} is too thick`);
       for (const room of level.rooms) assert.ok((room.right - room.left) / TILE >= 22, `room ${room.left / TILE}-${room.right / TILE - 1} is too narrow`);
+      assert.ok(Array.isArray(def.rooms) && def.rooms.every((k) => ROOM_KINDS.includes(k)), `room kinds ${def.rooms}`);
+      assert.equal(def.rooms[3], 'throne');
     });
 
-    test(`${def.id}: the start, spider and portal are in room 1; the checkpoint and princess are in room 2, the checkpoint at its door`, () => {
-      for (const [name, cell, room] of [['C', spawn, 0], ['S', spider, 0], ['O', portal, 0], ['K', checkpoint, 1], ['G', goal, 1]]) {
+    test(`${def.id}: start in room 1, spider and portal in room 2, checkpoint at room 3's door, princess in room 4`, () => {
+      for (const [name, cell, room] of [['C', spawn, 0], ['S', spider, 1], ['O', portal, 1], ['K', checkpoint, 2], ['G', goal, 3]]) {
         assert.equal(roomOf(cell.col), room, `'${name}' at column ${cell.col}`);
       }
-      assert.ok(checkpoint.col - level.rooms[1].left / TILE <= 3, `checkpoint at column ${checkpoint.col}`);
+      assert.ok(checkpoint.col - level.rooms[2].left / TILE <= 3, `checkpoint at column ${checkpoint.col}`);
     });
 
-    test(`${def.id}: the spider guards a flat lane of ${SPIDER.maxRange} columns with at least 2 rats in it, and the portal stands just behind it`, () => {
+    test(`${def.id}: the princess stands on flat floor from 2 columns left of her to 1 column right, where the carpet and throne go`, () => {
+      for (let col = goal.col - 2; col <= goal.col + 1; col++) assert.equal(floorRow(def.map, col), goal.row + 1, `floor at column ${col}`);
+    });
+
+    test(`${def.id}: rooms 1 and 3 each end with one door standing on the floor; rooms 2 and 4 have none`, () => {
+      const doors = cellsOf(def.map, 'D');
+      assert.deepEqual(doors.map((d) => roomOf(d.col)), [0, 2]);
+      for (const d of doors) {
+        const lastCol = level.rooms[roomOf(d.col)].right / TILE - 1;
+        assert.ok(lastCol - d.col <= 3, `door at column ${d.col} is ${lastCol - d.col} columns from the wall`);
+        assert.equal(def.map[d.row + 1][d.col], '#', `door at ${d.col},${d.row} is floating`);
+      }
+    });
+
+    test(`${def.id}: the spider guards a flat lane of ${SPIDER.maxRange} columns with at least 2 guard rats in it, and the portal stands just behind it`, () => {
       const side = spawn.col < spider.col ? -1 : 1;
       const floor = spider.row + 1;
-      let rats = 0;
       for (let k = 1; k <= SPIDER.maxRange; k++) {
         const col = spider.col + side * k;
         assert.equal(floorRow(def.map, col), floor, `lane column ${col} is not flat`);
         for (const row of [spider.row, spider.row - 1]) assert.notEqual(def.map[row][col], '#', `block in the fireball lane at ${col},${row}`);
-        for (let row = 0; row < ROWS; row++) if (def.map[row][col] === 'm') rats++;
       }
-      assert.ok(rats >= 2, `${rats} rats in the spider lane`);
+      const guards = level.enemies.filter((e) => e.guard).length;
+      assert.ok(guards >= 2, `${guards} guard rats in the spider lane`);
       const behind = (portal.col - spider.col) * -side;
       assert.ok(behind >= 1 && behind <= 4, `portal ${behind} columns behind the spider`);
       assert.equal(def.map[portal.row + 1][portal.col], '#', 'the portal stands on the floor');
@@ -246,10 +267,12 @@ for (const def of levels) {
       }
     });
 
-    test(`${def.id}: no enemy starts within 5 columns of the checkpoint`, () => {
+    test(`${def.id}: no enemy starts within 5 columns of the checkpoint or of a room entrance, and no skeleton shares the spider's room`, () => {
+      const entrances = [checkpoint.col, level.rooms[1].left / TILE + 1, level.rooms[3].left / TILE + 1];
       for (const { ch, col } of cellsOf(def.map, ENEMY_CHARS)) {
-        assert.ok(Math.abs(col - checkpoint.col) > 5, `'${ch}' at column ${col}, checkpoint at ${checkpoint.col}`);
+        for (const at of entrances) assert.ok(Math.abs(col - at) > 5, `'${ch}' at column ${col}, entrance at ${at}`);
       }
+      for (const { col } of cellsOf(def.map, 's')) assert.notEqual(roomOf(col), 1, `skeleton at column ${col} is in the spider's room`);
     });
   }
 

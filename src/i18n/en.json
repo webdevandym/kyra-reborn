@@ -81,8 +81,9 @@
     "level9": {
       "name": "Castle Hall",
       "signs": {
-        "rat": "Jump on a rat —\nget a shield!",
-        "skeleton": "A skeleton has 2 lives —\njump on it twice!",
+        "rat": "A rat in a red helmet —\njump on it for a shield!",
+        "skeleton": "A skeleton has 2 lives\nand throws bones!",
+        "door": "A door —\nwalk in!",
         "fireball": "Low fire — jump!\nHigh fire — stay down!",
         "princess": "Touch the\nprincess!"
       }
