@@ -160,10 +160,10 @@ test('a shell that hits a wall or leaves the top of the level disappears', () =>
   const world = createWorld(sea(['C..H.#....G', '###########']));
   world.projectiles.push({ kind: 'shell', x: 5.2 * TILE, y: 10 * TILE, vx: -SHELL.speed, vy: 0 });
   world.projectiles.push({ kind: 'shell', x: 8 * TILE, y: 10 * TILE, vx: 0, vy: -SHELL.speed });
+  world.enemies = [];
   placePlayer(world, 0.5 * TILE, 11 * TILE, { invuln: 99 });
-  run(world, 2, { safe: true });
-  assert.equal(world.projectiles.filter((p) => p.y < 10 * TILE && p.vy < 0).length, 0);
-  assert.equal(world.projectiles.filter((p) => p.vx < 0 && p.x > 5 * TILE).length, 0);
+  run(world, 3, { safe: true });
+  assert.equal(world.projectiles.length, 0);
 });
 
 test('the finish stays locked until every shark is gone, then goalOpen fires once', () => {
