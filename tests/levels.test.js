@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { ROWS, MOVER, TILE, BAT, GHOST, SPIDER } from '../src/config.js';
+import { ROWS, MOVER, LIFT, TILE, BAT, GHOST, SPIDER, SHARK, DOLPHIN, FISH, BUBBLE } from '../src/config.js';
 import { parseLevel, roomAt, ROOM_KINDS } from '../src/core/level.js';
 import levels from '../src/levels/index.js';
 import { LANGS } from '../src/i18n/index.js';
@@ -9,9 +9,10 @@ import { LANGS } from '../src/i18n/index.js';
 const DICTS = Object.fromEntries(LANGS.map((lang) => [lang, JSON.parse(readFileSync(new URL(`../src/i18n/${lang}.json`, import.meta.url), 'utf8'))]));
 
 const standable = (ch) => ch === '#' || ch === '=';
-const surfaceLike = (ch) => standable(ch) || ch === '~';
+const surfaceLike = (ch) => standable(ch) || ch === '~' || ch === 'V';
 
 const NONE = { rat: 0, ghost: 0, skeleton: 0, spider: 0 };
+const EMPTY_LAND = { carrot: 0, zombie: 0, propeller: 0, bee: 0, star: 0, bat: 0, rain: 0, rat: 0, ghost: 0, skeleton: 0, spider: 0 };
 const EXPECTED_COUNTS = {
   level1: { crystals: 15, carrot: 5, zombie: 0, propeller: 0, bee: 0, star: 0, bat: 0, rain: 0, movers: 0, ...NONE },
   level2: { crystals: 20, carrot: 6, zombie: 3, propeller: 0, bee: 0, star: 0, bat: 0, rain: 0, movers: 0, ...NONE },
@@ -24,10 +25,14 @@ const EXPECTED_COUNTS = {
   level9: { crystals: 24, carrot: 0, zombie: 0, propeller: 0, bee: 0, star: 0, bat: 0, rain: 0, movers: 0, rat: 9, ghost: 0, skeleton: 4, spider: 1 },
   level10: { crystals: 26, carrot: 0, zombie: 0, propeller: 0, bee: 0, star: 0, bat: 0, rain: 0, movers: 0, rat: 9, ghost: 3, skeleton: 5, spider: 1 },
   level11: { crystals: 28, carrot: 0, zombie: 0, propeller: 0, bee: 0, star: 0, bat: 0, rain: 0, movers: 0, rat: 10, ghost: 4, skeleton: 6, spider: 1 },
+  level12: { ...EMPTY_LAND, crystals: 21, movers: 2, dolphin: 5, fish: 5, shark: 1, bubble: 1, teal: 1, pearl: 0 },
+  level13: { ...EMPTY_LAND, crystals: 20, movers: 4, dolphin: 8, fish: 6, shark: 1, bubble: 2, teal: 1, pearl: 0 },
+  level14: { ...EMPTY_LAND, crystals: 18, movers: 4, dolphin: 7, fish: 6, shark: 2, bubble: 2, teal: 1, pearl: 1 },
 };
-const ENEMY_KINDS = ['carrot', 'zombie', 'propeller', 'bee', 'star', 'bat', 'rat', 'ghost', 'skeleton', 'spider'];
-const ENEMY_CHARS = 'cZpb*vmgsS';
-const BANNED = { meadow: '*vR~mgsSOKD', sky: 'cZpbmgsSOKD', castle: 'cZpb*vR~' };
+const ENEMY_KINDS = ['carrot', 'zombie', 'propeller', 'bee', 'star', 'bat', 'rat', 'ghost', 'skeleton', 'spider', 'dolphin', 'fish', 'shark'];
+const ENEMY_CHARS = 'cZpb*vmgsSdfH';
+const SEA_CHARS = 'dfHoTPV';
+const BANNED = { meadow: `*vR~mgsSOKD${SEA_CHARS}`, sky: `cZpbmgsSOKD${SEA_CHARS}`, castle: `cZpb*vR~${SEA_CHARS}`, sea: 'cZpb*vRmgsSOKD' };
 
 function cellsOf(map, chars) {
   const cells = [];
@@ -85,9 +90,9 @@ function firstStandableBelow(map, col, row) {
   return ROWS;
 }
 
-test('the level list is level1 to level11, meadow then sky then castle, with difficulty 1-3 that never goes down within a theme', () => {
-  assert.deepEqual(levels.map((def) => def.id), ['level1', 'level2', 'level3', 'level4', 'level5', 'level6', 'level7', 'level8', 'level9', 'level10', 'level11']);
-  assert.deepEqual(levels.map((def) => def.theme ?? 'meadow'), ['meadow', 'meadow', 'meadow', 'meadow', 'meadow', 'sky', 'sky', 'sky', 'castle', 'castle', 'castle']);
+test('the level list is level1 to level14, meadow then sky then castle then sea, with difficulty 1-3 that never goes down within a theme', () => {
+  assert.deepEqual(levels.map((def) => def.id), ['level1', 'level2', 'level3', 'level4', 'level5', 'level6', 'level7', 'level8', 'level9', 'level10', 'level11', 'level12', 'level13', 'level14']);
+  assert.deepEqual(levels.map((def) => def.theme ?? 'meadow'), ['meadow', 'meadow', 'meadow', 'meadow', 'meadow', 'sky', 'sky', 'sky', 'castle', 'castle', 'castle', 'sea', 'sea', 'sea']);
   const last = {};
   for (const def of levels) {
     const theme = def.theme ?? 'meadow';
@@ -95,7 +100,7 @@ test('the level list is level1 to level11, meadow then sky then castle, with dif
     assert.ok(def.difficulty >= (last[theme] ?? 1), `${def.id} is easier than the ${theme} level before it`);
     last[theme] = def.difficulty;
   }
-  assert.deepEqual(levels.map((def) => def.difficulty), [1, 1, 2, 2, 3, 2, 2, 3, 2, 3, 3]);
+  assert.deepEqual(levels.map((def) => def.difficulty), [1, 1, 2, 2, 3, 2, 2, 3, 2, 3, 3, 2, 3, 3]);
 });
 
 for (const def of levels) {
@@ -184,6 +189,133 @@ for (const def of levels) {
         assert.ok(Math.abs(col - spawn.col) >= 8, `${where}: too close to the chicken start`);
         for (const p of paths) assert.ok(!(p.row > row && col + 1 >= p.pathStart && col - 1 <= p.pathEnd), `${where}: rains on the path of the moving cloud at ${p.start},${p.row}`);
         for (const sign of def.signs) assert.ok(Math.abs(sign.col - col) > 1, `${where}: rains on the sign at column ${sign.col}`);
+      }
+    });
+  }
+
+  if (theme === 'sea') {
+    const level = parseLevel(def);
+    const [spawn] = cellsOf(def.map, 'C');
+    const [goal] = cellsOf(def.map, 'G');
+    const sharks = cellsOf(def.map, 'H');
+    const pearls = cellsOf(def.map, 'P');
+    const sticks = moverPaths(def.map);
+    const lifts = runsOf(def.map, 'V');
+    const open = (ch) => !standable(ch) && ch !== '~';
+    const stickAt = (col, row) => sticks.some((p) => col >= p.pathStart && col <= p.pathEnd && Math.abs(p.row - row) <= LIFT.range);
+
+    test(`${def.id}: neighbouring floor heights differ by at most 3 tiles`, () => {
+      for (let col = 1; col < cols; col++) {
+        const a = surfaceRow(def.map, col - 1);
+        const b = surfaceRow(def.map, col);
+        if (a === ROWS || b === ROWS) continue;
+        assert.ok(Math.abs(a - b) <= 3, `step of ${Math.abs(a - b)} tiles between columns ${col - 1} and ${col}`);
+      }
+    });
+
+    test(`${def.id}: pits not bridged by a sand stick are at most 3 columns wide, bridged ones at most 14, and the floor after a pit is at most 1 tile higher`, () => {
+      for (const gap of gapsOf(def.map)) {
+        assert.ok(gap.start > 0 && gap.end < cols - 1, `pit at the level edge (${gap.start}-${gap.end})`);
+        const width = gap.end - gap.start + 1;
+        const bridged = sticks.some((p) => p.pathStart <= gap.end && p.pathEnd >= gap.start) || lifts.some((v) => v.start <= gap.end && v.end >= gap.start);
+        assert.ok(width <= (bridged ? 14 : 3), `pit ${gap.start}-${gap.end} is ${width} columns wide`);
+        const rise = surfaceRow(def.map, gap.start - 1) - surfaceRow(def.map, gap.end + 1);
+        assert.ok(rise <= 1, `the floor after the pit at ${gap.start}-${gap.end} is ${rise} tiles higher`);
+      }
+    });
+
+    test(`${def.id}: every sliding sand stick is 2-4 tiles long, has an open path and a short hop to a floor or lift at both ends`, () => {
+      for (const run of sticks) {
+        const where = `sand stick at ${run.start},${run.row}`;
+        assert.ok(run.end - run.start + 1 >= 2 && run.end - run.start + 1 <= 4, `${where} has a bad length`);
+        assert.ok(run.pathStart - 2 >= 0 && run.pathEnd + 2 < cols, `${where} swings off the level`);
+        for (let col = run.pathStart; col <= run.pathEnd; col++) {
+          const ch = def.map[run.row][col];
+          assert.ok(!standable(ch), `${where}: its path is blocked at column ${col}`);
+          assert.ok(ch !== '~' || (col >= run.start && col <= run.end), `${where}: another stick shares its path at column ${col}`);
+        }
+        const hop = (candidates) => candidates.some((c) => [run.row - 1, run.row, run.row + 1].some((r) => standable(def.map[r][c]) || def.map[r][c] === 'V'));
+        assert.ok(hop([run.pathStart - 1, run.pathStart - 2]), `${where}: nothing within a short hop of its left end`);
+        assert.ok(hop([run.pathEnd + 1, run.pathEnd + 2]), `${where}: nothing within a short hop of its right end`);
+      }
+    });
+
+    test(`${def.id}: every lift has a clear shaft of ${LIFT.range} tiles up and down and a floor or stick within 2 columns of both sides`, () => {
+      for (const run of lifts) {
+        const where = `lift at ${run.start},${run.row}`;
+        assert.ok(run.row - LIFT.range >= 0 && run.row + LIFT.range < ROWS, `${where} leaves the level`);
+        for (let col = run.start; col <= run.end; col++) {
+          for (let r = run.row - LIFT.range; r <= run.row + LIFT.range; r++) {
+            const ch = def.map[r][col];
+            assert.ok(open(ch) && (ch !== 'V' || r === run.row), `${where}: its shaft is blocked at ${col},${r}`);
+          }
+        }
+        const supported = (candidates) => candidates.some((c) => {
+          for (let r = run.row - LIFT.range; r <= run.row + LIFT.range + 1; r++) if (standable(def.map[r]?.[c] ?? '.')) return true;
+          return stickAt(c, run.row);
+        });
+        assert.ok(supported([run.start - 1, run.start - 2]), `${where}: nothing within 2 columns on its left`);
+        assert.ok(supported([run.end + 1, run.end + 2]), `${where}: nothing within 2 columns on its right`);
+      }
+    });
+
+    test(`${def.id}: every dolphin and fish over open water has a clear swim box, and the rest stand on a floor`, () => {
+      for (const { ch, col, row } of cellsOf(def.map, 'df')) {
+        const where = `'${ch}' at ${col},${row}`;
+        const range = ch === 'd' ? DOLPHIN.swimRange : FISH.swimRange;
+        if (standable(def.map[row + 1]?.[col] ?? '#')) continue;
+        assert.ok(col - range >= 0 && col + range < cols, `${where}: swims off the level`);
+        for (let c = col - range; c <= col + range; c++) {
+          for (let r = row - 1; r <= row + 1; r++) assert.ok(open(def.map[r][c]) || (c === col && r === row), `${where}: its swim box hits ${c},${r}`);
+        }
+        assert.ok(row <= 7, `${where}: swims too low`);
+      }
+    });
+
+    test(`${def.id}: every bubble drifts through open water past a red crystal`, () => {
+      for (const { col, row } of cellsOf(def.map, 'o')) {
+        const where = `bubble at ${col},${row}`;
+        assert.ok(col - BUBBLE.range >= 0 && col + BUBBLE.range < cols, `${where}: drifts off the level`);
+        for (let c = col - BUBBLE.range; c <= col + BUBBLE.range; c++) {
+          for (let r = row - 1; r <= row + 1; r++) assert.ok(open(def.map[r][c]) || (c === col && r === row), `${where}: its path hits ${c},${r}`);
+        }
+        const near = cellsOf(def.map, 'r').some((c) => Math.abs(c.col - col) <= BUBBLE.range && Math.abs(c.row - row) <= 1);
+        assert.ok(near, `${where}: no crystal in its path`);
+      }
+    });
+
+    test(`${def.id}: the turquoise crystal sits near the start, within reach of the floor`, () => {
+      const teals = cellsOf(def.map, 'T');
+      assert.equal(teals.length, 1);
+      const [{ col, row }] = teals;
+      assert.ok(col - spawn.col <= 12 && col > spawn.col, `turquoise crystal at column ${col}`);
+      let ok = false;
+      for (let r = row + 1; r <= Math.min(ROWS - 1, row + 4); r++) if (standable(def.map[r][col])) ok = true;
+      assert.ok(ok, 'out of reach');
+    });
+
+    test(`${def.id}: the shark lanes are flat and open, the sharks stand 6+ columns apart, and the crystal comes after the last shark`, () => {
+      assert.ok(sharks.length >= 1 && sharks.length <= 2);
+      const last = Math.max(...sharks.map((s) => s.col));
+      for (const shark of sharks) {
+        const floor = shark.row + 1;
+        assert.ok(shark.col - spawn.col > 40, `shark at column ${shark.col} is too close to the start`);
+        for (let col = shark.col - SHARK.maxRange / 2; col <= shark.col; col++) {
+          assert.equal(floorRow(def.map, col), floor, `lane column ${col} is not flat`);
+          for (const row of [shark.row, shark.row - 1]) assert.ok(def.map[row][col] !== '#' && def.map[row][col] !== '=', `block in the shell lane at ${col},${row}`);
+        }
+        for (const other of sharks) if (other !== shark) assert.ok(Math.abs(other.col - shark.col) >= 6, 'sharks too close');
+      }
+      assert.ok(goal.col - last >= 3, `the crystal at column ${goal.col} is not behind the last shark at ${last}`);
+      for (let col = last; col <= goal.col + 1; col++) assert.equal(floorRow(def.map, col), goal.row + 1, `floor at column ${col}`);
+    });
+
+    test(`${def.id}: a pearl with a crab appears exactly on the two-shark level, on flat floor before the first shark`, () => {
+      assert.equal(pearls.length, sharks.length === 2 ? 1 : 0);
+      for (const pearl of pearls) {
+        const first = Math.min(...sharks.map((s) => s.col));
+        assert.ok(first - pearl.col >= 10, `pearl at column ${pearl.col} is too close to the sharks`);
+        for (let col = pearl.col; col <= first; col++) assert.equal(floorRow(def.map, col), pearl.row + 1, `floor at column ${col}`);
       }
     });
   }
@@ -337,7 +469,7 @@ for (const def of levels) {
   });
 
   test(`${def.id}: the chicken, walkers, spider, checkpoint and goal stand on a fixed surface, and every sign has ground under it`, () => {
-    for (const { ch, col, row } of cellsOf(def.map, 'CcZ*GmsSK')) {
+    for (const { ch, col, row } of cellsOf(def.map, 'CcZ*GmsSKHP')) {
       assert.ok(row + 1 < ROWS && standable(def.map[row + 1][col]), `'${ch}' at ${col},${row} is floating`);
     }
     for (const sign of def.signs) assert.ok((theme === 'castle' ? floorRow : surfaceRow)(def.map, sign.col) < ROWS, `sign at column ${sign.col} stands over a gap`);
@@ -351,9 +483,12 @@ test('each level matches the spec exact crystal, enemy, rain-cloud and moving-cl
     assert.ok(expected, `${def.id} has expected counts`);
     assert.equal(level.crystals.length, expected.crystals, `${def.id} crystals`);
     for (const kind of ENEMY_KINDS) {
-      assert.equal(level.enemies.filter((e) => e.kind === kind).length, expected[kind], `${def.id} ${kind}`);
+      assert.equal(level.enemies.filter((e) => e.kind === kind).length, expected[kind] ?? 0, `${def.id} ${kind}`);
     }
     assert.equal(level.rainClouds.length, expected.rain, `${def.id} rain clouds`);
-    assert.equal(level.movers.length, expected.movers, `${def.id} moving clouds`);
+    assert.equal(level.movers.length, expected.movers, `${def.id} moving clouds and sticks`);
+    assert.equal(level.bubbles.length, (expected.bubble ?? 0), `${def.id} bubbles`);
+    assert.equal(level.teals.length, (expected.teal ?? 0), `${def.id} turquoise crystals`);
+    assert.equal(level.pearls.length, (expected.pearl ?? 0), `${def.id} pearls`);
   }
 });

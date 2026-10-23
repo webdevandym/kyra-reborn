@@ -24,7 +24,7 @@ function track(e, level, steps) {
 }
 
 test('the registry knows every ground and flying kind and rejects unknown kinds', () => {
-  assert.deepEqual(Object.keys(ENEMY_KINDS).sort(), ['bat', 'bee', 'carrot', 'ghost', 'propeller', 'rat', 'skeleton', 'spider', 'star', 'zombie']);
+  assert.deepEqual(Object.keys(ENEMY_KINDS).sort(), ['bat', 'bee', 'carrot', 'dolphin', 'fish', 'ghost', 'propeller', 'rat', 'shark', 'skeleton', 'spider', 'star', 'zombie']);
   assert.throws(() => createEnemy({ kind: 'dragon', x: 0, y: 0 }), /unknown enemy kind 'dragon'/);
 });
 

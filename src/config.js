@@ -51,12 +51,21 @@ export const GHOST = { w: 36, h: 36, speed: 90, leash: 5, sight: 12, trail: 0.6 
 export const SPIDER = { w: 64, h: 44, lives: 3, fireEvery: 1.2, windup: 0.4, volleyGap: 0.3, dizzyTime: 0.8, knockback: 520, minRange: 2, maxRange: 12 };
 export const FIREBALL = { size: 22, speed: 220, lowY: 14, highY: 64 };
 export const BONE = { size: 18, gravity: 1400, flight: 0.9, maxSpeed: 320 };
+export const DOLPHIN = { w: 56, h: 34, speed: 80, hurtSpeed: 120, dizzyTime: 0.6, swimRange: 3, bob: 22, bobPeriod: 1.8, lift: 0 };
+export const FISH = { w: 34, h: 24, speed: 150, swimRange: 4, bob: 14, bobPeriod: 1.1, lift: 0 };
+export const SHARK = { w: 104, h: 66, lives: 3, fireEvery: 1.0, windup: 0.35, volleyGap: 0.14, dizzyTime: 0.8, knockback: 520, maxRange: 14, overhead: 1.6 };
+export const SHELL = { size: 22, speed: 300, lowY: 16, highY: 66 };
+export const BUBBLE = { size: 40, range: 3, bob: 18, period: 5, fallSpeed: 130 };
+export const CRAB = { w: 44, h: 30, speed: 170, pinches: 2, pinchGap: 0.9, reach: 6 };
+export const PEARL = { w: 44, h: 36 };
 export const PORTAL = { w: 50, h: 70, grow: 0.5 };
 export const DOOR = { w: 44, h: 72 };
 export const MOVER = { range: 2, period: 5, phasePerCol: 1.3 };
+export const LIFT = { range: 2, period: 4, phasePerCol: 1.3 };
 export const RAIN = { dry: 2.4, warn: 0.8, rain: 1.6, dropSpeed: 600, width: 2, phasePerCol: 0.7 };
 
 export const CRYSTAL = { size: 26 };
+export const TEAL = { size: 30 };
 export const GOAL = { w: 44, h: 64 };
 
 export const RULES = {
@@ -141,4 +150,27 @@ export const COLORS = {
   shieldInk: '#38BDF8',
   crown: '#FFC83D',
   princessCape: '#F9A8D4',
+  seaWash: '#E3F3F8',
+  seaDeep: '#C7E6F0',
+  seaFloor: '#F2E2B8',
+  seaFloorShade: '#DCC68E',
+  coral: '#F28B82',
+  coralLight: '#FBC4BE',
+  weed: '#4CB782',
+  dolphin: '#7FB3E6',
+  dolphinBelly: '#E6F1FB',
+  fish: '#FF9F43',
+  fishFin: '#FFD08A',
+  shark: '#6B7FA3',
+  sharkBelly: '#D9E1EE',
+  shell: '#F9C9D4',
+  shellRidge: '#E58AA3',
+  bubble: 'rgba(186, 230, 253, 0.45)',
+  bubbleInk: '#38BDF8',
+  crab: '#EF6B4A',
+  pearl: '#FFF7E6',
+  pearlShine: '#FFFFFF',
+  teal: '#14B8A6',
+  tealLight: '#99F6E4',
+  sand: '#EAD7A1',
 };

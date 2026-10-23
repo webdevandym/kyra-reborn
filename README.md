@@ -1,6 +1,6 @@
 # Kyra Reborn
 
-A notebook-doodle platformer for kids aged 8–10. Kyra the chicken («кура») walks, jumps, collects red crystals and stomps carrots, zombies, propeller carrots and bees across five meadow levels, crosses a cloud track in the evening sky, past two-life stars, bats and rain clouds, to the sleeping Moon, and then walks through four rooms of each castle level — halls, kitchens, libraries, dungeons and a throne room — past rats, bone-throwing skeletons, shy ghosts and a fire-spitting spider, to the princess. There are eleven levels. The game design and the characters come from a young designer's voice note and notebook drawing.
+A notebook-doodle platformer for kids aged 8–10. Kyra the chicken («кура») walks, jumps, collects red crystals and stomps carrots, zombies, propeller carrots and bees across five meadow levels, crosses a cloud track in the evening sky, past two-life stars, bats and rain clouds, to the sleeping Moon, and then walks through four rooms of each castle level — halls, kitchens, libraries, dungeons and a throne room — past rats, bone-throwing skeletons, shy ghosts and a fire-spitting spider, to the princess, and finally dives into three underwater levels full of dolphins, fish, bubbles and sharks. There are fourteen levels. The game design and the characters come from a young designer's voice note and notebook drawing.
 
 ## Play
 
@@ -40,6 +40,12 @@ Open <http://localhost:8123> in Chrome. ES modules need a local server, so openi
 - Each castle level has one spider with three lives. It spits volleys of one, two or three fireballs, low and high in turn: jump over a low volley, and stay on the ground under a high one. Each time you jump on it, it gets dizzy and throws you back.
 - Defeat the spider to open a portal. Going through it is a checkpoint: losing a life after that restarts from there. The other rooms are joined by doors: walk into one to go to the next room.
 - Touch the princess to finish a castle level.
+- Underwater, dolphins (two lives) and fast fish (one life) walk the sea floor or swim over the pits, and none of them throw anything. Jump on them from above.
+- Some sand sticks slide left and right and some go up and down; hop from one to the next across a pit.
+- A bubble drifts through the water and carries off any crystal it passes. Touch it to get the crystal back and a bubble of your own: fall slowly, like on a parachute, until you land.
+- The turquoise crystal near the start of each sea level is a shield: it takes one touch from a dolphin, fish or shell.
+- A shark waits at the end of every sea level. It has three lives and fires fast volleys of two, three and four shells, low and high in turn, and straight up when you are above it. The finish crystal stays in its bubble until every shark is beaten.
+- The last sea level has two sharks and a pearl: touch it and a crab comes out and pinches the nearest shark twice.
 - The level-complete and victory cards show how long the level took (only time spent playing counts).
 
 ## Develop

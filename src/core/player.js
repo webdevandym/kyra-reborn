@@ -1,4 +1,4 @@
-import { PLAYER } from '../config.js';
+import { PLAYER, BUBBLE } from '../config.js';
 import { applyGravity, moveAndCollide } from './physics.js';
 
 export function createPlayer(spawn) {
@@ -14,6 +14,8 @@ export function createPlayer(spawn) {
     prevBottom: spawn.y,
     ride: null,
     shield: false,
+    shieldAll: false,
+    bubble: false,
     facing: 1,
     coyote: 0,
     buffer: 0,
@@ -50,10 +52,13 @@ export function updatePlayer(p, input, dt, level, platforms = []) {
   if (p.vy >= 0) p.jumping = false;
 
   applyGravity(p, dt);
+  if (p.bubble && p.vy > BUBBLE.fallSpeed) p.vy = BUBBLE.fallSpeed;
   const wasOnGround = p.onGround;
   moveAndCollide(p, dt, level, platforms);
   const landed = !wasOnGround && p.onGround;
+  const popped = landed && p.bubble;
+  if (popped) p.bubble = false;
   p.squash = landed ? PLAYER.squashTime : Math.max(0, p.squash - dt);
   p.invuln = Math.max(0, p.invuln - dt);
-  return { jumped, landed };
+  return { jumped, landed, popped };
 }

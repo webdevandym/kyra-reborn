@@ -18,6 +18,8 @@ import { drawStarEnemy, drawBat, drawRainCloud, drawMovingCloud, drawMoon } from
 import { createCastleTheme } from '../src/render/castle.js';
 import { drawRat, drawGhost, drawSkeleton, drawSpider, drawFireball, drawBone, drawPortal, drawCheckpoint, drawShield, drawPrincess, drawDoor } from '../src/render/castle-sprites.js';
 import { ROOM_PROPS, ROOM_TINTS } from '../src/render/castle-props.js';
+import { createSeaTheme } from '../src/render/sea.js';
+import { drawDolphin, drawFish, drawShark, drawShell, drawBubble, drawPlayerBubble, drawTealCrystal, drawPearl, drawCrab, drawSandStick, drawBubbleCage } from '../src/render/sea-sprites.js';
 import { ROOM_KINDS } from '../src/core/level.js';
 
 before(async () => {
@@ -281,4 +283,84 @@ test('the castle theme tints and decorates each room by its kind, and draws the 
   theme.drawBackdrop(plain, 0, 0.5);
   theme.drawGoal({ x: 45 * TILE, y: 11 * TILE }, 1, true);
   assert.ok(calls.get('stroke') > 20);
+});
+
+test('every sea sprite draws without errors and with finite coordinates', () => {
+  const { ctx, calls } = mockContext();
+  drawDolphin(ctx, { x: 100, y: 450, dir: 1, anim: 2, lives: 2, dizzy: 0 }, 0.4);
+  drawDolphin(ctx, { x: 100, y: 300, dir: -1, anim: 0, lives: 1, dizzy: 0.4 }, 1.2);
+  drawFish(ctx, { x: 200, y: 450, dir: -1, anim: 3 }, 0.5);
+  drawFish(ctx, { x: 200, y: 300, dir: 1, anim: 0 }, 0.9);
+  drawShark(ctx, { x: 400, y: 450, dir: -1, winding: false, lives: 3, dizzy: 0, w: 104 }, 0.5);
+  drawShark(ctx, { x: 400, y: 450, dir: 1, winding: true, lives: 1, dizzy: 0.5, w: 104 }, 0.8);
+  drawShell(ctx, { x: 450, y: 436, vx: -300, vy: 0 }, 0.2);
+  drawShell(ctx, { x: 450, y: 386, vx: 0, vy: -300 }, 0.9);
+  drawBubble(ctx, { x: 500, y: 300, size: 40, carry: null }, 0.3);
+  drawBubble(ctx, { x: 500, y: 300, size: 40, carry: { id: '1,1' } }, 1.3);
+  drawPlayerBubble(ctx, { x: 550, y: 400, h: 40 }, 0.6);
+  drawTealCrystal(ctx, { x: 600, y: 380 }, 0.7);
+  drawPearl(ctx, { x: 650, y: 450, open: false }, 0.4);
+  drawPearl(ctx, { x: 650, y: 450, open: true }, 1.4);
+  drawCrab(ctx, { x: 700, y: 450, dir: 1, anim: 2, cooldown: 0 }, 0.5);
+  drawCrab(ctx, { x: 700, y: 450, dir: -1, anim: 0, cooldown: 0.8 }, 1.5);
+  drawSandStick(ctx, { x: 750, y: 450, w: 135, dx: 1.2, dy: 0 });
+  drawSandStick(ctx, { x: 750, y: 400, w: 90, dx: 0, dy: -1.1 });
+  drawSandStick(ctx, { x: 750, y: 400, w: 90, dx: 0, dy: 0.9 });
+  drawSandStick(ctx, { x: 750, y: 400, w: 90, dx: 0, dy: 0 });
+  drawBubbleCage(ctx, { x: 800, y: 450 }, 0.7);
+  assert.ok(calls.get('stroke') > 40);
+  assert.ok(calls.get('fill') > 20);
+});
+
+test('the sea theme paints the water wash and draws its backdrop, sand tiles, reef ledges and the green crystal, caged until the sharks are gone', () => {
+  const { ctx, calls } = mockContext();
+  const theme = createSeaTheme(ctx);
+  const level = parseLevel({ id: 'seatheme', theme: 'sea', map: mapFromBottom(['..=====...', 'C...##..HG', '####..####']) });
+  assert.equal(theme.paper, COLORS.seaWash);
+  theme.drawBackdrop(level, 0, 0.5);
+  theme.drawBackdrop(level, 3 * TILE, 4.5);
+  theme.drawTiles(level, 0);
+  theme.drawGoal({ x: 300, y: 450 }, 1.2, false, true);
+  theme.drawGoal({ x: 300, y: 450 }, 1.2, true, false);
+  assert.ok(calls.get('stroke') > 10);
+  assert.ok(calls.get('fill') > 10);
+});
+
+test('the scene renders a sea level with swimmers, a shark firing shells, bubbles, a pearl and crab, lifts and a shield', () => {
+  const { ctx, calls } = mockContext();
+  const def = {
+    id: 'seatest',
+    theme: 'sea',
+    map: mapFromBottom([
+      '....................',
+      '.......o...r........',
+      '..........d.........',
+      '....................',
+      'C..T..P.f.VV.H...G..',
+      '####.....~~~########',
+    ]),
+  };
+  const game = createGame([def]);
+  const camera = createCamera();
+  const particles = createParticles();
+  const scene = createScene(ctx);
+  game.confirm();
+  let shells = 0;
+  let crabs = 0;
+  for (let i = 0; i < 1500; i++) {
+    game.tick(STEP, IDLE);
+    game.world.player.invuln = 1;
+    game.world.player.shield = true;
+    game.world.player.shieldAll = true;
+    game.world.player.bubble = i % 400 < 100;
+    if (i === 100) game.world.pearls[0].open = true;
+    if (i === 120) game.world.player.x = game.world.pearls[0].x;
+    shells = Math.max(shells, game.world.projectiles.length);
+    crabs = Math.max(crabs, game.world.crabs.length);
+    if (i % 60 === 0) scene.render({ game, camera, particles, time: i * STEP, lang: 'pl', muted: false, debug: true });
+  }
+  assert.ok(shells > 0, 'the shark fired while the scene was drawn');
+  game.world.player.won = true;
+  scene.render({ game, camera, particles, time: 9, lang: 'en', muted: false, debug: true });
+  assert.ok(calls.get('stroke') > 50);
 });

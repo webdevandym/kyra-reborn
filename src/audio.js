@@ -77,6 +77,13 @@ export function createAudio({ muted = false } = {}) {
       tone({ type: 'square', from: 700, to: 300, dur: 0.08, vol: 0.14 });
       noise({ dur: 0.06, vol: 0.12, freq: 1800, delay: 0.02 });
     },
+    shell: () => {
+      tone({ type: 'triangle', from: 900, to: 420, dur: 0.07, vol: 0.14 });
+      noise({ dur: 0.05, vol: 0.1, freq: 2400, delay: 0.01 });
+    },
+    bubble: () => notes([500, 780], { type: 'sine', dur: 0.09, vol: 0.28, gap: 0.05 }),
+    bubblePop: () => tone({ type: 'sine', from: 900, to: 200, dur: 0.1, vol: 0.2 }),
+    pearl: () => notes([784, 988, 1318], { type: 'triangle', dur: 0.12, vol: 0.25, gap: 0.07 }),
     door: () => tone({ type: 'sawtooth', from: 160, to: 90, dur: 0.35, vol: 0.12 }),
     portal: () => {
       tone({ type: 'sine', from: 300, to: 1200, dur: 0.5, vol: 0.25 });

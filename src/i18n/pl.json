@@ -94,7 +94,34 @@
     },
     "level11": {
       "name": "Wieża księżniczki",
-      "signs": { "final": "Ostatni poziom —\npowodzenia!" }
+      "signs": { "final": "Ostatni zamek —\npowodzenia!" }
+    },
+    "level12": {
+      "name": "Rafa koralowa",
+      "signs": {
+        "sea": "Pod wodą! Delfiny i rybki\npływają — skacz na nie!",
+        "sand": "Piaskowe patyki się ruszają —\nskacz z jednego na drugi",
+        "bubble": "Bąbelek! Dotknij go i spadasz\nwolno. Może nieść kryształ",
+        "shark": "Rekin ma 3 życia!\nPokonaj go, by uwolnić kryształ"
+      }
+    },
+    "level13": {
+      "name": "Zatoka bąbelków",
+      "signs": {
+        "teal": "Turkusowy kryształ =\ntarcza na jedno uderzenie",
+        "lift": "Ten patyk jedzie w górę i w dół —\nwskakuj!",
+        "bubble": "Bąbelki niosą kryształy —\nzłap je!",
+        "shark": "Pokonaj rekina,\nby otworzyć kryształ"
+      }
+    },
+    "level14": {
+      "name": "Głębia rekinów",
+      "signs": {
+        "sea": "Ostatni morski poziom —\npowodzenia!",
+        "lift": "Patyki, które jeżdżą\nw górę i w dół",
+        "pearl": "Dotknij perły —\nkrab ci pomoże!",
+        "sharks": "Dwa rekiny!\nKrab ci pomoże"
+      }
     }
   }
 }

@@ -7,8 +7,21 @@ import { setBoilTime, inkEllipse, inkLine } from './ink.js';
 import { createMeadowTheme } from './meadow.js';
 import { createSkyTheme } from './sky.js';
 import { createCastleTheme } from './castle.js';
+import { createSeaTheme } from './sea.js';
 import { drawStarEnemy, drawBat, drawRainCloud, drawMovingCloud } from './sky-sprites.js';
 import { drawRat, drawGhost, drawSkeleton, drawSpider, drawFireball, drawBone, drawPortal, drawCheckpoint, drawShield, drawDoor } from './castle-sprites.js';
+import {
+  drawDolphin,
+  drawFish,
+  drawShark,
+  drawShell,
+  drawBubble,
+  drawPlayerBubble,
+  drawTealCrystal,
+  drawPearl,
+  drawCrab,
+  drawSandStick,
+} from './sea-sprites.js';
 import {
   drawChicken,
   drawCarrot,
@@ -33,10 +46,15 @@ const ENEMY_DRAWERS = {
   ghost: drawGhost,
   skeleton: drawSkeleton,
   spider: drawSpider,
+  dolphin: drawDolphin,
+  fish: drawFish,
+  shark: drawShark,
 };
 
+const PROJECTILE_DRAWERS = { bone: drawBone, fireball: drawFireball, shell: drawShell };
+
 export function createScene(ctx) {
-  const themes = { meadow: createMeadowTheme(ctx), sky: createSkyTheme(ctx), castle: createCastleTheme(ctx) };
+  const themes = { meadow: createMeadowTheme(ctx), sky: createSkyTheme(ctx), castle: createCastleTheme(ctx), sea: createSeaTheme(ctx) };
 
   function drawGrid(camX) {
     ctx.lineWidth = 1;
@@ -104,6 +122,9 @@ export function createScene(ctx) {
       if (wet) box(wet);
     });
     world.projectiles.forEach((f) => box(projectileRect(f)));
+    world.bubbles.forEach((b) => box(centeredRect(b.x, b.y, b.size, b.size)));
+    world.pearls.forEach((pearl) => box(bodyRect(pearl)));
+    world.crabs.forEach((crab) => box(bodyRect(crab)));
     if (world.portal) box(bodyRect(world.portal));
     world.doors.forEach((d) => box(bodyRect(d)));
     ctx.setLineDash([6, 6]);
@@ -131,14 +152,18 @@ export function createScene(ctx) {
     if (level.checkpoint) drawCheckpoint(ctx, level.checkpoint, world.checkpointReached, time);
     world.doors.forEach((d, i) => drawDoor(ctx, d, time, 731 + i * 11));
     if (world.portal?.open) drawPortal(ctx, world.portal, (world.time - world.portal.openedAt) / PORTAL.grow, time);
-    world.movers.forEach((m, i) => drawMovingCloud(ctx, m, 391 + i * 13));
+    world.movers.forEach((m, i) => (level.theme === 'sea' ? drawSandStick : drawMovingCloud)(ctx, m, 391 + i * 13));
     level.signs.forEach((sign, i) => drawSign(ctx, sign, t(sign.textKey, lang), 61 + i * 7));
     world.crystals.forEach((c, i) => drawRedCrystal(ctx, c, time, 41 + i));
-    theme.drawGoal(world.goal, time, world.player.won);
+    theme.drawGoal(world.goal, time, world.player.won, world.goal.locked);
+    world.pearls.forEach((pearl, i) => drawPearl(ctx, pearl, time, 961 + i * 17));
+    world.teals.forEach((t, i) => drawTealCrystal(ctx, t, time, 941 + i * 5));
+    world.bubbles.forEach((b, i) => drawBubble(ctx, b, time, 901 + i * 9));
     world.enemies.forEach((e, i) => {
       if (e.alive) ENEMY_DRAWERS[e.kind](ctx, e, time, 200 + i * 37);
     });
-    world.projectiles.forEach((f, i) => (f.kind === 'bone' ? drawBone : drawFireball)(ctx, f, time, 581 + i * 7));
+    world.crabs.forEach((crab, i) => drawCrab(ctx, crab, time, 981 + i * 13));
+    world.projectiles.forEach((f, i) => PROJECTILE_DRAWERS[f.kind](ctx, f, time, 581 + i * 7));
 
     const p = world.player;
     if (!p.dead) {
@@ -147,6 +172,7 @@ export function createScene(ctx) {
       drawChicken(ctx, { ...p, celebrate: p.won }, time);
       ctx.globalAlpha = 1;
       if (p.shield) drawShield(ctx, p, time);
+      if (p.bubble) drawPlayerBubble(ctx, p, time);
     }
     world.rain.forEach((cloud, i) => drawRainCloud(ctx, cloud, { phase: rainPhase(cloud, world.time), wet: rainRect(cloud, world.time), time }, 361 + i * 11));
     particles.drawWorld(ctx);

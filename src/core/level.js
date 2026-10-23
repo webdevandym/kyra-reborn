@@ -12,9 +12,12 @@ const ENEMY_CHARS = {
   g: 'ghost',
   s: 'skeleton',
   S: 'spider',
+  d: 'dolphin',
+  f: 'fish',
+  H: 'shark',
 };
-const KNOWN_CHARS = new Set(['.', '#', '=', 'C', 'c', 'Z', 'p', 'b', 'r', 'G', '*', 'v', 'R', '~', 'm', 'g', 's', 'S', 'O', 'K', 'D']);
-const THEMES = new Set(['meadow', 'sky', 'castle']);
+const KNOWN_CHARS = new Set(['.', '#', '=', 'C', 'c', 'Z', 'p', 'b', 'r', 'G', '*', 'v', 'R', '~', 'm', 'g', 's', 'S', 'O', 'K', 'D', 'd', 'f', 'H', 'o', 'T', 'P', 'V']);
+const THEMES = new Set(['meadow', 'sky', 'castle', 'sea']);
 export const ROOM_KINDS = ['hall', 'library', 'kitchen', 'dungeon', 'throne'];
 
 export function parseLevel(def) {
@@ -30,6 +33,9 @@ export function parseLevel(def) {
   const crystals = [];
   const rainClouds = [];
   const movers = [];
+  const bubbles = [];
+  const teals = [];
+  const pearls = [];
   let spawn = null;
   let goal = null;
   let portal = null;
@@ -60,19 +66,27 @@ export function parseLevel(def) {
       } else if (ch === 'D') {
         doors.push(feet);
       } else if (ENEMY_CHARS[ch]) {
-        enemies.push({ kind: ENEMY_CHARS[ch], ...feet });
+        const spec = { kind: ENEMY_CHARS[ch], ...feet };
+        if (ch === 'd' || ch === 'f') spec.swim = !'#='.includes(map[row + 1]?.[col] ?? '#');
+        enemies.push(spec);
+      } else if (ch === 'o') {
+        bubbles.push({ id: `${col},${row}`, x: feet.x, y: (row + 0.5) * TILE });
+      } else if (ch === 'T') {
+        teals.push({ id: `${col},${row}`, x: feet.x, y: (row + 0.5) * TILE });
+      } else if (ch === 'P') {
+        pearls.push({ id: `${col},${row}`, ...feet });
       } else if (ch === 'r') {
         crystals.push({ id: `${col},${row}`, x: feet.x, y: (row + 0.5) * TILE });
       } else if (ch === 'R') {
         rainClouds.push({ id: `${col},${row}`, col, row, x: (col + 0.5) * TILE, y: (row + 0.5) * TILE });
-      } else if (ch === '~' && line[col - 1] !== '~') {
+      } else if ((ch === '~' || ch === 'V') && line[col - 1] !== ch) {
         let end = col;
-        while (line[end] === '~') end++;
+        while (line[end] === ch) end++;
         const len = end - col;
         if (len < 2 || len > 4) {
-          throw new Error(`${id}: moving cloud at ${col},${row} must be 2–4 tiles`);
+          throw new Error(`${id}: moving ${ch === '~' ? 'cloud' : 'lift'} at ${col},${row} must be 2–4 tiles`);
         }
-        movers.push({ id: `${col},${row}`, col, row, width: len * TILE, x: col * TILE, y: row * TILE });
+        movers.push({ id: `${col},${row}`, col, row, axis: ch === '~' ? 'x' : 'y', width: len * TILE, x: col * TILE, y: row * TILE });
       }
     });
     tiles.push(tileRow);
@@ -80,6 +94,7 @@ export function parseLevel(def) {
 
   if (!spawn) throw new Error(`${id}: missing chicken start 'C'`);
   if (!goal) throw new Error(`${id}: missing green crystal 'G'`);
+  if (theme === 'sea' && !enemies.some((e) => e.kind === 'shark')) throw new Error(`${id}: a sea level needs a shark 'H'`);
   if (theme === 'castle') {
     if (enemies.filter((e) => e.kind === 'spider').length !== 1) throw new Error(`${id}: a castle level needs exactly one spider 'S'`);
     if (!portal) throw new Error(`${id}: a castle level needs a portal 'O'`);
@@ -106,6 +121,9 @@ export function parseLevel(def) {
     crystals,
     rainClouds,
     movers,
+    bubbles,
+    teals,
+    pearls,
     signs: [],
   };
   markGuards(level);

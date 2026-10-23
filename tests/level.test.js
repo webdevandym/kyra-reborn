@@ -66,8 +66,8 @@ test('parseLevel reads * as a star, v as a bat, R as a rain cloud and each ~ run
   ]);
   assert.deepEqual(level.rainClouds, [{ id: '2,6', col: 2, row: 6, x: 2.5 * TILE, y: 6.5 * TILE }]);
   assert.deepEqual(level.movers, [
-    { id: '4,8', col: 4, row: 8, width: 3 * TILE, x: 4 * TILE, y: 8 * TILE },
-    { id: '6,11', col: 6, row: 11, width: 2 * TILE, x: 6 * TILE, y: 11 * TILE },
+    { id: '4,8', col: 4, row: 8, axis: 'x', width: 3 * TILE, x: 4 * TILE, y: 8 * TILE },
+    { id: '6,11', col: 6, row: 11, axis: 'x', width: 2 * TILE, x: 6 * TILE, y: 11 * TILE },
   ]);
   assert.equal(tileAt(level, 2, 6), 'empty');
   assert.equal(tileAt(level, 5, 8), 'empty');

@@ -1,4 +1,4 @@
-import { TILE, STEP, CARROT, ZOMBIE, PROPELLER, BEE, FLYER, RULES, STAR, BAT, RAT, SKELETON, GHOST, SPIDER, FIREBALL, BONE } from '../config.js';
+import { TILE, STEP, CARROT, ZOMBIE, PROPELLER, BEE, FLYER, RULES, STAR, BAT, RAT, SKELETON, GHOST, SPIDER, FIREBALL, BONE, DOLPHIN, FISH, SHARK, SHELL } from '../config.js';
 import { applyGravity, moveAndCollide } from './physics.js';
 import { tileAt, roomAt } from './level.js';
 
@@ -345,7 +345,104 @@ const spider = {
   },
 };
 
+const dolphinLives = twoLife(DOLPHIN);
+const swimmingDolphin = flyer({ ...DOLPHIN, range: DOLPHIN.swimRange });
+const swimmingFish = flyer({ ...FISH, range: FISH.swimRange });
+
+const dolphin = {
+  create: (spec) => (spec.swim ? { ...swimmingDolphin.create(spec), lives: 2, dizzy: 0, swim: true } : { ...dolphinLives.create(spec), swim: false }),
+  update(e, dt, level) {
+    e.dizzy = Math.max(0, e.dizzy - dt);
+    if (e.swim) hover(e, dt, level);
+    else patrol(e, dt, level);
+  },
+  onStomp: dolphinLives.onStomp,
+};
+
+const fish = {
+  create: (spec) => (spec.swim ? { ...swimmingFish.create(spec), swim: true } : { ...baseEnemy(spec, FISH.w, FISH.h, FISH.speed), swim: false }),
+  update: (e, dt, level) => (e.swim ? hover(e, dt, level) : patrol(e, dt, level)),
+  onStomp: defeat,
+};
+
+function sharkShot(e, player) {
+  const above = Math.abs(player.x - e.x) <= SHARK.overhead * TILE && player.y < e.y - e.h;
+  if (above) return { kind: 'shell', x: e.x, y: e.y - e.h - SHELL.size / 2, vx: 0, vy: -SHELL.speed };
+  return {
+    kind: 'shell',
+    x: e.x + e.dir * (e.w / 2 + SHELL.size / 2),
+    y: e.y - (e.volleyHigh ? SHELL.highY : SHELL.lowY),
+    vx: e.dir * SHELL.speed,
+    vy: 0,
+  };
+}
+
+const shark = {
+  create: (spec) => ({
+    ...baseEnemy(spec, SHARK.w, SHARK.h, 0),
+    lives: SHARK.lives,
+    dizzy: 0,
+    cooldown: SHARK.fireEvery,
+    winding: false,
+    volleySize: 2,
+    volleyHigh: false,
+    nextHigh: false,
+    shotsLeft: 0,
+    gap: 0,
+  }),
+  update(e, dt, level, player) {
+    e.anim += dt;
+    if (player && player.x !== e.x) e.dir = Math.sign(player.x - e.x);
+    if (e.dizzy > 0) {
+      e.dizzy = Math.max(0, e.dizzy - dt);
+      e.winding = false;
+      return null;
+    }
+    if (!player) return null;
+    if (player.dead || Math.abs(player.x - e.x) > SHARK.maxRange * TILE) {
+      e.winding = false;
+      e.shotsLeft = 0;
+      e.cooldown = Math.max(e.cooldown, SHARK.windup + STEP);
+      return null;
+    }
+    if (e.shotsLeft > 0) {
+      e.gap -= dt;
+      if (e.gap > 0) return null;
+      e.shotsLeft -= 1;
+      if (e.shotsLeft === 0) e.cooldown = SHARK.fireEvery + e.gap;
+      else e.gap += SHARK.volleyGap;
+      return sharkShot(e, player);
+    }
+    e.cooldown -= dt;
+    e.winding = e.cooldown <= SHARK.windup;
+    if (e.cooldown > 0) return null;
+    e.winding = false;
+    e.volleyHigh = e.nextHigh;
+    e.nextHigh = !e.nextHigh;
+    e.shotsLeft = e.volleySize - 1;
+    e.volleySize = e.volleySize === 4 ? 2 : e.volleySize + 1;
+    if (e.shotsLeft === 0) e.cooldown += SHARK.fireEvery;
+    else e.gap = SHARK.volleyGap + e.cooldown;
+    return sharkShot(e, player);
+  },
+  onStomp(e) {
+    if (e.dizzy > 0) return 'bounce';
+    if (e.lives > 1) {
+      e.lives -= 1;
+      e.dizzy = SHARK.dizzyTime;
+      e.winding = false;
+      e.shotsLeft = 0;
+      e.cooldown = SHARK.fireEvery;
+      return 'hurt';
+    }
+    return defeat(e);
+  },
+};
+
 export const ENEMY_KINDS = {
+  dolphin,
+  fish,
+  shark,
   carrot,
   zombie,
   propeller: flyer(PROPELLER),

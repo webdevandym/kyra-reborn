@@ -234,7 +234,7 @@ export function drawZombie(ctx, zombie, time, seed = 31) {
 
 const GEM = [[-10, -4], [-5, -11], [5, -11], [10, -4], [0, 12]];
 
-function drawGem(ctx, s, fill, light, seed) {
+export function drawGem(ctx, s, fill, light, seed) {
   const pts = GEM.map(([gx, gy]) => [gx * s, gy * s]);
   inkPoly(ctx, pts, { fill, width: 2.2, seed });
   inkPoly(ctx, [[-5 * s, -11 * s], [-1 * s, -4 * s], [-10 * s, -4 * s]], { fill: light, stroke: null, seed: seed + 1 });

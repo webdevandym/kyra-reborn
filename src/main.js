@@ -16,6 +16,7 @@ const WORLD_ICONS = {
   meadow: '<svg class="level-card__world" viewBox="0 0 24 16" aria-hidden="true"><path d="M1 15h22M4 15c1-4 2-7 4-10M10 15c1-4 3-7 5-9M16 15c1-3 3-6 6-7"/></svg>',
   sky: '<svg class="level-card__world" viewBox="0 0 30 18" aria-hidden="true"><path d="M26 2a5 5 0 1 0 3 8a4 4 0 1 1-3-8z"/><path d="M4 16a4 4 0 0 1 1-8a5 5 0 0 1 9-2a4 4 0 0 1 6 3a3.5 3.5 0 0 1 0 7z"/></svg>',
   castle: '<svg class="level-card__world" viewBox="0 0 24 18" aria-hidden="true"><path d="M5 17V5h3v2h2V5h4v2h2V5h3v12z"/><path d="M10 17v-4a2 2 0 0 1 4 0v4"/></svg>',
+  sea: '<svg class="level-card__world" viewBox="0 0 30 18" aria-hidden="true"><path d="M2 9c3-4 6 4 9 0s6 4 9 0s5 3 8 0"/><path d="M2 15c3-4 6 4 9 0s6 4 9 0s5 3 8 0"/><circle cx="22" cy="3.5" r="2"/></svg>',
 };
 
 const canvas = document.getElementById('game');
@@ -216,6 +217,34 @@ function handleEvents(events) {
         break;
       case 'fire':
         if (e.x > camera.x - 100 && e.x < camera.x + VIEW_W + 100) audio.sfx.fire();
+        break;
+      case 'shell':
+        if (e.x > camera.x - 100 && e.x < camera.x + VIEW_W + 100) audio.sfx.shell();
+        break;
+      case 'bubble':
+        audio.sfx.bubble();
+        particles.sparkle(e.x, e.y, COLORS.bubbleInk);
+        break;
+      case 'bubbleGrab':
+        particles.sparkle(e.x, e.y, COLORS.bubbleInk);
+        break;
+      case 'bubblePop':
+        audio.sfx.bubblePop();
+        particles.poof(e.x, e.y);
+        break;
+      case 'pearlOpen':
+        audio.sfx.pearl();
+        particles.sparkle(e.x, e.y, COLORS.pearlShine);
+        break;
+      case 'crabPinch':
+        audio.sfx.stomp();
+        particles.stars(e.x, e.y);
+        particles.text(e.x, e.y - 14, e.result === 'defeated' ? '✓' : '♥', COLORS.heart);
+        if (e.result === 'defeated') particles.poof(e.x, e.y + 12);
+        break;
+      case 'goalOpen':
+        audio.sfx.portal();
+        particles.sparkle(e.x, e.y - 42, COLORS.goal);
         break;
       case 'shieldUp':
         audio.sfx.shieldUp();

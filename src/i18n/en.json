@@ -94,7 +94,34 @@
     },
     "level11": {
       "name": "Princess Tower",
-      "signs": { "final": "Final level —\ngood luck!" }
+      "signs": { "final": "Last castle —\ngood luck!" }
+    },
+    "level12": {
+      "name": "Coral Reef",
+      "signs": {
+        "sea": "Underwater! Dolphins and fish\nswim — jump on them!",
+        "sand": "Sand sticks move —\nhop from one to the other",
+        "bubble": "A bubble! Touch it and you\nfall slowly. It may carry a crystal",
+        "shark": "A shark has 3 lives!\nBeat it to free the crystal"
+      }
+    },
+    "level13": {
+      "name": "Bubble Bay",
+      "signs": {
+        "teal": "Turquoise crystal =\na shield for one hit",
+        "lift": "This stick goes up and down —\nhop on!",
+        "bubble": "Bubbles carry crystals —\ncatch them!",
+        "shark": "Beat the shark to\nopen the crystal"
+      }
+    },
+    "level14": {
+      "name": "Shark Deep",
+      "signs": {
+        "sea": "Last sea level —\ngood luck!",
+        "lift": "Sticks that move\nup and down",
+        "pearl": "Touch the pearl —\na crab will help!",
+        "sharks": "Two sharks!\nThe crab helps you"
+      }
     }
   }
 }

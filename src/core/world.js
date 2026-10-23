@@ -1,4 +1,4 @@
-import { TILE, PLAYER, CRYSTAL, GOAL, RULES, FIREBALL, BONE, PORTAL, DOOR, SPIDER } from '../config.js';
+import { TILE, PLAYER, CRYSTAL, GOAL, RULES, FIREBALL, BONE, PORTAL, DOOR, SPIDER, SHARK, SHELL, PEARL, TEAL } from '../config.js';
 import { createPlayer, updatePlayer } from './player.js';
 import { createEnemy, updateEnemy, stompEnemy } from './enemies.js';
 import { classifyContact } from './combat.js';
@@ -7,6 +7,11 @@ import { shiftX } from './physics.js';
 import { roomIndex, solidTop, tileAt } from './level.js';
 import { createMover, updateMovers } from './platforms.js';
 import { createRainCloud, rainPhase, rainRect } from './hazards.js';
+import { createBubble, placeBubble, bubbleRect } from './bubbles.js';
+import { createCrab, updateCrab } from './crab.js';
+
+const SHOT_EVENTS = { bone: 'throw', fireball: 'fire', shell: 'shell' };
+const KNOCKBACK = { spider: SPIDER.knockback, shark: SHARK.knockback };
 
 export function createWorld(level, collected = new Set(), { start = null } = {}) {
   const firstRoom = start ? roomIndex(level, start.x) : 0;
@@ -18,19 +23,26 @@ export function createWorld(level, collected = new Set(), { start = null } = {})
     rain: level.rainClouds.map((spec) => createRainCloud(spec, level)),
     crystals: level.crystals.filter((c) => !collected.has(c.id)).map((c) => ({ ...c })),
     projectiles: [],
+    bubbles: level.bubbles.map((spec) => createBubble(spec)),
+    teals: level.teals.map((t) => ({ ...t })),
+    pearls: level.pearls.map((p) => ({ x: p.x, y: p.y, w: PEARL.w, h: PEARL.h, open: false })),
+    crabs: [],
     portal: level.portal ? { x: level.portal.x, y: level.portal.y, w: PORTAL.w, h: PORTAL.h, open: false, openedAt: 0 } : null,
     doors: level.doors.map((d) => ({ x: d.x, y: d.y, w: DOOR.w, h: DOOR.h })),
     checkpointReached: Boolean(start),
-    goal: { x: level.goal.x, y: level.goal.y, w: GOAL.w, h: GOAL.h },
+    goal: { x: level.goal.x, y: level.goal.y, w: GOAL.w, h: GOAL.h, locked: false },
     time: 0,
     done: false,
     step: (dt, input) => stepWorld(world, dt, input),
   };
+  world.goal.locked = world.enemies.some((e) => e.kind === 'shark');
   return world;
 }
 
+const PROJECTILE_SIZE = { bone: BONE.size, shell: SHELL.size, fireball: FIREBALL.size };
+
 export function projectileRect(f) {
-  const size = f.kind === 'bone' ? BONE.size : FIREBALL.size;
+  const size = PROJECTILE_SIZE[f.kind];
   return centeredRect(f.x, f.y, size, size);
 }
 
@@ -42,6 +54,13 @@ function moveProjectile(f, dt, level, events) {
     if (tileAt(level, Math.floor(f.x / TILE), Math.floor(f.y / TILE)) !== 'solid') return true;
     events.push({ type: 'boneBreak', x: f.x, y: f.y });
     return false;
+  }
+  if (f.kind === 'shell') {
+    f.x += f.vx * dt;
+    f.y += f.vy * dt;
+    const leadX = f.x + Math.sign(f.vx) * (SHELL.size / 2);
+    const leadY = f.y + Math.sign(f.vy) * (SHELL.size / 2);
+    return f.y > -TILE && tileAt(level, Math.floor(leadX / TILE), Math.floor(leadY / TILE)) !== 'solid';
   }
   f.x += f.vx * dt;
   const lead = f.x + Math.sign(f.vx) * (FIREBALL.size / 2);
@@ -61,21 +80,41 @@ export function stepWorld(world, dt, input) {
       events.push({ type: 'rainStart', x: cloud.x, y: cloud.y });
     }
   }
-  if (p.ride && p.onGround) shiftX(p, p.ride.dx, world.level);
+  if (p.ride && p.onGround) {
+    shiftX(p, p.ride.dx, world.level);
+    p.y += p.ride.dy;
+  }
 
-  const { jumped, landed } = updatePlayer(p, input, dt, world.level, world.movers);
+  const { jumped, landed, popped } = updatePlayer(p, input, dt, world.level, world.movers);
   if (jumped) events.push({ type: 'jump', x: p.x, y: p.y });
   if (landed) events.push({ type: 'land', x: p.x, y: p.y });
+  if (popped) events.push({ type: 'bubblePop', x: p.x, y: p.y - p.h / 2 });
 
   for (const e of world.enemies) {
     const shot = updateEnemy(e, dt, world.level, p);
     if (!shot) continue;
     world.projectiles.push(shot);
-    events.push({ type: shot.kind === 'bone' ? 'throw' : 'fire', x: shot.x, y: shot.y });
+    events.push({ type: SHOT_EVENTS[shot.kind], x: shot.x, y: shot.y });
   }
+  stepCrabs(world, dt, events);
   world.projectiles = world.projectiles.filter((f) => moveProjectile(f, dt, world.level, events));
 
   const playerBox = bodyRect(p);
+  stepBubbles(world, events);
+  for (const t of world.teals) {
+    if (!overlaps(playerBox, centeredRect(t.x, t.y, TEAL.size, TEAL.size))) continue;
+    t.taken = true;
+    p.shield = true;
+    p.shieldAll = true;
+    events.push({ type: 'shieldUp', x: t.x, y: t.y });
+  }
+  world.teals = world.teals.filter((t) => !t.taken);
+  for (const pearl of world.pearls) {
+    if (pearl.open || !overlaps(playerBox, bodyRect(pearl))) continue;
+    pearl.open = true;
+    world.crabs.push(createCrab(pearl));
+    events.push({ type: 'pearlOpen', x: pearl.x, y: pearl.y - pearl.h });
+  }
   world.crystals = world.crystals.filter((c) => {
     if (!overlaps(playerBox, centeredRect(c.x, c.y, CRYSTAL.size, CRYSTAL.size))) return true;
     events.push({ type: 'crystal', id: c.id, x: c.x, y: c.y });
@@ -91,11 +130,12 @@ export function stepWorld(world, dt, input) {
       p.jumping = false;
       p.onGround = false;
       p.invuln = Math.max(p.invuln, PLAYER.stompGrace);
-      if (e.kind === 'spider' && result !== 'defeated') p.vx = e.dir * SPIDER.knockback;
+      if (KNOCKBACK[e.kind] && result !== 'defeated') p.vx = e.dir * KNOCKBACK[e.kind];
       events.push({ type: 'stomp', kind: e.kind, result, x: e.x, y: top });
       if (result === 'defeated') onDefeat(world, e, events);
     } else if (contact === 'hit' && p.invuln <= 0) {
-      return die(world, events);
+      if (!p.shieldAll) return die(world, events);
+      popShield(p, events);
     }
   }
   world.enemies = world.enemies.filter((e) => e.alive);
@@ -104,9 +144,7 @@ export function stepWorld(world, dt, input) {
     if (p.invuln > 0 || !overlaps(bodyRect(p), projectileRect(f))) continue;
     f.spent = true;
     if (f.kind === 'bone' || !p.shield) return die(world, events);
-    p.shield = false;
-    p.invuln = Math.max(p.invuln, PLAYER.stompGrace);
-    events.push({ type: 'shieldPop', x: p.x, y: p.y - p.h / 2 });
+    popShield(p, events, PLAYER.stompGrace);
   }
   world.projectiles = world.projectiles.filter((f) => !f.spent);
 
@@ -133,7 +171,7 @@ export function stepWorld(world, dt, input) {
     events.push({ type: 'door', ...moveTo(world, x, solidTop(world.level, Math.floor(x / TILE))) });
   }
 
-  if (overlaps(bodyRect(p), bodyRect(world.goal))) {
+  if (!world.goal.locked && overlaps(bodyRect(p), bodyRect(world.goal))) {
     world.done = true;
     p.won = true;
     events.push({ type: 'goal', x: world.goal.x, y: world.goal.y });
@@ -141,8 +179,63 @@ export function stepWorld(world, dt, input) {
   return events;
 }
 
+function popShield(p, events, grace = PLAYER.spawnGrace) {
+  p.shield = false;
+  p.shieldAll = false;
+  p.invuln = Math.max(p.invuln, grace);
+  events.push({ type: 'shieldPop', x: p.x, y: p.y - p.h / 2 });
+}
+
+function stepBubbles(world, events) {
+  const p = world.player;
+  const box = bodyRect(p);
+  for (const b of world.bubbles) {
+    placeBubble(b, world.time);
+    const rect = bubbleRect(b);
+    if (!b.carry) {
+      const taken = world.crystals.find((c) => overlaps(rect, centeredRect(c.x, c.y, CRYSTAL.size, CRYSTAL.size)));
+      if (taken) {
+        b.carry = taken;
+        world.crystals = world.crystals.filter((c) => c !== taken);
+        events.push({ type: 'bubbleGrab', x: b.x, y: b.y });
+      }
+    }
+    if (!overlaps(box, rect)) continue;
+    b.popped = true;
+    p.bubble = true;
+    events.push({ type: 'bubble', x: b.x, y: b.y });
+    if (b.carry) events.push({ type: 'crystal', id: b.carry.id, x: b.x, y: b.y });
+  }
+  world.bubbles = world.bubbles.filter((b) => !b.popped);
+}
+
+function stepCrabs(world, dt, events) {
+  const sharks = world.enemies.filter((e) => e.kind === 'shark');
+  for (const crab of world.crabs) {
+    const shark = updateCrab(crab, dt, world.level, sharks);
+    if (!shark) continue;
+    shark.lives -= 1;
+    shark.dizzy = SHARK.dizzyTime;
+    shark.winding = false;
+    shark.shotsLeft = 0;
+    shark.cooldown = SHARK.fireEvery;
+    const result = shark.lives > 0 ? 'hurt' : 'defeated';
+    events.push({ type: 'crabPinch', result, x: shark.x, y: shark.y - shark.h });
+    if (result === 'defeated') {
+      shark.alive = false;
+      onDefeat(world, shark, events);
+    }
+  }
+  world.crabs = world.crabs.filter((c) => c.alive);
+  world.enemies = world.enemies.filter((e) => e.alive);
+}
+
 function onDefeat(world, e, events) {
   const p = world.player;
+  if (e.kind === 'shark' && world.goal.locked && !world.enemies.some((s) => s.kind === 'shark' && s.alive)) {
+    world.goal.locked = false;
+    events.push({ type: 'goalOpen', x: world.goal.x, y: world.goal.y });
+  }
   if (e.kind === 'rat' && e.guard && !p.shield) {
     p.shield = true;
     events.push({ type: 'shieldUp', x: p.x, y: p.y - p.h });
