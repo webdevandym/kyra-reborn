@@ -390,18 +390,6 @@ kbd {
   }
 }
 
-.touch-note {
-  display: none;
-  margin: 0;
-  color: var(--comb);
-}
-
-@media (pointer: coarse) {
-  .touch-note {
-    display: block;
-  }
-}
-
 .legend {
   display: flex;
   flex-wrap: wrap;
@@ -418,7 +406,205 @@ kbd {
   margin-right: 2px;
 }
 
+[data-touch-only],
+.touch-layer,
+.rotate-note {
+  display: none;
+}
+
+html[data-touch="on"] {
+  overscroll-behavior: none;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html[data-touch="on"] body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+html[data-touch="on"] [data-touch-only] {
+  display: inline-flex;
+}
+
+html[data-touch="on"] .desk {
+  min-height: 100dvh;
+  padding: 0;
+  gap: 0;
+}
+
+html[data-touch="on"] .stage {
+  width: min(100vw, calc(100dvh * 16 / 9));
+  border-radius: 0;
+  box-shadow: none;
+}
+
+html[data-touch="on"] .legend,
+html[data-touch="on"] kbd {
+  display: none;
+}
+
+html[data-touch="on"] .btn {
+  min-height: 44px;
+  justify-content: center;
+}
+
+html[data-touch="on"][data-state="playing"] .touch-layer {
+  display: block;
+}
+
+.touch-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  touch-action: none;
+  font-family: var(--font-hand);
+  color: var(--ink);
+}
+
+.touch-pause {
+  position: absolute;
+  top: max(8px, env(safe-area-inset-top));
+  right: max(8px, env(safe-area-inset-right));
+  min-width: 44px;
+  padding-inline: 0.6em;
+  font-size: 18px;
+}
+
+.touch-stick,
+.touch-knob,
+.touch-jump,
+.touch-ring {
+  position: absolute;
+  display: none;
+  translate: -50% -50%;
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.touch-layer[data-scheme="stick"] .touch-stick {
+  display: block;
+  left: var(--stick-x);
+  top: var(--stick-y);
+  width: var(--stick-size);
+  height: var(--stick-size);
+  border-style: dashed;
+  background: rgba(35, 64, 168, 0.12);
+}
+
+.touch-layer[data-scheme="stick"] .touch-knob {
+  display: block;
+  left: var(--stick-x);
+  top: var(--stick-y);
+  width: calc(var(--stick-size) * 0.42);
+  height: calc(var(--stick-size) * 0.42);
+  background: rgba(35, 64, 168, 0.7);
+}
+
+.touch-layer[data-scheme="stick"][data-walk="on"] .touch-knob {
+  left: var(--thumb-x);
+  top: var(--thumb-y);
+}
+
+.touch-layer[data-scheme="stick"] .touch-jump {
+  display: grid;
+  place-items: center;
+  left: var(--jump-x);
+  top: var(--jump-y);
+  width: var(--jump-size);
+  height: var(--jump-size);
+  font-size: 22px;
+  font-weight: 700;
+  background: rgba(255, 216, 77, 0.8);
+}
+
+.touch-layer[data-scheme="stick"][data-jump="on"] .touch-jump {
+  background: var(--sun);
+  scale: 0.92;
+}
+
+.touch-layer[data-scheme="slide"][data-walk="on"] .touch-ring {
+  display: block;
+  left: var(--anchor-x);
+  top: var(--anchor-y);
+  width: var(--stick-size);
+  height: var(--stick-size);
+  border-style: dashed;
+  background: rgba(35, 64, 168, 0.1);
+}
+
+.touch-dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 38%;
+  height: 38%;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: rgba(35, 64, 168, 0.7);
+}
+
+.touch-layer[data-scheme="slide"][data-walk="on"] .touch-dot {
+  left: calc(50% + var(--thumb-dx));
+  top: calc(50% + var(--thumb-dy));
+}
+
+.touch-hint {
+  position: absolute;
+  top: 50%;
+  margin: 0;
+  padding: 0.2em 0.8em;
+  translate: -50% -50%;
+  font-size: 22px;
+  font-weight: 700;
+  background: var(--card);
+  border: 2px solid var(--ink);
+  border-radius: var(--wobbly);
+  opacity: 0;
+  transition: opacity 400ms ease;
+  pointer-events: none;
+}
+
+.touch-hint--jump {
+  left: 25%;
+}
+
+.touch-hint--walk {
+  left: 75%;
+}
+
+.touch-layer[data-hint="on"] .touch-hint {
+  opacity: 0.85;
+}
+
+.rotate-note {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  place-items: center;
+  padding: 24px;
+  text-align: center;
+  font-family: var(--font-hand);
+  font-size: 9vw;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--desk);
+}
+
+@media (orientation: portrait) {
+  html[data-touch="on"] .rotate-note {
+    display: grid;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .touch-hint {
+    transition: none;
+  }
   .banner {
     animation: none;
   }

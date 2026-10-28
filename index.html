@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <title>Kyra Reborn</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='28' cy='38' r='20' fill='%23FFFDF5' stroke='%232340A8' stroke-width='4'/%3E%3Ccircle cx='40' cy='20' r='12' fill='%23FFFDF5' stroke='%232340A8' stroke-width='4'/%3E%3Cpath d='M50 18l10 4-10 4z' fill='%23F59E0B'/%3E%3Ccircle cx='36' cy='8' r='5' fill='%23E5484D'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -31,9 +31,9 @@
           <div class="row">
             <button class="btn" type="button" data-action="lang"><kbd>L</kbd> <span data-next-lang></span></button>
             <button class="btn" type="button" data-action="mute"><kbd>M</kbd> <span data-sound-label></span></button>
+            <button class="btn" type="button" data-action="controls" data-touch-only><span data-controls-label></span></button>
           </div>
           <p class="stat"><span data-i18n="best"></span>: <strong data-stat="best"></strong></p>
-          <p class="touch-note" data-i18n="keyboardNeeded"></p>
         </div>
       </section>
 
@@ -48,6 +48,7 @@
           <div class="row">
             <button class="btn" type="button" data-action="lang"><kbd>L</kbd> <span data-next-lang></span></button>
             <button class="btn" type="button" data-action="mute"><kbd>M</kbd> <span data-sound-label></span></button>
+            <button class="btn" type="button" data-action="controls" data-touch-only><span data-controls-label></span></button>
           </div>
           <button class="btn btn--quiet" type="button" data-action="menu" data-i18n="menu"></button>
         </div>
@@ -96,6 +97,16 @@
       <li><kbd>L</kbd> <span data-i18n="language"></span></li>
     </ul>
   </main>
+  <div class="touch-layer" id="touch-layer" data-scheme="slide" data-hint="off" data-jump="off" data-walk="off">
+    <div class="touch-stick" aria-hidden="true"></div>
+    <div class="touch-knob" aria-hidden="true"></div>
+    <div class="touch-jump" aria-hidden="true"><span data-i18n="jump"></span></div>
+    <div class="touch-ring" aria-hidden="true"><div class="touch-dot"></div></div>
+    <p class="touch-hint touch-hint--jump" aria-hidden="true" data-i18n="hintJump"></p>
+    <p class="touch-hint touch-hint--walk" aria-hidden="true" data-i18n="hintWalk"></p>
+    <button class="btn touch-pause" type="button" data-action="pause" data-i18n-aria-label="pause">II</button>
+  </div>
+  <div class="rotate-note" role="alert" data-i18n="turnPhone"></div>
   <script type="module" src="src/main.js"></script>
 </body>
 </html>

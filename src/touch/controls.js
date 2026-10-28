@@ -117,7 +117,7 @@ export function createTouchControls({ scheme = DEFAULT_SCHEME, size = { width: 9
           anchorX: walk.anchorX,
           anchorY: walk.anchorY,
           x: walk.anchorX + clamp(walk.x - walk.anchorX, slideRange()),
-          y: walk.y,
+          y: walk.anchorY + clamp(walk.y - walk.anchorY, slideRange()),
           dir,
         },
       };

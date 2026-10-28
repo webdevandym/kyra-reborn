@@ -1,9 +1,11 @@
-export function createTouchSurface(stage, controls, { isActive, size = { width: 960, height: 540 } }) {
+export function createTouchSurface(stage, controls, { isActive, size = null }) {
   const tracked = new Set();
 
   function point(event) {
     const rect = stage.getBoundingClientRect();
-    return [((event.clientX - rect.left) * size.width) / rect.width, ((event.clientY - rect.top) * size.height) / rect.height];
+    const width = size?.width ?? rect.width;
+    const height = size?.height ?? rect.height;
+    return [((event.clientX - rect.left) * width) / rect.width, ((event.clientY - rect.top) * height) / rect.height];
   }
 
   function onDown(event) {
