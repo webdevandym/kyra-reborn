@@ -427,6 +427,14 @@ html[data-touch="on"] body {
   overflow: hidden;
 }
 
+html[data-touch="on"] {
+  background-color: var(--strip-color, var(--desk));
+}
+
+html[data-touch="on"] body {
+  background: transparent;
+}
+
 html[data-touch="on"] body {
   position: fixed;
   inset: 0;

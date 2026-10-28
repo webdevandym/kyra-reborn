@@ -15,6 +15,7 @@ import { createTouchOverlay } from './touch/overlay.js';
 import { createTouchSurface } from './touch/surface.js';
 import { hudInsets } from './touch/hud.js';
 import { createDiag } from './diag.js';
+import { STRIP_COLOR, STRIP_RGB } from './render/strip.js';
 import { ambientNeeded, reflectionStrips } from './render/ambient.js';
 import { swipeStep } from './touch/swipe.js';
 
@@ -93,7 +94,7 @@ const safeProbe = document.getElementById('safe-probe');
 const ambient = document.getElementById('ambient');
 const ambientCtx = ambient.getContext('2d');
 const AMBIENT_SCALE = 1 / 3;
-const DESK_RGB = '217, 227, 242';
+document.documentElement.style.setProperty('--strip-color', STRIP_COLOR);
 const NO_HUD_INSET = { left: 0, right: 0, corner: 0 };
 let appliedViewWidth = 0;
 let stageRect = { left: 0, top: 0, width: 0, height: 0 };
@@ -176,8 +177,8 @@ function fadeStrip(strip) {
     bottom: [0, dy, 0, dy + dh],
   };
   const fade = ambientCtx.createLinearGradient(...gradients[side]);
-  fade.addColorStop(0, `rgba(${DESK_RGB}, 0.1)`);
-  fade.addColorStop(1, `rgba(${DESK_RGB}, 0.9)`);
+  fade.addColorStop(0, `rgba(${STRIP_RGB}, 0.1)`);
+  fade.addColorStop(1, `rgba(${STRIP_RGB}, 0.9)`);
   ambientCtx.fillStyle = fade;
   ambientCtx.fillRect(dx, dy, dw, dh);
 }
