@@ -428,6 +428,7 @@ carousel.addEventListener(
 );
 
 window.addEventListener('pointerdown', () => audio.unlock());
+window.addEventListener('touchend', () => audio.unlock(), { passive: true });
 
 const portrait = matchMedia('(orientation: portrait)');
 
