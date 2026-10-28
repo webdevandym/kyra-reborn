@@ -56,7 +56,8 @@ body {
   width: min(calc(100vw - 32px), calc((100dvh - 96px) * 16 / 9), 1600px);
   aspect-ratio: 16 / 9;
   max-width: 100%;
-  container-type: inline-size;
+  container-type: size;
+  --cqi: min(1cqi, calc(1cqh * 16 / 9));
   border-radius: 6px;
   box-shadow: 0 2px 0 rgba(35, 64, 168, 0.12), 0 18px 40px -18px rgba(35, 64, 168, 0.45);
   overflow: hidden;
@@ -74,7 +75,7 @@ canvas {
   inset: 0;
   display: grid;
   place-items: center;
-  padding: 3cqi;
+  padding: calc(3 * var(--cqi));
   overflow: auto;
   background: rgba(251, 252, 255, 0.35);
 }
@@ -82,15 +83,15 @@ canvas {
 .card {
   display: grid;
   justify-items: center;
-  gap: 1.6cqi;
-  max-width: min(92%, 62cqi);
-  padding: 3cqi 5cqi;
+  gap: calc(1.6 * var(--cqi));
+  max-width: min(92%, calc(62 * var(--cqi)));
+  padding: calc(3 * var(--cqi)) calc(5 * var(--cqi));
   background: var(--card);
   border: 3px solid var(--ink);
   border-radius: var(--wobbly);
-  box-shadow: 0.6cqi 0.8cqi 0 var(--shadow);
+  box-shadow: calc(0.6 * var(--cqi)) calc(0.8 * var(--cqi)) 0 var(--shadow);
   text-align: center;
-  font-size: clamp(12px, 2.1cqi, 24px);
+  font-size: clamp(12px, calc(2.1 * var(--cqi)), 24px);
   transform: rotate(-0.6deg);
 }
 
@@ -98,7 +99,7 @@ canvas {
   margin: 0;
   font-family: var(--font-hand);
   font-weight: 700;
-  font-size: 6.2cqi;
+  font-size: calc(6.2 * var(--cqi));
   line-height: 1;
   text-wrap: balance;
 }
@@ -107,18 +108,18 @@ canvas {
   margin: 0;
   font-family: var(--font-hand);
   font-weight: 700;
-  font-size: 10cqi;
+  font-size: calc(10 * var(--cqi));
   line-height: 0.9;
   letter-spacing: 0.01em;
-  text-decoration: underline wavy var(--comb) 0.35cqi;
-  text-underline-offset: 1.4cqi;
+  text-decoration: underline wavy var(--comb) calc(0.35 * var(--cqi));
+  text-underline-offset: calc(1.4 * var(--cqi));
 }
 
 .subtitle {
   margin: 0;
   font-family: var(--font-hand);
   font-weight: 600;
-  font-size: 3.4cqi;
+  font-size: calc(3.4 * var(--cqi));
 }
 
 .lead,
@@ -134,7 +135,7 @@ canvas {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 1.2cqi;
+  gap: calc(1.2 * var(--cqi));
 }
 
 .btn {
@@ -171,31 +172,31 @@ canvas {
 }
 
 .card--title {
-  gap: 0.85cqi;
-  padding-block: 1.9cqi;
+  gap: calc(0.85 * var(--cqi));
+  padding-block: calc(1.9 * var(--cqi));
 }
 
 [data-screen="victory"] .card {
-  gap: 1.1cqi;
-  padding-block: 2.4cqi;
+  gap: calc(1.1 * var(--cqi));
+  padding-block: calc(2.4 * var(--cqi));
 }
 
 [data-screen="victory"] .card h2 {
-  font-size: 5.4cqi;
+  font-size: calc(5.4 * var(--cqi));
 }
 
 .card--title .logo {
-  font-size: 6.6cqi;
+  font-size: calc(6.6 * var(--cqi));
 }
 
 .card--title .subtitle {
-  font-size: 2.4cqi;
+  font-size: calc(2.4 * var(--cqi));
 }
 
 .picker {
   display: grid;
   justify-items: center;
-  gap: 0.7cqi;
+  gap: calc(0.7 * var(--cqi));
 }
 
 .picker__heading {
@@ -205,8 +206,8 @@ canvas {
 }
 
 .carousel {
-  --card-w: 14cqi;
-  --gap: 1.4cqi;
+  --card-w: calc(14 * var(--cqi));
+  --gap: calc(1.4 * var(--cqi));
   position: relative;
   width: calc(var(--card-w) * 2.3);
   max-width: 100%;
@@ -305,12 +306,12 @@ canvas {
 .carousel__dots {
   display: flex;
   justify-content: center;
-  gap: 0.6cqi;
+  gap: calc(0.6 * var(--cqi));
 }
 
 .carousel__dot {
-  width: 1.1cqi;
-  height: 1.1cqi;
+  width: calc(1.1 * var(--cqi));
+  height: calc(1.1 * var(--cqi));
   min-width: 7px;
   min-height: 7px;
   border: 2px solid currentColor;
@@ -367,15 +368,15 @@ kbd {
   top: 34%;
   left: 50%;
   translate: -50% 0;
-  padding: 1.2cqi 4cqi;
+  padding: calc(1.2 * var(--cqi)) calc(4 * var(--cqi));
   font-family: var(--font-hand);
   font-weight: 700;
-  font-size: 6cqi;
+  font-size: calc(6 * var(--cqi));
   white-space: nowrap;
   background: var(--card);
   border: 3px solid var(--ink);
   border-radius: var(--wobbly);
-  box-shadow: 0.6cqi 0.8cqi 0 var(--shadow);
+  box-shadow: calc(0.6 * var(--cqi)) calc(0.8 * var(--cqi)) 0 var(--shadow);
   animation: banner-in 420ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
 }
 
@@ -437,12 +438,13 @@ html[data-touch="on"] [data-touch-only] {
 
 html[data-touch="on"] .desk {
   min-height: 100dvh;
-  padding: 0;
+  padding: 0 env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px);
   gap: 0;
 }
 
 html[data-touch="on"] .stage {
-  width: min(100vw, calc(100dvh * 16 / 9));
+  width: min(calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)), calc(100dvh * var(--view-aspect, 16 / 9)));
+  aspect-ratio: var(--view-aspect, 16 / 9);
   border-radius: 0;
   box-shadow: none;
 }

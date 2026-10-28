@@ -90,7 +90,8 @@ export function createScene(ctx) {
     ctx.fillText(text, x, y);
   }
 
-  function drawHud(game, lang, muted) {
+  function drawHud(game, lang, muted, inset) {
+    const right = VIEW_W - inset;
     const shown = Math.min(game.lives, 5);
     for (let i = 0; i < shown; i++) drawHeart(ctx, 32 + i * 34, 32, 13, 71 + i);
     if (game.lives > 5) hudText(`×${game.lives}`, 32 + shown * 34 - 8, 34, 'left', '700 24px "Balsamiq Sans", system-ui, sans-serif');
@@ -98,11 +99,11 @@ export function createScene(ctx) {
     const title = `${t('level', lang)} ${game.levelIndex + 1} · ${t(game.level.nameKey, lang)}`;
     hudText(title, VIEW_W / 2, 32, 'center', '700 32px "Caveat", "Comic Sans MS", cursive');
 
-    drawGemIcon(ctx, VIEW_W - 92, 30);
-    hudText(String(game.points), VIEW_W - 28, 32, 'right', '700 28px "Balsamiq Sans", system-ui, sans-serif');
+    drawGemIcon(ctx, right - 92, 30);
+    hudText(String(game.points), right - 28, 32, 'right', '700 28px "Balsamiq Sans", system-ui, sans-serif');
     const progress = game.points % RULES.crystalsPerLife;
     for (let i = 0; i < RULES.crystalsPerLife; i++) {
-      inkEllipse(ctx, VIEW_W - 124 + i * 20, 62, 5.5, 5.5, { fill: i < progress ? COLORS.crystal : COLORS.paper, width: 1.8, seed: 100 + i });
+      inkEllipse(ctx, right - 124 + i * 20, 62, 5.5, 5.5, { fill: i < progress ? COLORS.crystal : COLORS.paper, width: 1.8, seed: 100 + i });
     }
     if (muted) drawMutedIcon(ctx, VIEW_W - 32, VIEW_H - 28);
   }
@@ -133,7 +134,7 @@ export function createScene(ctx) {
     ctx.restore();
   }
 
-  function render({ game, camera, particles, time, lang, muted, debug = false, touch = false, reducedMotion = false, shake = { x: 0, y: 0 }, fps = 0 }) {
+  function render({ game, camera, particles, time, lang, muted, debug = false, touch = false, hudInset = 0, reducedMotion = false, shake = { x: 0, y: 0 }, fps = 0 }) {
     setBoilTime(time, reducedMotion);
     const { world } = game;
     const { level } = world;
@@ -180,7 +181,7 @@ export function createScene(ctx) {
     ctx.restore();
 
     particles.drawScreen(ctx);
-    if (game.state !== 'title') drawHud(game, lang, muted);
+    if (game.state !== 'title') drawHud(game, lang, muted, hudInset);
     if (debug) {
       ctx.font = '12px monospace';
       ctx.fillStyle = COLORS.ink;

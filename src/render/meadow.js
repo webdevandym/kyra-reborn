@@ -1,4 +1,4 @@
-import { TILE, VIEW_W, COLORS } from '../config.js';
+import { TILE, VIEW_W, VIEW_W_MAX, COLORS } from '../config.js';
 import { tileAt } from '../core/level.js';
 import { mulberry32, inkShape, inkEllipse, inkLine } from './ink.js';
 import { drawGreenCrystal } from './sprites.js';
@@ -13,11 +13,11 @@ export function createMeadowTheme(ctx) {
     if (doodleCache.has(level.id)) return doodleCache.get(level.id);
     const rand = mulberry32(hashString(level.id));
     const clouds = [];
-    for (let x = 60; x < level.width * 0.3 + VIEW_W; x += 280 + rand() * 260) {
+    for (let x = 60; x < level.width * 0.3 + VIEW_W_MAX; x += 280 + rand() * 260) {
       clouds.push({ x, y: 70 + rand() * 90, s: 0.8 + rand() * 0.6, seed: Math.floor(rand() * 1e5) });
     }
     const hills = [];
-    for (let x = -120; x < level.width * 0.5 + VIEW_W; x += 240 + rand() * 200) {
+    for (let x = -120; x < level.width * 0.5 + VIEW_W_MAX; x += 240 + rand() * 200) {
       hills.push({ x, w: 260 + rand() * 220, h: 60 + rand() * 80, seed: Math.floor(rand() * 1e5) });
     }
     const doodles = { clouds, hills };

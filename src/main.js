@@ -1,5 +1,5 @@
 import * as config from './config.js';
-import { VIEW_W, VIEW_H, STEP, MAX_FRAME, TILE, COLORS } from './config.js';
+import { VIEW_W, VIEW_H, VIEW_W_MIN, STEP, MAX_FRAME, TILE, COLORS, setViewWidth, viewWidthFor } from './config.js';
 import levels from './levels/index.js';
 import { createGame } from './core/game.js';
 import { createCamera, updateCamera, snapCamera } from './core/camera.js';
@@ -69,6 +69,7 @@ const touchMode = createTouchMode({
   onChange: (active) => {
     document.documentElement.dataset.touch = active ? 'on' : 'off';
     releaseTouch();
+    applyView();
   },
 });
 const surface = createTouchSurface(touchLayer, touch, { isActive: () => touchMode.isActive() && game.state === 'playing' });
@@ -84,13 +85,53 @@ function syncTouchSize() {
   overlay.setSize(viewportSize());
 }
 
+const desk = document.querySelector('.desk');
+let appliedViewWidth = 0;
+
+function applyView() {
+  let width = VIEW_W_MIN;
+  if (touchMode.isActive()) {
+    const style = getComputedStyle(desk);
+    const available = window.innerWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+    width = viewWidthFor(available / window.innerHeight);
+  }
+  const next = setViewWidth(width);
+  if (next === appliedViewWidth) return;
+  appliedViewWidth = next;
+  document.documentElement.style.setProperty('--view-aspect', `${next} / ${VIEW_H}`);
+  snapCamera(camera, game.world.player, game.world.level);
+  resizeCanvas();
+}
+
+let seenViewport = '';
+
+function syncViewport() {
+  const key = `${window.innerWidth}x${window.innerHeight}`;
+  if (key === seenViewport) return;
+  seenViewport = key;
+  syncTouchSize();
+  applyView();
+}
+
 let shakeTime = 0;
 
+const PAUSE_BUTTON = { size: 44, edge: 8 };
+let hudInset = 0;
+
+function pauseButtonOverlap(stageRight, stageWidth) {
+  if (!touchMode.isActive()) return 0;
+  const safeRight = parseFloat(getComputedStyle(desk).paddingRight) || 0;
+  const buttonLeft = window.innerWidth - Math.max(PAUSE_BUTTON.edge, safeRight) - PAUSE_BUTTON.size;
+  const overlap = Math.max(0, stageRight - buttonLeft + PAUSE_BUTTON.edge);
+  return (overlap * VIEW_W) / stageWidth;
+}
+
 function resizeCanvas() {
-  const { width, height } = canvas.getBoundingClientRect();
+  const { width, height, right } = canvas.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
   canvas.width = Math.max(1, Math.round(width * dpr));
   canvas.height = Math.max(1, Math.round(height * dpr));
+  hudInset = width > 0 ? pauseButtonOverlap(right, width) : 0;
 }
 
 function levelTitle(index = game.levelIndex) {
@@ -441,13 +482,14 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) autoPause();
 });
 window.addEventListener('blur', autoPause);
-window.addEventListener('resize', syncTouchSize);
+window.addEventListener('resize', syncViewport);
 portrait.addEventListener('change', (event) => {
   if (event.matches && touchMode.isActive()) autoPause();
 });
 
 new ResizeObserver(resizeCanvas).observe(canvas);
 resizeCanvas();
+syncViewport();
 
 if (debug) {
   window.kyra = {
@@ -479,6 +521,7 @@ function syncState() {
 }
 
 function frame(now) {
+  syncViewport();
   const dt = Math.min((now - last) / 1000, MAX_FRAME);
   last = now;
   fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
@@ -500,7 +543,7 @@ function frame(now) {
   const k = shakeTime / 0.3;
   const shake = { x: (Math.random() - 0.5) * 10 * k, y: (Math.random() - 0.5) * 8 * k };
   ctx.setTransform(canvas.width / VIEW_W, 0, 0, canvas.height / VIEW_H, 0, 0);
-  scene.render({ game, camera, particles, time, lang: prefs.lang, muted: audio.muted, debug, touch: touchMode.isActive(), reducedMotion, shake, fps });
+  scene.render({ game, camera, particles, time, lang: prefs.lang, muted: audio.muted, debug, touch: touchMode.isActive(), hudInset, reducedMotion, shake, fps });
   requestAnimationFrame(frame);
 }
 

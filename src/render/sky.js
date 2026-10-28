@@ -1,4 +1,4 @@
-import { TILE, VIEW_W, COLORS } from '../config.js';
+import { TILE, VIEW_W, VIEW_W_MAX, COLORS } from '../config.js';
 import { tileAt } from '../core/level.js';
 import { mulberry32, inkShape, inkLine, inkPoly } from './ink.js';
 import { hashString, visibleCols } from './layout.js';
@@ -11,11 +11,11 @@ export function createSkyTheme(ctx) {
     if (doodleCache.has(level.id)) return doodleCache.get(level.id);
     const rand = mulberry32(hashString(level.id) ^ 0x5bd1e995);
     const sparkles = [];
-    for (let x = 30; x < level.width * 0.1 + VIEW_W + 60; x += 60 + rand() * 90) {
+    for (let x = 30; x < level.width * 0.1 + VIEW_W_MAX + 60; x += 60 + rand() * 90) {
       sparkles.push({ x, y: 24 + rand() * 250, r: 3 + rand() * 3.5, tw: rand() * Math.PI * 2, seed: Math.floor(rand() * 1e5) });
     }
     const clouds = [];
-    for (let x = 80; x < level.width * 0.3 + VIEW_W; x += 320 + rand() * 280) {
+    for (let x = 80; x < level.width * 0.3 + VIEW_W_MAX; x += 320 + rand() * 280) {
       clouds.push({ x, y: 60 + rand() * 140, s: 0.7 + rand() * 0.5, seed: Math.floor(rand() * 1e5) });
     }
     const doodles = { sparkles, clouds };
