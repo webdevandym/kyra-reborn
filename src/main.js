@@ -14,6 +14,7 @@ import { createTouchMode } from './touch/mode.js';
 import { createTouchOverlay } from './touch/overlay.js';
 import { createTouchSurface } from './touch/surface.js';
 import { hudInsets } from './touch/hud.js';
+import { createDiag } from './diag.js';
 import { ambientNeeded, reflectionStrips } from './render/ambient.js';
 import { swipeStep } from './touch/swipe.js';
 
@@ -116,7 +117,26 @@ function applyView() {
 
 let seenViewport = '';
 
+let pinned = '';
+
+function pinToVisibleArea() {
+  const vv = window.visualViewport;
+  const style = document.documentElement.style;
+  const next = vv && touchMode.isActive() ? `${vv.offsetLeft}|${vv.offsetTop}|${vv.width}|${vv.height}` : '';
+  if (next === pinned) return;
+  pinned = next;
+  if (!next) {
+    for (const name of ['left', 'top', 'width', 'height']) style.removeProperty(`--vv-${name}`);
+    return;
+  }
+  style.setProperty('--vv-left', `${vv.offsetLeft}px`);
+  style.setProperty('--vv-top', `${vv.offsetTop}px`);
+  style.setProperty('--vv-width', `${vv.width}px`);
+  style.setProperty('--vv-height', `${vv.height}px`);
+}
+
 function syncViewport() {
+  pinToVisibleArea();
   const size = viewportSize();
   const key = `${size.width}x${size.height}`;
   if (key === seenViewport) return;
@@ -136,11 +156,12 @@ function resizeCanvas() {
   const dpr = window.devicePixelRatio || 1;
   canvas.width = Math.max(1, Math.round(rect.width * dpr));
   canvas.height = Math.max(1, Math.round(rect.height * dpr));
-  stageRect = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+  const origin = desk.getBoundingClientRect();
+  stageRect = { left: rect.left - origin.left, top: rect.top - origin.top, right: rect.right - origin.left, width: rect.width, height: rect.height };
   const size = viewportSize();
   const touching = touchMode.isActive() && rect.width > 0;
-  hud = touching ? hudInsets({ stage: rect, viewportWidth: size.width, safe: safeInsets(), viewW: VIEW_W }) : NO_HUD_INSET;
-  ambientOn = touching && ambientNeeded(rect, size);
+  hud = touching ? hudInsets({ stage: stageRect, viewportWidth: size.width, safe: safeInsets(), viewW: VIEW_W }) : NO_HUD_INSET;
+  ambientOn = touching && ambientNeeded(stageRect, size);
   document.documentElement.dataset.ambient = ambientOn ? 'on' : 'off';
   ambient.width = Math.max(1, Math.round(size.width * AMBIENT_SCALE));
   ambient.height = Math.max(1, Math.round(size.height * AMBIENT_SCALE));
@@ -553,6 +574,10 @@ portrait.addEventListener('change', (event) => {
 new ResizeObserver(resizeCanvas).observe(canvas);
 resizeCanvas();
 syncViewport();
+
+if (location.hash.includes('diag')) {
+  createDiag({ desk, stage: document.getElementById('stage'), layer: touchLayer, probe: safeProbe, view: () => VIEW_W, touchActive: () => touchMode.isActive() });
+}
 
 if (debug) {
   window.kyra = {

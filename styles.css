@@ -486,6 +486,30 @@ html[data-touch="on"] .stage {
   box-shadow: none;
 }
 
+html[data-touch="on"] .desk,
+html[data-touch="on"] .touch-layer,
+html[data-touch="on"] .ambient {
+  inset: auto;
+  left: var(--vv-left, 0px);
+  top: var(--vv-top, 0px);
+  width: var(--vv-width, 100%);
+  height: var(--vv-height, 100%);
+}
+
+.diag {
+  position: fixed;
+  left: 70px;
+  top: 54px;
+  z-index: 50;
+  margin: 0;
+  padding: 2px 5px;
+  font: 10px/1.25 ui-monospace, Menlo, monospace;
+  color: #111;
+  background: rgba(255, 255, 255, 0.88);
+  pointer-events: none;
+  white-space: pre;
+}
+
 html[data-touch="on"] .legend,
 html[data-touch="on"] kbd {
   display: none;
