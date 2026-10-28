@@ -1,4 +1,4 @@
-import { TILE, VIEW_W, COLORS } from '../config.js';
+import { TILE, VIEW_W, VIEW_W_MAX, COLORS } from '../config.js';
 import { tileAt, roomAt } from '../core/level.js';
 import { mulberry32, inkShape, inkLine, inkRect } from './ink.js';
 import { hashString, visibleCols } from './layout.js';
@@ -14,7 +14,7 @@ export function createCastleTheme(ctx) {
     const perRoom = level.rooms.map((room) => {
       const props = ROOM_PROPS[room.kind ?? 'hall'];
       const start = room.left * 0.3 + 70;
-      const end = Math.max(room.left, room.right - VIEW_W) * 0.3 + VIEW_W - 70;
+      const end = Math.max(room.left, room.right - VIEW_W_MAX) * 0.3 + VIEW_W_MAX - 70;
       const items = [];
       for (let x = start, i = 0; x < end; x += 150 + rand() * 90, i++) {
         items.push({ draw: props[i % props.length], x, seed: Math.floor(rand() * 1e5) });

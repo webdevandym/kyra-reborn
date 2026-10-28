@@ -1,4 +1,4 @@
-import { TILE, VIEW_W, VIEW_H, COLORS } from '../config.js';
+import { TILE, VIEW_W, VIEW_W_MAX, VIEW_H, COLORS } from '../config.js';
 import { tileAt } from '../core/level.js';
 import { mulberry32, inkShape, inkEllipse, inkLine, inkPoly } from './ink.js';
 import { drawGreenCrystal } from './sprites.js';
@@ -12,15 +12,15 @@ export function createSeaTheme(ctx) {
     if (doodleCache.has(level.id)) return doodleCache.get(level.id);
     const rand = mulberry32(hashString(level.id) ^ 0x1b873593);
     const rays = [];
-    for (let x = -60; x < level.width * 0.15 + VIEW_W; x += 150 + rand() * 120) {
+    for (let x = -60; x < level.width * 0.15 + VIEW_W_MAX; x += 150 + rand() * 120) {
       rays.push({ x, w: 40 + rand() * 50, lean: 60 + rand() * 60 });
     }
     const bubbles = [];
-    for (let x = 20; x < level.width * 0.25 + VIEW_W; x += 70 + rand() * 110) {
+    for (let x = 20; x < level.width * 0.25 + VIEW_W_MAX; x += 70 + rand() * 110) {
       bubbles.push({ x, y: rand() * VIEW_H, r: 3 + rand() * 5, speed: 14 + rand() * 22, wobble: rand() * Math.PI * 2, seed: Math.floor(rand() * 1e5) });
     }
     const weeds = [];
-    for (let x = 0; x < level.width * 0.4 + VIEW_W; x += 110 + rand() * 140) {
+    for (let x = 0; x < level.width * 0.4 + VIEW_W_MAX; x += 110 + rand() * 140) {
       weeds.push({ x, h: 90 + rand() * 110, sway: rand() * Math.PI * 2, seed: Math.floor(rand() * 1e5) });
     }
     const doodles = { rays, bubbles, weeds };

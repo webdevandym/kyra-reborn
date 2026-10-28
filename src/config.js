@@ -1,7 +1,21 @@
 export const TILE = 45;
 export const ROWS = 12;
-export const VIEW_W = 960;
 export const VIEW_H = 540;
+export const VIEW_W_MIN = 960;
+export const VIEW_W_MAX = 1260;
+export let VIEW_W = VIEW_W_MIN;
+
+const clampViewWidth = (width) => Math.min(VIEW_W_MAX, Math.max(VIEW_W_MIN, Math.round(width)));
+
+export function viewWidthFor(aspect) {
+  if (!Number.isFinite(aspect) || aspect <= 0) return VIEW_W_MIN;
+  return clampViewWidth(VIEW_H * aspect);
+}
+
+export function setViewWidth(width) {
+  VIEW_W = clampViewWidth(width);
+  return VIEW_W;
+}
 export const STEP = 1 / 120;
 export const MAX_FRAME = 0.1;
 export const GRAVITY = 2400;
