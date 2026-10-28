@@ -1,7 +1,7 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { LANGS, DEFAULT_LANG, LANG_NAMES, loadLang, unloadLangs, t, nextLang, nextLangName, resolveLang, formatTime } from '../src/i18n/index.js';
+import { LANGS, DEFAULT_LANG, LANG_NAMES, loadLang, unloadLangs, t, tSign, nextLang, nextLangName, resolveLang, formatTime } from '../src/i18n/index.js';
 
 const dir = new URL('../src/i18n/', import.meta.url);
 const readJson = (url) => JSON.parse(readFileSync(url, 'utf8'));
@@ -120,4 +120,20 @@ test('formatTime shows whole minutes and zero-padded whole seconds', () => {
   assert.equal(formatTime(-3), '0:00');
   assert.equal(formatTime(Number.NaN), '0:00');
   assert.equal(formatTime(Number.POSITIVE_INFINITY), '0:00');
+});
+
+test('tSign uses the Touch variant when touch is on and it exists', async () => {
+  await loadLang('en', { fetchJson: readJson });
+  assert.equal(tSign('levels.level1.signs.jump', 'en', true), t('levels.level1.signs.jumpTouch', 'en'));
+  assert.notEqual(tSign('levels.level1.signs.jump', 'en', true), t('levels.level1.signs.jump', 'en'));
+});
+
+test('tSign falls back to the normal sign when no Touch variant exists', async () => {
+  await loadLang('en', { fetchJson: readJson });
+  assert.equal(tSign('levels.level1.signs.stomp', 'en', true), t('levels.level1.signs.stomp', 'en'));
+});
+
+test('tSign ignores Touch variants when touch is off', async () => {
+  await loadLang('en', { fetchJson: readJson });
+  assert.equal(tSign('levels.level1.signs.jump', 'en', false), t('levels.level1.signs.jump', 'en'));
 });

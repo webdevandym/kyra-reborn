@@ -2,7 +2,7 @@ import { TILE, VIEW_W, VIEW_H, COLORS, RULES, CRYSTAL, PORTAL } from '../config.
 import { bodyRect, centeredRect } from '../core/rect.js';
 import { rainPhase, rainRect } from '../core/hazards.js';
 import { projectileRect } from '../core/world.js';
-import { t } from '../i18n/index.js';
+import { t, tSign } from '../i18n/index.js';
 import { setBoilTime, inkEllipse, inkLine } from './ink.js';
 import { createMeadowTheme } from './meadow.js';
 import { createSkyTheme } from './sky.js';
@@ -133,7 +133,7 @@ export function createScene(ctx) {
     ctx.restore();
   }
 
-  function render({ game, camera, particles, time, lang, muted, debug = false, reducedMotion = false, shake = { x: 0, y: 0 }, fps = 0 }) {
+  function render({ game, camera, particles, time, lang, muted, debug = false, touch = false, reducedMotion = false, shake = { x: 0, y: 0 }, fps = 0 }) {
     setBoilTime(time, reducedMotion);
     const { world } = game;
     const { level } = world;
@@ -153,7 +153,7 @@ export function createScene(ctx) {
     world.doors.forEach((d, i) => drawDoor(ctx, d, time, 731 + i * 11));
     if (world.portal?.open) drawPortal(ctx, world.portal, (world.time - world.portal.openedAt) / PORTAL.grow, time);
     world.movers.forEach((m, i) => (level.theme === 'sea' ? drawSandStick : drawMovingCloud)(ctx, m, 391 + i * 13));
-    level.signs.forEach((sign, i) => drawSign(ctx, sign, t(sign.textKey, lang), 61 + i * 7));
+    level.signs.forEach((sign, i) => drawSign(ctx, sign, tSign(sign.textKey, lang, touch), 61 + i * 7));
     world.crystals.forEach((c, i) => drawRedCrystal(ctx, c, time, 41 + i));
     theme.drawGoal(world.goal, time, world.player.won, world.goal.locked);
     world.pearls.forEach((pearl, i) => drawPearl(ctx, pearl, time, 961 + i * 17));

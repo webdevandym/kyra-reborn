@@ -42,6 +42,15 @@ export function t(key, lang = DEFAULT_LANG) {
   return typeof node === 'string' ? node : key;
 }
 
+export function tSign(textKey, lang = DEFAULT_LANG, touch = false) {
+  if (touch) {
+    const touchKey = `${textKey}Touch`;
+    const text = t(touchKey, lang);
+    if (text !== touchKey) return text;
+  }
+  return t(textKey, lang);
+}
+
 export function nextLang(lang) {
   return LANGS[(LANGS.indexOf(lang) + 1) % LANGS.length];
 }

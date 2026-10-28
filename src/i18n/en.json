@@ -21,7 +21,11 @@
     "levelTime": "Level time",
     "soundOn": "Sound: on",
     "soundOff": "Sound: off",
-    "keyboardNeeded": "You need a keyboard to play",
+    "controlsSlide": "Controls: slide",
+    "controlsStick": "Controls: stick",
+    "turnPhone": "Turn your phone sideways",
+    "hintJump": "Tap to jump",
+    "hintWalk": "Slide to walk",
     "walk": "walk",
     "jump": "jump",
     "pause": "pause",
@@ -36,7 +40,9 @@
       "name": "Carrot Field",
       "signs": {
         "walk": "← → to walk",
+        "walkTouch": "Slide your thumb\nto walk",
         "jump": "Space to jump!\nHold it to go higher!",
+        "jumpTouch": "Tap to jump!\nHold it to go higher!",
         "stomp": "Jump on the\ncarrot from above!",
         "crystals": "5 crystals =\n+1 life",
         "goal": "Green crystal =\nfinish!"

@@ -21,7 +21,11 @@
     "levelTime": "Czas poziomu",
     "soundOn": "Dźwięk: wł.",
     "soundOff": "Dźwięk: wył.",
-    "keyboardNeeded": "Do gry potrzebna jest klawiatura",
+    "controlsSlide": "Sterowanie: przesuwanie",
+    "controlsStick": "Sterowanie: drążek",
+    "turnPhone": "Obróć telefon poziomo",
+    "hintJump": "Dotknij, żeby skoczyć",
+    "hintWalk": "Przesuń, żeby iść",
     "walk": "idź",
     "jump": "skok",
     "pause": "pauza",
@@ -36,7 +40,9 @@
       "name": "Marchewkowe pole",
       "signs": {
         "walk": "← → — idź",
+        "walkTouch": "Przesuń kciuk —\nidź",
         "jump": "Spacja — skok!\nPrzytrzymaj — wyżej!",
+        "jumpTouch": "Dotknij — skok!\nPrzytrzymaj — wyżej!",
         "stomp": "Skocz na\nmarchewkę z góry!",
         "crystals": "5 kryształów =\n+1 życie",
         "goal": "Zielony kryształ —\nmeta!"
