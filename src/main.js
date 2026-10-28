@@ -14,7 +14,7 @@ import { createTouchMode } from './touch/mode.js';
 import { createTouchOverlay } from './touch/overlay.js';
 import { createTouchSurface } from './touch/surface.js';
 import { hudInsets } from './touch/hud.js';
-import { ambientNeeded, coverRect } from './render/ambient.js';
+import { ambientNeeded, reflectionStrips } from './render/ambient.js';
 import { swipeStep } from './touch/swipe.js';
 
 const NO_INPUT = { left: false, right: false, jumpHeld: false, jumpPressed: false };
@@ -60,7 +60,8 @@ const input = createInput(window);
 const scene = createScene(ctx);
 
 const touchLayer = document.getElementById('touch-layer');
-const viewportSize = () => ({ width: window.innerWidth, height: window.innerHeight });
+const desk = document.querySelector('.desk');
+const viewportSize = () => ({ width: desk.clientWidth, height: desk.clientHeight });
 const savedScheme = load('kyra.controls', DEFAULT_SCHEME);
 let touchScheme = SCHEMES.includes(savedScheme) ? savedScheme : DEFAULT_SCHEME;
 const touch = createTouchControls({ scheme: touchScheme, size: viewportSize() });
@@ -90,9 +91,11 @@ function syncTouchSize() {
 const safeProbe = document.getElementById('safe-probe');
 const ambient = document.getElementById('ambient');
 const ambientCtx = ambient.getContext('2d');
-const AMBIENT_WIDTH = 64;
+const AMBIENT_SCALE = 1 / 3;
+const DESK_RGB = '217, 227, 242';
 const NO_HUD_INSET = { left: 0, right: 0, corner: 0 };
 let appliedViewWidth = 0;
+let stageRect = { left: 0, top: 0, width: 0, height: 0 };
 
 function safeInsets() {
   const style = getComputedStyle(safeProbe);
@@ -100,7 +103,8 @@ function safeInsets() {
 }
 
 function applyView() {
-  const width = touchMode.isActive() ? viewWidthFor(window.innerWidth / window.innerHeight) : VIEW_W_MIN;
+  const size = viewportSize();
+  const width = touchMode.isActive() ? viewWidthFor(size.width / size.height) : VIEW_W_MIN;
   const next = setViewWidth(width);
   if (next !== appliedViewWidth) {
     appliedViewWidth = next;
@@ -113,7 +117,8 @@ function applyView() {
 let seenViewport = '';
 
 function syncViewport() {
-  const key = `${window.innerWidth}x${window.innerHeight}`;
+  const size = viewportSize();
+  const key = `${size.width}x${size.height}`;
   if (key === seenViewport) return;
   seenViewport = key;
   syncTouchSize();
@@ -131,19 +136,51 @@ function resizeCanvas() {
   const dpr = window.devicePixelRatio || 1;
   canvas.width = Math.max(1, Math.round(rect.width * dpr));
   canvas.height = Math.max(1, Math.round(rect.height * dpr));
+  stageRect = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+  const size = viewportSize();
   const touching = touchMode.isActive() && rect.width > 0;
-  hud = touching ? hudInsets({ stage: rect, viewportWidth: window.innerWidth, safe: safeInsets(), viewW: VIEW_W }) : NO_HUD_INSET;
-  ambientOn = touching && ambientNeeded(rect, viewportSize());
+  hud = touching ? hudInsets({ stage: rect, viewportWidth: size.width, safe: safeInsets(), viewW: VIEW_W }) : NO_HUD_INSET;
+  ambientOn = touching && ambientNeeded(rect, size);
   document.documentElement.dataset.ambient = ambientOn ? 'on' : 'off';
-  ambient.width = AMBIENT_WIDTH;
-  ambient.height = Math.max(1, Math.round((AMBIENT_WIDTH * window.innerHeight) / window.innerWidth));
+  ambient.width = Math.max(1, Math.round(size.width * AMBIENT_SCALE));
+  ambient.height = Math.max(1, Math.round(size.height * AMBIENT_SCALE));
+}
+
+function fadeStrip(strip) {
+  const { dx, dy, dw, dh, side } = strip;
+  const gradients = {
+    left: [dx + dw, 0, dx, 0],
+    right: [dx, 0, dx + dw, 0],
+    top: [0, dy + dh, 0, dy],
+    bottom: [0, dy, 0, dy + dh],
+  };
+  const fade = ambientCtx.createLinearGradient(...gradients[side]);
+  fade.addColorStop(0, `rgba(${DESK_RGB}, 0.1)`);
+  fade.addColorStop(1, `rgba(${DESK_RGB}, 0.9)`);
+  ambientCtx.fillStyle = fade;
+  ambientCtx.fillRect(dx, dy, dw, dh);
 }
 
 function drawAmbient(now) {
   if (!ambientOn || now - lastAmbient < 120) return;
   lastAmbient = now;
-  const r = coverRect(canvas.width, canvas.height, ambient.width, ambient.height);
-  ambientCtx.drawImage(canvas, r.x, r.y, r.w, r.h);
+  const size = viewportSize();
+  const k = ambient.width / size.width;
+  ambientCtx.clearRect(0, 0, ambient.width, ambient.height);
+  for (const strip of reflectionStrips(stageRect, size, k, { width: canvas.width, height: canvas.height })) {
+    ambientCtx.save();
+    if (strip.flipX) {
+      ambientCtx.translate(2 * strip.dx + strip.dw, 0);
+      ambientCtx.scale(-1, 1);
+    }
+    if (strip.flipY) {
+      ambientCtx.translate(0, 2 * strip.dy + strip.dh);
+      ambientCtx.scale(1, -1);
+    }
+    ambientCtx.drawImage(canvas, strip.sx, strip.sy, strip.sw, strip.sh, strip.dx, strip.dy, strip.dw, strip.dh);
+    ambientCtx.restore();
+    fadeStrip(strip);
+  }
 }
 
 function levelTitle(index = game.levelIndex) {
@@ -482,6 +519,20 @@ carousel.addEventListener(
 
 window.addEventListener('pointerdown', () => audio.unlock());
 window.addEventListener('touchend', () => audio.unlock(), { passive: true });
+
+document.addEventListener(
+  'touchmove',
+  (event) => {
+    if (!touchMode.isActive()) return;
+    const scroller = event.target.closest?.('.overlay');
+    if (scroller && scroller.scrollHeight > scroller.clientHeight) return;
+    event.preventDefault();
+  },
+  { passive: false },
+);
+document.addEventListener('gesturestart', (event) => {
+  if (touchMode.isActive()) event.preventDefault();
+});
 
 const portrait = matchMedia('(orientation: portrait)');
 
