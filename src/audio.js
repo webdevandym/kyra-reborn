@@ -6,6 +6,9 @@ export function createAudio({ muted = false } = {}) {
   let isMuted = muted;
 
   function unlock() {
+    try {
+      if (globalThis.navigator?.audioSession) globalThis.navigator.audioSession.type = 'playback';
+    } catch {}
     if (!ctx) {
       const AudioContextClass = globalThis.AudioContext;
       if (!AudioContextClass) return;
@@ -14,7 +17,7 @@ export function createAudio({ muted = false } = {}) {
       master.gain.value = isMuted ? 0 : MASTER_VOLUME;
       master.connect(ctx.destination);
     }
-    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    if (ctx.state !== 'running') ctx.resume().catch(() => {});
   }
 
   function tone({ type = 'square', from, to = from, dur = 0.12, vol = 0.4, delay = 0 }) {
