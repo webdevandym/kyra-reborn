@@ -13,6 +13,8 @@ import { DEFAULT_SCHEME, SCHEMES, createTouchControls, mergeSnapshots } from './
 import { createTouchMode } from './touch/mode.js';
 import { createTouchOverlay } from './touch/overlay.js';
 import { createTouchSurface } from './touch/surface.js';
+import { hudInsets } from './touch/hud.js';
+import { ambientNeeded, coverRect } from './render/ambient.js';
 import { swipeStep } from './touch/swipe.js';
 
 const NO_INPUT = { left: false, right: false, jumpHeld: false, jumpPressed: false };
@@ -85,21 +87,26 @@ function syncTouchSize() {
   overlay.setSize(viewportSize());
 }
 
-const desk = document.querySelector('.desk');
+const safeProbe = document.getElementById('safe-probe');
+const ambient = document.getElementById('ambient');
+const ambientCtx = ambient.getContext('2d');
+const AMBIENT_WIDTH = 64;
+const NO_HUD_INSET = { left: 0, right: 0, corner: 0 };
 let appliedViewWidth = 0;
 
+function safeInsets() {
+  const style = getComputedStyle(safeProbe);
+  return { left: parseFloat(style.paddingLeft) || 0, right: parseFloat(style.paddingRight) || 0 };
+}
+
 function applyView() {
-  let width = VIEW_W_MIN;
-  if (touchMode.isActive()) {
-    const style = getComputedStyle(desk);
-    const available = window.innerWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
-    width = viewWidthFor(available / window.innerHeight);
-  }
+  const width = touchMode.isActive() ? viewWidthFor(window.innerWidth / window.innerHeight) : VIEW_W_MIN;
   const next = setViewWidth(width);
-  if (next === appliedViewWidth) return;
-  appliedViewWidth = next;
-  document.documentElement.style.setProperty('--view-aspect', `${next} / ${VIEW_H}`);
-  snapCamera(camera, game.world.player, game.world.level);
+  if (next !== appliedViewWidth) {
+    appliedViewWidth = next;
+    document.documentElement.style.setProperty('--view-aspect', `${next} / ${VIEW_H}`);
+    snapCamera(camera, game.world.player, game.world.level);
+  }
   resizeCanvas();
 }
 
@@ -115,23 +122,28 @@ function syncViewport() {
 
 let shakeTime = 0;
 
-const PAUSE_BUTTON = { size: 44, edge: 8 };
-let hudInset = 0;
-
-function pauseButtonOverlap(stageRight, stageWidth) {
-  if (!touchMode.isActive()) return 0;
-  const safeRight = parseFloat(getComputedStyle(desk).paddingRight) || 0;
-  const buttonLeft = window.innerWidth - Math.max(PAUSE_BUTTON.edge, safeRight) - PAUSE_BUTTON.size;
-  const overlap = Math.max(0, stageRight - buttonLeft + PAUSE_BUTTON.edge);
-  return (overlap * VIEW_W) / stageWidth;
-}
+let hud = NO_HUD_INSET;
+let ambientOn = false;
+let lastAmbient = 0;
 
 function resizeCanvas() {
-  const { width, height, right } = canvas.getBoundingClientRect();
+  const rect = canvas.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
-  canvas.width = Math.max(1, Math.round(width * dpr));
-  canvas.height = Math.max(1, Math.round(height * dpr));
-  hudInset = width > 0 ? pauseButtonOverlap(right, width) : 0;
+  canvas.width = Math.max(1, Math.round(rect.width * dpr));
+  canvas.height = Math.max(1, Math.round(rect.height * dpr));
+  const touching = touchMode.isActive() && rect.width > 0;
+  hud = touching ? hudInsets({ stage: rect, viewportWidth: window.innerWidth, safe: safeInsets(), viewW: VIEW_W }) : NO_HUD_INSET;
+  ambientOn = touching && ambientNeeded(rect, viewportSize());
+  document.documentElement.dataset.ambient = ambientOn ? 'on' : 'off';
+  ambient.width = AMBIENT_WIDTH;
+  ambient.height = Math.max(1, Math.round((AMBIENT_WIDTH * window.innerHeight) / window.innerWidth));
+}
+
+function drawAmbient(now) {
+  if (!ambientOn || now - lastAmbient < 120) return;
+  lastAmbient = now;
+  const r = coverRect(canvas.width, canvas.height, ambient.width, ambient.height);
+  ambientCtx.drawImage(canvas, r.x, r.y, r.w, r.h);
 }
 
 function levelTitle(index = game.levelIndex) {
@@ -543,7 +555,8 @@ function frame(now) {
   const k = shakeTime / 0.3;
   const shake = { x: (Math.random() - 0.5) * 10 * k, y: (Math.random() - 0.5) * 8 * k };
   ctx.setTransform(canvas.width / VIEW_W, 0, 0, canvas.height / VIEW_H, 0, 0);
-  scene.render({ game, camera, particles, time, lang: prefs.lang, muted: audio.muted, debug, touch: touchMode.isActive(), hudInset, reducedMotion, shake, fps });
+  scene.render({ game, camera, particles, time, lang: prefs.lang, muted: audio.muted, debug, touch: touchMode.isActive(), hud, reducedMotion, shake, fps });
+  drawAmbient(now);
   requestAnimationFrame(frame);
 }
 

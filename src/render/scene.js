@@ -53,6 +53,8 @@ const ENEMY_DRAWERS = {
 
 const PROJECTILE_DRAWERS = { bone: drawBone, fireball: drawFireball, shell: drawShell };
 
+const NO_HUD_INSET = { left: 0, right: 0, corner: 0 };
+
 export function createScene(ctx) {
   const themes = { meadow: createMeadowTheme(ctx), sky: createSkyTheme(ctx), castle: createCastleTheme(ctx), sea: createSeaTheme(ctx) };
 
@@ -90,11 +92,11 @@ export function createScene(ctx) {
     ctx.fillText(text, x, y);
   }
 
-  function drawHud(game, lang, muted, inset) {
-    const right = VIEW_W - inset;
+  function drawHud(game, lang, muted, hud) {
+    const right = VIEW_W - hud.right;
     const shown = Math.min(game.lives, 5);
-    for (let i = 0; i < shown; i++) drawHeart(ctx, 32 + i * 34, 32, 13, 71 + i);
-    if (game.lives > 5) hudText(`×${game.lives}`, 32 + shown * 34 - 8, 34, 'left', '700 24px "Balsamiq Sans", system-ui, sans-serif');
+    for (let i = 0; i < shown; i++) drawHeart(ctx, 32 + hud.left + i * 34, 32, 13, 71 + i);
+    if (game.lives > 5) hudText(`×${game.lives}`, 32 + hud.left + shown * 34 - 8, 34, 'left', '700 24px "Balsamiq Sans", system-ui, sans-serif');
 
     const title = `${t('level', lang)} ${game.levelIndex + 1} · ${t(game.level.nameKey, lang)}`;
     hudText(title, VIEW_W / 2, 32, 'center', '700 32px "Caveat", "Comic Sans MS", cursive');
@@ -105,7 +107,7 @@ export function createScene(ctx) {
     for (let i = 0; i < RULES.crystalsPerLife; i++) {
       inkEllipse(ctx, right - 124 + i * 20, 62, 5.5, 5.5, { fill: i < progress ? COLORS.crystal : COLORS.paper, width: 1.8, seed: 100 + i });
     }
-    if (muted) drawMutedIcon(ctx, VIEW_W - 32, VIEW_H - 28);
+    if (muted) drawMutedIcon(ctx, VIEW_W - 32 - hud.corner, VIEW_H - 28);
   }
 
   function drawDebug(world) {
@@ -134,7 +136,7 @@ export function createScene(ctx) {
     ctx.restore();
   }
 
-  function render({ game, camera, particles, time, lang, muted, debug = false, touch = false, hudInset = 0, reducedMotion = false, shake = { x: 0, y: 0 }, fps = 0 }) {
+  function render({ game, camera, particles, time, lang, muted, debug = false, touch = false, hud = NO_HUD_INSET, reducedMotion = false, shake = { x: 0, y: 0 }, fps = 0 }) {
     setBoilTime(time, reducedMotion);
     const { world } = game;
     const { level } = world;
@@ -181,7 +183,7 @@ export function createScene(ctx) {
     ctx.restore();
 
     particles.drawScreen(ctx);
-    if (game.state !== 'title') drawHud(game, lang, muted, hudInset);
+    if (game.state !== 'title') drawHud(game, lang, muted, hud);
     if (debug) {
       ctx.font = '12px monospace';
       ctx.fillStyle = COLORS.ink;

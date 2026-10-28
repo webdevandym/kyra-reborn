@@ -438,12 +438,38 @@ html[data-touch="on"] [data-touch-only] {
 
 html[data-touch="on"] .desk {
   min-height: 100dvh;
-  padding: 0 env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px);
+  padding: 0;
   gap: 0;
 }
 
+.safe-probe {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  visibility: hidden;
+  pointer-events: none;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
+
+.ambient {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  width: 100vw;
+  height: 100dvh;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+html[data-ambient="on"] .ambient {
+  display: block;
+}
+
 html[data-touch="on"] .stage {
-  width: min(calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)), calc(100dvh * var(--view-aspect, 16 / 9)));
+  width: min(100vw, calc(100dvh * var(--view-aspect, 16 / 9)));
   aspect-ratio: var(--view-aspect, 16 / 9);
   border-radius: 0;
   box-shadow: none;
