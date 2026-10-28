@@ -9,6 +9,10 @@ import { createScene } from './render/scene.js';
 import { createParticles } from './render/particles.js';
 import { t, loadLang, nextLang, nextLangName, resolveLang, DEFAULT_LANG, formatTime } from './i18n/index.js';
 import { load, save } from './storage.js';
+import { DEFAULT_SCHEME, SCHEMES, createTouchControls, mergeSnapshots } from './touch/controls.js';
+import { createTouchMode } from './touch/mode.js';
+import { createTouchOverlay } from './touch/overlay.js';
+import { createTouchSurface } from './touch/surface.js';
 
 const NO_INPUT = { left: false, right: false, jumpHeld: false, jumpPressed: false };
 const ARROWS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
@@ -51,6 +55,33 @@ const particles = createParticles({ reduced: reducedMotion });
 const audio = createAudio({ muted: load('kyra.muted', false) === true });
 const input = createInput(window);
 const scene = createScene(ctx);
+
+const touchLayer = document.getElementById('touch-layer');
+const viewportSize = () => ({ width: window.innerWidth, height: window.innerHeight });
+const savedScheme = load('kyra.controls', DEFAULT_SCHEME);
+let touchScheme = SCHEMES.includes(savedScheme) ? savedScheme : DEFAULT_SCHEME;
+const touch = createTouchControls({ scheme: touchScheme, size: viewportSize() });
+const overlay = createTouchOverlay(touchLayer, touch, { size: viewportSize(), scheme: touchScheme });
+const touchMode = createTouchMode({
+  coarse: matchMedia('(pointer: coarse)').matches,
+  target: window,
+  onChange: (active) => {
+    document.documentElement.dataset.touch = active ? 'on' : 'off';
+    releaseTouch();
+  },
+});
+const surface = createTouchSurface(touchLayer, touch, { isActive: () => touchMode.isActive() && game.state === 'playing' });
+document.documentElement.dataset.touch = touchMode.isActive() ? 'on' : 'off';
+
+function releaseTouch() {
+  touch.reset();
+  surface.releaseAll();
+}
+
+function syncTouchSize() {
+  touch.setSize(viewportSize());
+  overlay.setSize(viewportSize());
+}
 
 let shakeTime = 0;
 
@@ -115,6 +146,7 @@ function applyStrings() {
   for (const el of document.querySelectorAll('[data-i18n]')) el.textContent = t(el.dataset.i18n, prefs.lang);
   for (const el of document.querySelectorAll('[data-sound-label]')) el.textContent = t(audio.muted ? 'soundOff' : 'soundOn', prefs.lang);
   for (const el of document.querySelectorAll('[data-next-lang]')) el.textContent = nextLangName(prefs.lang);
+  for (const el of document.querySelectorAll('[data-controls-label]')) el.textContent = t(touchScheme === 'slide' ? 'controlsSlide' : 'controlsStick', prefs.lang);
   for (const el of document.querySelectorAll('[data-i18n-aria-label]')) el.setAttribute('aria-label', t(el.dataset.i18nAriaLabel, prefs.lang));
   syncPicker();
   fillStats();
@@ -131,6 +163,7 @@ function focusPrimary() {
 }
 
 function syncScreens() {
+  document.documentElement.dataset.state = game.state;
   fillStats();
   for (const el of screens) el.hidden = el.dataset.screen !== game.state;
   focusPrimary();
@@ -168,8 +201,21 @@ function toggleLang() {
     });
 }
 
+function toggleControls() {
+  touchScheme = touchScheme === 'slide' ? 'stick' : 'slide';
+  touch.setScheme(touchScheme);
+  overlay.setScheme(touchScheme);
+  save('kyra.controls', touchScheme);
+  applyStrings();
+}
+
 const BUTTON_ACTIONS = {
   confirm: () => game.confirm(),
+  pause: () => {
+    releaseTouch();
+    game.togglePause();
+  },
+  controls: toggleControls,
   pick: (button) => {
     pickLevel(Number(button.dataset.level));
     focusPrimary();
@@ -274,6 +320,7 @@ function handleEvents(events) {
         if (!reducedMotion) shakeTime = 0.3;
         break;
       case 'levelStart':
+        if (touchMode.isActive()) overlay.showHint();
         particles.clear();
         snapCamera(camera, game.world.player, game.world.level);
         break;
@@ -298,7 +345,13 @@ function handleEvents(events) {
 }
 
 function onStateChange() {
-  if (game.state === 'playing') input.clearPressed();
+  if (game.state === 'playing') {
+    input.clearPressed();
+    touch.clearPressed();
+    syncTouchSize();
+  } else {
+    releaseTouch();
+  }
   if (game.state === 'title') {
     particles.clear();
     snapCamera(camera, game.world.player, game.world.level);
@@ -345,12 +398,17 @@ window.addEventListener('pointerdown', () => audio.unlock());
 
 const autoPause = () => {
   input.reset();
+  releaseTouch();
   if (game.state === 'playing') game.togglePause();
 };
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) autoPause();
 });
 window.addEventListener('blur', autoPause);
+window.addEventListener('resize', syncTouchSize);
+matchMedia('(orientation: portrait)').addEventListener('change', (event) => {
+  if (event.matches && touchMode.isActive()) autoPause();
+});
 
 new ResizeObserver(resizeCanvas).observe(canvas);
 resizeCanvas();
@@ -394,7 +452,7 @@ function frame(now) {
   }
   while (acc >= STEP) {
     syncState();
-    const gameInput = game.state === 'playing' ? input.snapshot() : NO_INPUT;
+    const gameInput = game.state === 'playing' ? mergeSnapshots(input.snapshot(), touch.snapshot()) : NO_INPUT;
     handleEvents(game.tick(STEP, gameInput));
     particles.update(STEP);
     updateCamera(camera, game.world.player, game.world.level, STEP);
@@ -402,10 +460,11 @@ function frame(now) {
     acc -= STEP;
   }
   syncState();
+  overlay.update();
   const k = shakeTime / 0.3;
   const shake = { x: (Math.random() - 0.5) * 10 * k, y: (Math.random() - 0.5) * 8 * k };
   ctx.setTransform(canvas.width / VIEW_W, 0, 0, canvas.height / VIEW_H, 0, 0);
-  scene.render({ game, camera, particles, time, lang: prefs.lang, muted: audio.muted, debug, reducedMotion, shake, fps });
+  scene.render({ game, camera, particles, time, lang: prefs.lang, muted: audio.muted, debug, touch: touchMode.isActive(), reducedMotion, shake, fps });
   requestAnimationFrame(frame);
 }
 
