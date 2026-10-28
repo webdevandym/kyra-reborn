@@ -11,14 +11,15 @@ afterEach(() => setViewWidth(VIEW_W_MIN));
 const oneRoom = (width) => ({ rooms: [{ left: 0, right: width }] });
 const player = (x, facing = 1) => ({ x, facing });
 
-test('the view is 960 wide for 16:9 and narrower screens and grows with the screen aspect up to 21:9', () => {
+test('the view is 960 wide for 16:9 and narrower screens and grows with the screen aspect up to 8:3', () => {
   assert.equal(VIEW_W_MIN, 960);
   assert.equal(viewWidthFor(16 / 9), 960);
   assert.equal(viewWidthFor(4 / 3), 960);
   assert.equal(viewWidthFor(19.5 / 9), Math.round(VIEW_H * (19.5 / 9)));
-  assert.equal(viewWidthFor(21 / 9), VIEW_W_MAX);
+  assert.equal(viewWidthFor(21 / 9), 1260);
+  assert.equal(viewWidthFor(2.62), Math.round(VIEW_H * 2.62));
   assert.equal(viewWidthFor(32 / 9), VIEW_W_MAX);
-  assert.equal(VIEW_W_MAX, 1260);
+  assert.equal(VIEW_W_MAX, 1440);
 });
 
 test('viewWidthFor falls back to the default width for a missing or broken aspect', () => {

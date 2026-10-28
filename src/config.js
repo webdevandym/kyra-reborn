@@ -2,7 +2,7 @@ export const TILE = 45;
 export const ROWS = 12;
 export const VIEW_H = 540;
 export const VIEW_W_MIN = 960;
-export const VIEW_W_MAX = 1260;
+export const VIEW_W_MAX = 1440;
 export let VIEW_W = VIEW_W_MIN;
 
 const clampViewWidth = (width) => Math.min(VIEW_W_MAX, Math.max(VIEW_W_MIN, Math.round(width)));

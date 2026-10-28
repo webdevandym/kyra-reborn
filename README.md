@@ -33,7 +33,7 @@ Touch devices get on-screen controls automatically; pressing a keyboard key swit
 
 Switch between them with the Controls button on the main and pause screens; the choice is remembered. The pause button is in the top-right corner. Swipe the level carousel to choose a level.
 
-On wide phones the game fills the whole landscape screen, edge to edge (the HUD and buttons stay out of the notch): the view widens (up to 21:9), so you see a little more of the world to the sides. Where bars would still be left, for example on an iPad, a soft blurred reflection of the game fills them. For a full-screen game without Safari's bars, open the page in Safari and use Share → Add to Home Screen.
+On wide phones the game fills the whole landscape screen, edge to edge (the HUD and buttons stay out of the notch): the view widens (up to 8:3), so you see a little more of the world to the sides. Where bars would still be left, for example on an iPad, a mirrored, fading reflection of the game's edge fills them. For a full-screen game without the browser's bars, open the page in Safari and use Share → Add to Home Screen (Chrome on iPhone cannot do this).
 
 ## Rules
 
