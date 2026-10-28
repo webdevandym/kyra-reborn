@@ -18,6 +18,7 @@ import { createDiag } from './diag.js';
 import { STRIP_COLOR, STRIP_RGB } from './render/strip.js';
 import { ambientNeeded, reflectionStrips } from './render/ambient.js';
 import { swipeStep } from './touch/swipe.js';
+import { retryUrl, shouldRetryCover, withoutCoverParam } from './touch/cover.js';
 
 const NO_INPUT = { left: false, right: false, jumpHeld: false, jumpPressed: false };
 const ARROWS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
@@ -568,6 +569,20 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('blur', autoPause);
 window.addEventListener('resize', syncViewport);
+
+const loadedSearch = location.search;
+if (withoutCoverParam(loadedSearch) !== loadedSearch) history.replaceState(null, '', location.pathname + withoutCoverParam(loadedSearch) + location.hash);
+
+function retryCoverIfInset() {
+  const inner = { width: window.innerWidth, height: window.innerHeight };
+  const screenSize = { width: screen.width, height: screen.height };
+  if (shouldRetryCover({ coarse: matchMedia('(pointer: coarse)').matches, screen: screenSize, inner, search: loadedSearch })) {
+    location.replace(retryUrl(location.origin + location.pathname, location.search, location.hash));
+  }
+}
+
+if (document.readyState === 'complete') setTimeout(retryCoverIfInset, 1500);
+else window.addEventListener('load', () => setTimeout(retryCoverIfInset, 1500));
 portrait.addEventListener('change', (event) => {
   if (event.matches && touchMode.isActive()) autoPause();
 });
@@ -576,8 +591,8 @@ new ResizeObserver(resizeCanvas).observe(canvas);
 resizeCanvas();
 syncViewport();
 
-if (location.hash.includes('diag')) {
-  createDiag({ desk, stage: document.getElementById('stage'), layer: touchLayer, probe: safeProbe, view: () => VIEW_W, touchActive: () => touchMode.isActive() });
+if (location.hash.includes('diag') || loadedSearch.includes('diag')) {
+  createDiag({ desk, stage: document.getElementById('stage'), layer: touchLayer, probe: safeProbe, view: () => VIEW_W, touchActive: () => touchMode.isActive(), retried: withoutCoverParam(loadedSearch) !== loadedSearch });
 }
 
 if (debug) {

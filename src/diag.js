@@ -1,4 +1,4 @@
-export function createDiag({ desk, stage, layer, probe, view, touchActive }) {
+export function createDiag({ desk, stage, layer, probe, view, touchActive, retried }) {
   const el = document.createElement('pre');
   el.className = 'diag';
   document.body.append(el);
@@ -32,7 +32,7 @@ export function createDiag({ desk, stage, layer, probe, view, touchActive }) {
       `stage ${box(stage)}`,
       `layer ${box(layer)}`,
       `view ${view()} touch ${touchActive()}`,
-      `nav ${nav?.type ?? '?'} ${document.readyState} loaded ${Math.round(nav?.loadEventEnd ?? 0)}ms cover ${cover}`,
+      `nav ${nav?.type ?? '?'} ${document.readyState} loaded ${Math.round(nav?.loadEventEnd ?? 0)}ms cover ${cover} retried ${retried}`,
       `sizes ${sizes.join(' > ')}`,
       `strip ${getComputedStyle(document.documentElement).backgroundColor} theme-color ${document.querySelector('meta[name="theme-color"]')?.content}`,
     ].join('\n');
