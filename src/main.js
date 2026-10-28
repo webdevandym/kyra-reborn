@@ -13,6 +13,7 @@ import { DEFAULT_SCHEME, SCHEMES, createTouchControls, mergeSnapshots } from './
 import { createTouchMode } from './touch/mode.js';
 import { createTouchOverlay } from './touch/overlay.js';
 import { createTouchSurface } from './touch/surface.js';
+import { swipeStep } from './touch/swipe.js';
 
 const NO_INPUT = { left: false, right: false, jumpHeld: false, jumpPressed: false };
 const ARROWS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
@@ -393,6 +394,37 @@ window.addEventListener('keydown', (event) => {
   const delta = event.code === 'ArrowUp' || event.code === 'ArrowLeft' ? -1 : 1;
   buttons[(index + delta + buttons.length) % buttons.length].focus();
 });
+
+const carousel = document.querySelector('.carousel');
+let swipeStart = null;
+let swiped = false;
+carousel.addEventListener('pointerdown', (event) => {
+  swiped = false;
+  swipeStart = event.pointerType === 'touch' ? { x: event.clientX, y: event.clientY } : null;
+});
+carousel.addEventListener('pointerup', (event) => {
+  if (!swipeStart || game.state !== 'title') return;
+  const step = swipeStep(event.clientX - swipeStart.x, event.clientY - swipeStart.y);
+  swipeStart = null;
+  if (step === 0) return;
+  swiped = true;
+  if (pickLevel(game.selectedIndex - step)) {
+    audio.sfx.click();
+    focusPrimary();
+  }
+});
+carousel.addEventListener('pointercancel', () => {
+  swipeStart = null;
+});
+carousel.addEventListener(
+  'click',
+  (event) => {
+    if (!swiped) return;
+    swiped = false;
+    event.stopPropagation();
+  },
+  true,
+);
 
 window.addEventListener('pointerdown', () => audio.unlock());
 
