@@ -33,6 +33,8 @@ Touch devices get on-screen controls automatically; pressing a keyboard key swit
 
 Switch between them with the Controls button on the main and pause screens; the choice is remembered. The pause button is in the top-right corner. Swipe the level carousel to choose a level.
 
+On wide phones the game fills the whole landscape screen: the view widens (up to 21:9), so you see a little more of the world to the sides. For a full-screen game without Safari's bars, open the page in Safari and use Share → Add to Home Screen.
+
 ## Rules
 
 - Each red crystal is 1 point; every 5 points give an extra life.
