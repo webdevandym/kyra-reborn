@@ -350,6 +350,7 @@ function onStateChange() {
     input.clearPressed();
     touch.clearPressed();
     syncTouchSize();
+    if (touchMode.isActive() && portrait.matches) autoPause();
   } else {
     releaseTouch();
   }
@@ -428,6 +429,8 @@ carousel.addEventListener(
 
 window.addEventListener('pointerdown', () => audio.unlock());
 
+const portrait = matchMedia('(orientation: portrait)');
+
 const autoPause = () => {
   input.reset();
   releaseTouch();
@@ -438,7 +441,7 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('blur', autoPause);
 window.addEventListener('resize', syncTouchSize);
-matchMedia('(orientation: portrait)').addEventListener('change', (event) => {
+portrait.addEventListener('change', (event) => {
   if (event.matches && touchMode.isActive()) autoPause();
 });
 
