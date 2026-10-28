@@ -426,6 +426,11 @@ html[data-touch="on"] body {
   overscroll-behavior: none;
 }
 
+html[data-touch="on"] .stage,
+html[data-touch="on"] .overlay {
+  touch-action: none;
+}
+
 html[data-touch="on"] [data-touch-only] {
   display: inline-flex;
 }
@@ -450,6 +455,18 @@ html[data-touch="on"] kbd {
 html[data-touch="on"] .btn {
   min-height: 44px;
   justify-content: center;
+}
+
+html[data-touch="on"] .card--title {
+  max-width: 96%;
+}
+
+html[data-touch="on"] .card--title .row {
+  flex-wrap: nowrap;
+}
+
+html[data-touch="on"] .card--title .row .btn {
+  padding-inline: 0.7em;
 }
 
 html[data-touch="on"][data-state="playing"] .touch-layer {
