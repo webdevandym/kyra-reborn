@@ -4,7 +4,7 @@ A notebook-doodle platformer for kids aged 8–10. Kyra the chicken («кура�
 
 ## Play
 
-Play in the browser at <https://webdevandym.github.io/kyra-reborn/> (a keyboard is needed).
+Play in the browser at <https://webdevandym.github.io/kyra-reborn/> with a keyboard, or by touch on a phone or tablet held sideways.
 
 To run it locally:
 
@@ -23,6 +23,15 @@ Open <http://localhost:8123> in Chrome. ES modules need a local server, so openi
 | M | sound on/off |
 | L | Polski / Українська / English |
 | Enter | confirm / next |
+
+### Touch controls
+
+Touch devices get on-screen controls automatically; pressing a keyboard key switches them off again. Hold the device in landscape (in portrait the game pauses and asks you to turn it).
+
+- **Slide** (default): tap anywhere on the left half to jump (hold for a higher jump); touch anywhere on the right half and slide left or right to walk.
+- **Stick**: a round stick in the bottom-right corner to walk and a JUMP button in the bottom-left corner.
+
+Switch between them with the Controls button on the main and pause screens; the choice is remembered. The pause button is in the top-right corner. Swipe the level carousel to choose a level.
 
 ## Rules
 
