@@ -12,7 +12,7 @@ import { createMeadowTheme } from '../src/render/meadow.js';
 import { createParticles } from '../src/render/particles.js';
 import { drawChicken, drawCarrot, drawPropellerCarrot, drawZombie, drawBee, drawRedCrystal, drawGreenCrystal, drawSign, drawHeart } from '../src/render/sprites.js';
 import { LANGS, loadLang } from '../src/i18n/index.js';
-import { mapFromBottom, castleMap } from './helpers.js';
+import { mapFromBottom, castleMap, recordingContext } from './helpers.js';
 import { createSkyTheme } from '../src/render/sky.js';
 import { drawStarEnemy, drawBat, drawRainCloud, drawMovingCloud, drawMoon } from '../src/render/sky-sprites.js';
 import { createCastleTheme } from '../src/render/castle.js';
@@ -428,6 +428,23 @@ test('the forest theme paints pale green paper and draws its backdrop, grass, lo
   theme.drawGoal({ x: 300, y: 450 }, 1.2, false, false);
   assert.ok(calls.get('stroke') > 50);
   assert.ok(calls.get('fill') > 50);
+});
+
+test('the forest theme draws a rock wall for a full-height solid column and dirt for the others', () => {
+  const level = parseLevel(forestDef());
+  const punched = { ...level, tiles: level.tiles.map((row, r) => (r === 1 ? row.map((tile, c) => (c === 12 ? 'empty' : tile)) : row)) };
+  const log = (lv) => {
+    const { ctx, log: calls } = recordingContext();
+    createForestTheme(ctx).drawTiles(lv, 0);
+    return calls;
+  };
+  const stone = `=fillStyle:${COLORS.stone}`;
+  const dirtTile = `fillRect(${12 * TILE},${2 * TILE},${TILE + 0.5},${TILE + 0.5})`;
+  const walled = log(level);
+  const partial = log(punched);
+  assert.ok(walled.includes(stone) && !partial.includes(stone), 'only the full-height column is drawn as rock');
+  assert.ok(partial.includes(dirtTile) && !walled.includes(dirtTile), 'a partly solid column keeps its dirt tiles');
+  assert.ok(walled.includes(`=fillStyle:${COLORS.dirt}`), 'the rest of the level is still dirt');
 });
 
 test('the scene renders a forest level without errors', () => {

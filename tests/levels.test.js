@@ -493,7 +493,7 @@ for (const def of levels) {
       assert.ok(savepoint.col < bubble.col && bubble.col < portal2.col, `bubble at column ${bubble.col}, savepoint at ${savepoint.col}, portal 2 at ${portal2.col}`);
       const floor = ground(bubble.col);
       assert.ok(floor < ROWS, 'the bubble hangs over a pit');
-      assert.ok(floor - bubble.row >= 3, `the bubble at row ${bubble.row} is less than 2 rows above the ground at row ${floor}`);
+      assert.ok(floor - bubble.row >= 3, `the bubble at row ${bubble.row} is less than 3 rows above the ground at row ${floor}`);
       for (let col = bubble.col - 1; col <= bubble.col + 1; col++) {
         for (let row = bubble.row - 1; row < floor; row++) assert.ok(open(col, row), `the bubble's space is blocked at ${col},${row}`);
       }
