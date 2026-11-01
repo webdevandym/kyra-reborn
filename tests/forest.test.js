@@ -1,8 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TILE } from '../src/config.js';
-import { parseLevel } from '../src/core/level.js';
-import { mapFromBottom, castleMap } from './helpers.js';
+import { TILE, STEP, PLAYER, PORTAL, RULES } from '../src/config.js';
+import { parseLevel, solidTop } from '../src/core/level.js';
+import { createWorld, goalBlocked } from '../src/core/world.js';
+import { createGame } from '../src/core/game.js';
+import { mapFromBottom, castleMap, testLevel, runSteps, types } from './helpers.js';
 
 const WALLS = [12, 25];
 const FEET = ['C...n......O', '.', '.K..M...n.O.', '.', '..w.....U..G'].join('');
@@ -10,9 +12,13 @@ const GROUND = '#'.repeat(FEET.length);
 
 const put = (row, col, ch) => row.slice(0, col) + ch + row.slice(col + 1);
 
-function forest({ upper = '.'.repeat(FEET.length), feet = FEET, ground = GROUND, walls = WALLS, extra = {} } = {}) {
+function forestDef({ upper = '.'.repeat(FEET.length), feet = FEET, ground = GROUND, walls = WALLS, extra = {} } = {}) {
   const map = mapFromBottom([upper, feet, ground]).map((line) => [...line].map((ch, col) => (walls.includes(col) ? '#' : ch)).join(''));
-  return parseLevel({ id: 'wood', theme: 'forest', map, ...extra });
+  return { id: 'wood', theme: 'forest', map, ...extra };
+}
+
+function forest(options) {
+  return parseLevel(forestDef(options));
 }
 
 function rejects(options, pattern) {
@@ -162,4 +168,287 @@ test('portals is empty and house is null for every non-forest theme', () => {
     assert.deepEqual(level.portals, []);
     assert.equal(level.house, null);
   }
+});
+
+const IDLE = { left: false, right: false, jumpHeld: false, jumpPressed: false };
+const RIGHT = { ...IDLE, right: true };
+const FLOOR = 11 * TILE;
+const NO_HOUSE = put(FEET, 34, '.');
+const KEEP = { id: 'keep', theme: 'castle', map: castleMap(['C.............S.O.#K......c..G', '#'.repeat(30)], [18]) };
+
+const monkeyOf = (world) => world.enemies.find((e) => e.kind === 'monkey');
+const snakesOf = (world) => world.enemies.filter((e) => e.kind === 'snake');
+const ofType = (events, type) => events.filter((e) => e.type === type);
+const goalOpen = (level) => ({ type: 'goalOpen', x: level.goal.x, y: level.goal.y });
+
+function standAt(p, x, y = FLOOR) {
+  Object.assign(p, { x, y, prevBottom: y, vx: 0, vy: 0, onGround: true, jumping: false });
+}
+
+function kill(world, e) {
+  const p = world.player;
+  if (e.kind === 'monkey') {
+    standAt(p, e.x - 3 * TILE);
+    p.invuln = 99;
+    for (let i = 0; i < 240 && !(e.mode === 'awake' && e.onGround); i++) world.step(STEP, IDLE);
+    assert.equal(e.mode, 'awake');
+    assert.equal(e.onGround, true);
+  }
+  if (e.lives > 1) e.lives = 1;
+  const y = e.y - e.h + 4;
+  Object.assign(p, { x: e.x, y, prevBottom: y, vx: 0, vy: 120, onGround: false, jumping: false, invuln: 99 });
+  const events = world.step(STEP, IDLE);
+  assert.ok(events.some((ev) => ev.type === 'stomp' && ev.kind === e.kind && ev.result === 'defeated'), `the ${e.kind} at x ${e.x} is defeated`);
+  return events;
+}
+
+function touchGoal(world) {
+  standAt(world.player, world.goal.x);
+  world.player.invuln = 99;
+  return world.step(STEP, IDLE);
+}
+
+function startGame(def) {
+  const game = createGame([def]);
+  game.confirm();
+  while (game.state === 'intro') game.tick(STEP, IDLE);
+  assert.equal(game.state, 'playing');
+  return game;
+}
+
+function warpThrough(game, index) {
+  const gate = game.world.portals[index];
+  gate.open = true;
+  standAt(game.world.player, gate.x, gate.y);
+  return game.tick(STEP, IDLE);
+}
+
+function dieAndRespawn(game) {
+  const p = game.world.player;
+  standAt(p, p.x, game.level.height + RULES.fallLimit + 1);
+  const events = game.tick(STEP, IDLE);
+  assert.equal(game.state, 'dying');
+  for (let i = 0; game.state === 'dying' && i < 1000; i++) events.push(...game.tick(STEP, IDLE));
+  assert.equal(game.state, 'playing');
+  return events;
+}
+
+test("killing the snake of a part opens that part's portal", () => {
+  const world = createWorld(forest({ feet: put(FEET, 2, 'a') }));
+  assert.deepEqual(world.portals, [
+    { ...feetOf(11), w: PORTAL.w, h: PORTAL.h, open: false, openedAt: 0, room: 0 },
+    { ...feetOf(23), w: PORTAL.w, h: PORTAL.h, open: false, openedAt: 0, room: 1 },
+  ]);
+  const [one, two, three] = snakesOf(world);
+  const rabbit = world.enemies.find((e) => e.kind === 'rabbit');
+  const opened = (e) => ofType(kill(world, e), 'portalOpen');
+
+  assert.deepEqual(opened(rabbit), [], 'a rabbit opens nothing');
+  assert.deepEqual(opened(two), [{ type: 'portalOpen', ...feetOf(23) }]);
+  assert.deepEqual(world.portals.map((g) => g.open), [false, true], 'only the portal of its own part');
+  assert.equal(world.portals[1].openedAt, world.time);
+  assert.deepEqual(opened(one), [{ type: 'portalOpen', ...feetOf(11) }]);
+  assert.deepEqual(world.portals.map((g) => g.open), [true, true]);
+  assert.equal(world.portals[0].openedAt, world.time);
+  assert.deepEqual(opened(three), [], 'the last part has no portal');
+});
+
+test('an open portal moves the chicken to the next part and emits warp', () => {
+  const level = forest({ feet: put(FEET, 27, '#') });
+  const world = createWorld(level);
+  const p = world.player;
+  const m = monkeyOf(world);
+  const entrance = (room) => level.rooms[room].left + 1.5 * TILE;
+
+  world.portals[0].open = true;
+  standAt(p, world.portals[0].x);
+  p.invuln = 0;
+  world.projectiles.push({ kind: 'cone', x: p.x - 4 * TILE, y: FLOOR - 3 * TILE, vx: 0, vy: 0 });
+  const first = world.step(STEP, IDLE);
+  assert.deepEqual(ofType(first, 'warp'), [{ type: 'warp', from: { x: 11.5 * TILE, y: FLOOR }, to: { x: entrance(1), y: FLOOR } }]);
+  assert.deepEqual([p.x, p.y, p.vx, p.vy, p.onGround], [entrance(1), FLOOR, 0, 0, true]);
+  assert.equal(p.invuln, PLAYER.spawnGrace);
+  assert.deepEqual(world.projectiles, []);
+  assert.deepEqual(ofType(first, 'portal'), [], 'not the castle portal event');
+  assert.equal(m.mode, 'asleep', 'a sleeping monkey stays in its bubble');
+
+  standAt(p, m.x - 3 * TILE);
+  world.step(STEP, IDLE);
+  assert.equal(m.mode, 'awake');
+  world.portals[1].open = true;
+  standAt(p, world.portals[1].x);
+  const second = world.step(STEP, IDLE);
+  assert.equal(solidTop(level, 27), 10 * TILE);
+  assert.deepEqual(ofType(second, 'warp').map((e) => e.to), [{ x: entrance(2), y: 10 * TILE }], 'standing on the ground at the entrance of part 3');
+  assert.deepEqual([p.x, p.y], [entrance(2), 10 * TILE]);
+  assert.equal(m.mode, 'arriving', 'an awake monkey follows her through');
+  assert.equal(m.hidden, true);
+});
+
+test('a closed portal does nothing', () => {
+  const world = createWorld(forest());
+  world.enemies = [];
+  const p = world.player;
+  for (const gate of world.portals) {
+    standAt(p, gate.x);
+    const events = world.step(STEP, IDLE);
+    assert.deepEqual(ofType(events, 'warp'), []);
+    assert.deepEqual([p.x, p.y], [gate.x, FLOOR]);
+    assert.equal(gate.open, false);
+  }
+});
+
+test("the savepoint is reached once when the chicken's x passes the flag", () => {
+  const level = forest();
+  const flag = level.checkpoint;
+  const world = createWorld(level);
+  world.enemies = [];
+  const p = world.player;
+  const saves = (events) => ofType(events, 'savepoint');
+  assert.equal(world.checkpointReached, false);
+
+  standAt(p, flag.x - 1);
+  assert.deepEqual(saves(world.step(STEP, IDLE)), []);
+  assert.equal(world.checkpointReached, false);
+
+  standAt(p, flag.x);
+  assert.deepEqual(saves(world.step(STEP, IDLE)), [{ type: 'savepoint', x: flag.x, y: flag.y }]);
+  assert.equal(world.checkpointReached, true);
+
+  standAt(p, flag.x - TILE);
+  const later = [];
+  runSteps(Math.round(1 / STEP), () => later.push(...world.step(STEP, RIGHT)));
+  assert.ok(p.x > flag.x + 2 * TILE, `walked back past the flag to x ${p.x}`);
+  assert.deepEqual(saves(later), []);
+});
+
+test('portal 2 does not move the savepoint', () => {
+  const game = startGame(forestDef());
+  const level = game.level;
+  const flag = { x: level.checkpoint.x, y: level.checkpoint.y };
+  assert.equal(game.checkpoint, null);
+
+  const one = warpThrough(game, 0);
+  assert.deepEqual(types(one).filter((t) => t === 'warp' || t === 'savepoint'), ['warp', 'savepoint'], 'portal 1 drops her on the flag');
+  assert.deepEqual(game.checkpoint, flag);
+
+  const two = warpThrough(game, 1);
+  assert.deepEqual(types(two).filter((t) => t === 'warp' || t === 'savepoint'), ['warp']);
+  assert.equal(game.world.player.x, level.rooms[2].left + 1.5 * TILE);
+  assert.deepEqual(game.checkpoint, flag);
+
+  dieAndRespawn(game);
+  assert.deepEqual([game.world.player.x, game.world.player.y], [flag.x, flag.y]);
+});
+
+test('after death the world restarts at the savepoint with checkpointReached set', () => {
+  const game = startGame(forestDef());
+  const level = game.level;
+  dieAndRespawn(game);
+  assert.equal(game.checkpoint, null, 'dying in part 1 restarts at C');
+  assert.deepEqual([game.world.player.x, game.world.player.y], [level.spawn.x, level.spawn.y]);
+  assert.equal(game.world.checkpointReached, false);
+
+  warpThrough(game, 0);
+  dieAndRespawn(game);
+  const world = game.world;
+  assert.deepEqual([world.player.x, world.player.y], [level.checkpoint.x, level.checkpoint.y]);
+  assert.equal(world.checkpointReached, true);
+  assert.deepEqual(snakesOf(world).map((s) => s.x), [21.5 * TILE, 28.5 * TILE], 'the snake of part 1 stays gone');
+  assert.deepEqual(world.portals.map((g) => g.open), [false, false]);
+
+  const after = [];
+  runSteps(10, () => after.push(...game.tick(STEP, IDLE)));
+  assert.equal(game.state, 'playing');
+  assert.deepEqual(ofType(after, 'savepoint'), [], 'standing on the flag again fires nothing');
+});
+
+test('the castle portal still sets the checkpoint', () => {
+  const game = startGame(KEEP);
+  const { world, level } = game;
+  const moves = (events) => types(events).filter((t) => t === 'portal' || t === 'warp' || t === 'savepoint');
+  assert.deepEqual(world.portals, []);
+
+  standAt(world.player, level.checkpoint.x + TILE);
+  world.player.invuln = 99;
+  assert.deepEqual(moves(game.tick(STEP, IDLE)), [], 'walking past K is no savepoint in the castle');
+  assert.equal(world.checkpointReached, false);
+  assert.equal(game.checkpoint, null);
+
+  world.portal.open = true;
+  standAt(world.player, world.portal.x);
+  assert.deepEqual(moves(game.tick(STEP, IDLE)), ['portal']);
+  assert.deepEqual(game.checkpoint, { x: level.checkpoint.x, y: level.checkpoint.y });
+  assert.equal(world.checkpointReached, true);
+});
+
+test('goalBlocked holds while a shark, snake, monkey or grandmother lives or the house stands', () => {
+  for (const kind of ['shark', 'snake', 'monkey', 'grandma']) {
+    assert.equal(goalBlocked({ enemies: [{ kind, alive: true }] }), true, kind);
+    assert.equal(goalBlocked({ enemies: [{ kind, alive: false }] }), false, `a defeated ${kind}`);
+  }
+  assert.equal(goalBlocked({ enemies: ['rabbit', 'deer', 'spider', 'fish'].map((kind) => ({ kind, alive: true })) }), false);
+  assert.equal(goalBlocked({ enemies: [], house: { x: 0, y: 0 } }), true);
+  assert.equal(goalBlocked({ enemies: [], house: null }), false);
+});
+
+test('the crystal stays locked until the monkey and every snake are dead and then opens exactly once', () => {
+  const level = forest({ feet: put(NO_HOUSE, 31, 'a') });
+  for (const last of ['monkey', 'snake']) {
+    const world = createWorld(level);
+    assert.equal(world.goal.locked, true);
+    touchGoal(world);
+    assert.equal(world.done, false, 'the caged crystal cannot be taken');
+
+    const blockers = last === 'monkey' ? [...snakesOf(world), monkeyOf(world)] : [monkeyOf(world), ...snakesOf(world)];
+    blockers.forEach((e, i) => {
+      const final = i === blockers.length - 1;
+      assert.deepEqual(ofType(kill(world, e), 'goalOpen'), final ? [goalOpen(level)] : [], `${e.kind} ${i + 1} of 4, ${last} last`);
+      assert.equal(world.goal.locked, !final);
+    });
+
+    const rabbit = world.enemies.find((e) => e.kind === 'rabbit');
+    assert.deepEqual(ofType(kill(world, rabbit), 'goalOpen'), [], 'a later defeat does not open it again');
+    assert.ok(types(touchGoal(world)).includes('goal'));
+    assert.equal(world.done, true);
+  }
+});
+
+test('with the monkey already dead on respawn the lock does not wait for it', () => {
+  const level = forest({ feet: NO_HOUSE });
+  const fromSavepoint = (monkey) => createWorld(level, new Set(), { start: level.checkpoint, monkey });
+
+  const awake = fromSavepoint({ state: 'awake', lives: 2 });
+  assert.equal(monkeyOf(awake).mode, 'arriving');
+  for (const snake of snakesOf(awake)) kill(awake, snake);
+  assert.equal(awake.goal.locked, true, 'an awake monkey still holds the lock');
+
+  const world = fromSavepoint({ state: 'dead', lives: 0 });
+  assert.equal(monkeyOf(world), undefined);
+  const [two, three] = snakesOf(world);
+  assert.deepEqual([two.x, three.x], [21.5 * TILE, 28.5 * TILE], 'the snake of part 1 is not rebuilt');
+  assert.equal(world.goal.locked, true);
+  assert.deepEqual(ofType(kill(world, two), 'goalOpen'), []);
+  assert.deepEqual(ofType(kill(world, three), 'goalOpen'), [goalOpen(level)]);
+  assert.equal(world.goal.locked, false);
+});
+
+test('the sea lock still opens when the last shark dies', () => {
+  const level = testLevel(['C..f..H....H..G', '###############'], { theme: 'sea' });
+  const world = createWorld(level);
+  const fish = world.enemies.find((e) => e.kind === 'fish');
+  const [a, b] = world.enemies.filter((e) => e.kind === 'shark');
+  assert.equal(world.goal.locked, true);
+  assert.deepEqual(ofType(kill(world, fish), 'goalOpen'), [], 'a fish is no blocker');
+  assert.deepEqual(ofType(kill(world, a), 'goalOpen'), []);
+  assert.equal(world.goal.locked, true);
+  assert.deepEqual(ofType(kill(world, b), 'goalOpen'), [goalOpen(level)]);
+  assert.equal(world.goal.locked, false);
+});
+
+test('a finish without sharks, snakes or a monkey is never locked and a defeat there emits no goalOpen', () => {
+  const world = createWorld(testLevel(['C...c....G', '##########']));
+  assert.equal(world.goal.locked, false);
+  assert.deepEqual(ofType(kill(world, world.enemies[0]), 'goalOpen'), []);
+  assert.equal(createWorld(parseLevel(KEEP)).goal.locked, false);
 });

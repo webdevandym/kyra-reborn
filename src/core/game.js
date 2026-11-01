@@ -117,6 +117,8 @@ export function createGame(levelDefs, { best = 0 } = {}) {
       queue.push({ type: 'death', livesLeft: game.lives });
     } else if (event.type === 'portal') {
       game.checkpoint = { ...event.to };
+    } else if (event.type === 'savepoint') {
+      game.checkpoint = { x: event.x, y: event.y };
     } else if (event.type === 'monkeyState') {
       game.monkey = { state: event.state, lives: event.lives };
     } else if (event.type === 'goal') {

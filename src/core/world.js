@@ -14,6 +14,11 @@ import { hurtShooter } from './shooter.js';
 import { startArriving } from './monkey.js';
 
 const KNOCKBACK = { spider: SPIDER.knockback, shark: SHARK.knockback, monkey: MONKEY.knockback };
+const GOAL_BLOCKERS = new Set(['shark', 'snake', 'monkey', 'grandma']);
+
+export function goalBlocked(world) {
+  return Boolean(world.house) || world.enemies.some((e) => e.alive && GOAL_BLOCKERS.has(e.kind));
+}
 
 function startingEnemies(level, firstRoom, monkey) {
   const enemies = [];
@@ -53,6 +58,7 @@ export function createWorld(level, collected = new Set(), { start = null, monkey
     pearls: level.pearls.map((p) => ({ x: p.x, y: p.y, w: PEARL.w, h: PEARL.h, open: false })),
     crabs: [],
     portal: level.portal ? { x: level.portal.x, y: level.portal.y, w: PORTAL.w, h: PORTAL.h, open: false, openedAt: 0 } : null,
+    portals: level.portals.map((g) => ({ x: g.x, y: g.y, w: PORTAL.w, h: PORTAL.h, open: false, openedAt: 0, room: roomIndex(level, g.x) })),
     doors: level.doors.map((d) => ({ x: d.x, y: d.y, w: DOOR.w, h: DOOR.h })),
     checkpointReached: Boolean(start),
     goal: { x: level.goal.x, y: level.goal.y, w: GOAL.w, h: GOAL.h, locked: false },
@@ -60,7 +66,7 @@ export function createWorld(level, collected = new Set(), { start = null, monkey
     done: false,
     step: (dt, input) => stepWorld(world, dt, input),
   };
-  world.goal.locked = world.enemies.some((e) => e.kind === 'shark');
+  world.goal.locked = goalBlocked(world);
   return world;
 }
 
@@ -169,11 +175,20 @@ export function stepWorld(world, dt, input) {
     world.checkpointReached = true;
   }
 
+  const gate = world.portals.find((g) => g.open && overlaps(bodyRect(p), bodyRect(g)));
+  if (gate) {
+    const move = enterRoom(world, gate.room + 1);
+    recallMonkey(world);
+    events.push({ type: 'warp', ...move });
+  }
+
   const door = world.doors.find((d) => overlaps(bodyRect(p), bodyRect(d)));
-  if (door) {
-    const next = world.level.rooms[roomIndex(world.level, door.x) + 1];
-    const x = next.left + 1.5 * TILE;
-    events.push({ type: 'door', ...moveTo(world, x, solidTop(world.level, Math.floor(x / TILE))) });
+  if (door) events.push({ type: 'door', ...enterRoom(world, roomIndex(world.level, door.x) + 1) });
+
+  const flag = world.level.theme === 'forest' && !world.checkpointReached ? world.level.checkpoint : null;
+  if (flag && p.x >= flag.x) {
+    world.checkpointReached = true;
+    events.push({ type: 'savepoint', x: flag.x, y: flag.y });
   }
 
   if (!world.goal.locked && overlaps(bodyRect(p), bodyRect(world.goal))) {
@@ -239,7 +254,7 @@ function stepCrabs(world, dt, events) {
 
 function onDefeat(world, e, events) {
   const p = world.player;
-  if (e.kind === 'shark' && world.goal.locked && !world.enemies.some((s) => s.kind === 'shark' && s.alive)) {
+  if (world.goal.locked && !goalBlocked(world)) {
     world.goal.locked = false;
     events.push({ type: 'goalOpen', x: world.goal.x, y: world.goal.y });
   }
@@ -252,6 +267,17 @@ function onDefeat(world, e, events) {
     world.portal.openedAt = world.time;
     events.push({ type: 'portalOpen', x: world.portal.x, y: world.portal.y });
   }
+  const gate = e.kind === 'snake' && world.portals.find((g) => !g.open && g.room === roomIndex(world.level, e.x));
+  if (gate) {
+    gate.open = true;
+    gate.openedAt = world.time;
+    events.push({ type: 'portalOpen', x: gate.x, y: gate.y });
+  }
+}
+
+function enterRoom(world, index) {
+  const x = world.level.rooms[index].left + 1.5 * TILE;
+  return moveTo(world, x, solidTop(world.level, Math.floor(x / TILE)));
 }
 
 function moveTo(world, x, y) {
