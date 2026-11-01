@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { ROWS, MOVER, LIFT, TILE, BAT, GHOST, SPIDER, SHARK, DOLPHIN, FISH, BUBBLE } from '../src/config.js';
+import { ROWS, MOVER, LIFT, TILE, BAT, GHOST, SPIDER, SHARK, DOLPHIN, FISH, BUBBLE, GOAL } from '../src/config.js';
+import { HOUSE_SIZE } from '../src/render/forest-sprites.js';
 import { parseLevel, roomAt, solidTop, ROOM_KINDS } from '../src/core/level.js';
 import levels from '../src/levels/index.js';
 import { LANGS } from '../src/i18n/index.js';
@@ -30,6 +31,7 @@ const EXPECTED_COUNTS = {
   level14: { ...EMPTY_LAND, crystals: 18, movers: 4, dolphin: 7, fish: 6, shark: 2, bubble: 2, teal: 1, pearl: 1 },
   level15: { ...EMPTY_LAND, crystals: 27, movers: 0, rabbit: 4, deer: 3, snake: 3, monkey: 1 },
   level16: { ...EMPTY_LAND, crystals: 30, movers: 0, rabbit: 4, deer: 5, snake: 3, monkey: 1 },
+  level17: { ...EMPTY_LAND, crystals: 33, movers: 0, rabbit: 5, deer: 4, snake: 3, monkey: 1 },
 };
 const ENEMY_KINDS = ['carrot', 'zombie', 'propeller', 'bee', 'star', 'bat', 'rat', 'ghost', 'skeleton', 'spider', 'dolphin', 'fish', 'shark', 'rabbit', 'deer', 'snake', 'monkey'];
 const ENEMY_CHARS = 'cZpb*vmgsSdfH';
@@ -92,9 +94,9 @@ function firstStandableBelow(map, col, row) {
   return ROWS;
 }
 
-test('the level list is level1 to level16, meadow then sky then castle then sea then forest, with difficulty 1-3 that never goes down within a theme', () => {
-  assert.deepEqual(levels.map((def) => def.id), ['level1', 'level2', 'level3', 'level4', 'level5', 'level6', 'level7', 'level8', 'level9', 'level10', 'level11', 'level12', 'level13', 'level14', 'level15', 'level16']);
-  assert.deepEqual(levels.map((def) => def.theme ?? 'meadow'), ['meadow', 'meadow', 'meadow', 'meadow', 'meadow', 'sky', 'sky', 'sky', 'castle', 'castle', 'castle', 'sea', 'sea', 'sea', 'forest', 'forest']);
+test('the level list is level1 to level17, meadow then sky then castle then sea then forest, with difficulty 1-3 that never goes down within a theme', () => {
+  assert.deepEqual(levels.map((def) => def.id), ['level1', 'level2', 'level3', 'level4', 'level5', 'level6', 'level7', 'level8', 'level9', 'level10', 'level11', 'level12', 'level13', 'level14', 'level15', 'level16', 'level17']);
+  assert.deepEqual(levels.map((def) => def.theme ?? 'meadow'), ['meadow', 'meadow', 'meadow', 'meadow', 'meadow', 'sky', 'sky', 'sky', 'castle', 'castle', 'castle', 'sea', 'sea', 'sea', 'forest', 'forest', 'forest']);
   const last = {};
   for (const def of levels) {
     const theme = def.theme ?? 'meadow';
@@ -102,13 +104,13 @@ test('the level list is level1 to level16, meadow then sky then castle then sea 
     assert.ok(def.difficulty >= (last[theme] ?? 1), `${def.id} is easier than the ${theme} level before it`);
     last[theme] = def.difficulty;
   }
-  assert.deepEqual(levels.map((def) => def.difficulty), [1, 1, 2, 2, 3, 2, 2, 3, 2, 3, 3, 2, 3, 3, 3, 3]);
+  assert.deepEqual(levels.map((def) => def.difficulty), [1, 1, 2, 2, 3, 2, 2, 3, 2, 3, 3, 2, 3, 3, 3, 3, 3]);
 });
 
 test('the house appears only on level 17', () => {
   const withHouse = levels.filter((def) => cellsOf(def.map, 'U').length > 0).map((def) => def.id);
-  assert.ok(withHouse.every((id) => id === 'level17'), `a house on ${withHouse}`);
-  for (const def of levels) assert.ok(cellsOf(def.map, 'U').length <= 1, `${def.id} has more than one house`);
+  assert.deepEqual(withHouse, ['level17']);
+  for (const def of levels) assert.equal(cellsOf(def.map, 'U').length, def.id === 'level17' ? 1 : 0, `houses on ${def.id}`);
 });
 
 for (const def of levels) {
@@ -502,6 +504,31 @@ for (const def of levels) {
       for (let col = goal.col - 1; col <= goal.col + 1; col++) assert.equal(ground(col), goal.row + 1, `ground at column ${col}`);
       assert.ok(open(goal.col, goal.row - 1), 'no room above the crystal');
     });
+
+    if (def.id === 'level17') {
+      test(`${def.id}: the house stands on solid ground in part 3 beside the crystal, never over it, in a flat arena of 20+ columns whose logs are 3+ tiles up`, () => {
+        const [house] = cellsOf(def.map, 'U');
+        assert.ok(house, 'no house');
+        const floor = house.row + 1;
+        assert.equal(partOf(house.col), 2, `house at column ${house.col}`);
+        assert.equal(def.map[floor][house.col], '#', 'the house does not stand on solid ground');
+        assert.equal(solidTop(level, house.col), level.house.y, 'the grandmother would not land on the ground under the house');
+        const flat = (col) => partOf(col) === 2 && ground(col) === floor && open(col, floor - 1) && open(col, floor - 2);
+        assert.ok(flat(house.col), 'no room for the grandmother at the house');
+        let left = house.col;
+        let right = house.col;
+        while (flat(left - 1)) left--;
+        while (flat(right + 1)) right++;
+        assert.ok(right - left + 1 >= 20, `the arena ${left}-${right} is ${right - left + 1} columns wide`);
+        const logs = runsOf(def.map, '=').filter((run) => run.end >= left - 1 && run.start <= right + 1);
+        assert.ok(logs.length >= 1 && logs.length <= 2, `${logs.length} logs over the arena`);
+        for (const run of logs) assert.ok(floor - run.row >= 3, `log at row ${run.row}, columns ${run.start}-${run.end} is ${floor - run.row} tiles above the arena floor`);
+        assert.ok(goal.row === house.row && goal.col >= left && goal.col <= right, `crystal at ${goal.col},${goal.row} is not in the arena`);
+        const apart = Math.abs(goal.col - house.col);
+        assert.ok(apart <= 8, `the crystal is ${apart} columns from the house`);
+        assert.ok(apart * TILE - HOUSE_SIZE.w / 2 - GOAL.w / 2 >= TILE, `the house at column ${house.col} leaves no clear tile before the crystal at ${goal.col}`);
+      });
+    }
 
     test(`${def.id}: pits lie inside a part, are at most 3 columns wide and 2 where the monkey chases, and the floors across a pit differ by at most 1 tile`, () => {
       for (const gap of gapsOf(def.map)) {

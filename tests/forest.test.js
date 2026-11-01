@@ -553,10 +553,18 @@ function finishForestLevel(def) {
   tickUntil(run, () => monkey.mode === 'awake' && !monkey.hidden, 'the monkey arrives');
   assert.equal(roomIndex(level, monkey.x), 2, 'the monkey arrives in part 3');
 
-  stompSnakeOf(run, 2);
+  const lastSnake = stompSnakeOf(run, 2);
+  assert.equal(ofType(lastSnake, 'grandmaOut').length, level.house ? 1 : 0, 'the grandmother comes out exactly when the last snake dies');
+  if (level.house) {
+    assert.ok(game.world.house, 'the house stands while the grandmother lives');
+    assert.equal(game.world.goal.locked, true, 'the crystal is locked while the grandmother lives');
+  }
   const safeCol = level.rooms[2].left / TILE + 1;
   const nextLock = () => game.world.enemies.find((o) => LOCKS.has(o.kind));
-  for (let e = nextLock(); e; e = nextLock()) stompOut(run, e, safeCol);
+  for (let e = nextLock(); e; e = nextLock()) {
+    assert.equal(game.world.goal.locked, true, `the crystal is locked while the ${e.kind} lives`);
+    stompOut(run, e, safeCol);
+  }
 
   const { goal, player } = game.world;
   assert.equal(goal.locked, false, 'every lock is beaten');
@@ -589,5 +597,24 @@ test('level16 can be finished in a scripted run', () => {
   assert.equal(ofType(events, 'warp').length, 2);
   assert.equal(ofType(events, 'goalOpen').length, 1);
   assert.equal(events.filter((ev) => ev.type === 'stomp' && ev.kind === 'monkey').length, MONKEY.lives);
+  assert.deepEqual(ofType(events, 'death'), []);
+});
+
+test('level17 can be finished in a scripted run including the grandmother', () => {
+  const def = levels.find((d) => d.id === 'level17');
+  const { game, events } = finishForestLevel(def);
+  assert.equal(game.state, 'victory');
+  assert.equal(ofType(events, 'savepoint').length, 1);
+  assert.deepEqual(game.checkpoint, { x: game.level.checkpoint.x, y: game.level.checkpoint.y });
+  assert.equal(ofType(events, 'warp').length, 2);
+  assert.equal(ofType(events, 'grandmaOut').length, 1);
+  assert.equal(events.filter((ev) => ev.type === 'stomp' && ev.kind === 'monkey').length, MONKEY.lives);
+  const grandma = events.filter((ev) => ev.type === 'stomp' && ev.kind === 'grandma');
+  assert.deepEqual(grandma.map((ev) => ev.result), ['hurt', 'hurt', 'hurt', 'defeated']);
+  const defeat = events.indexOf(grandma[grandma.length - 1]);
+  assert.deepEqual(events.slice(defeat + 1, defeat + 3).map((ev) => ev.type), ['houseGone', 'goalOpen'], 'her defeat removes the house and then opens the crystal');
+  assert.equal(ofType(events, 'houseGone').length, 1);
+  assert.equal(game.world.house, null);
+  assert.equal(ofType(events, 'goalOpen').length, 1);
   assert.deepEqual(ofType(events, 'death'), []);
 });

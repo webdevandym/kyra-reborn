@@ -146,6 +146,15 @@
         "monkey": "The monkey wakes up\nwhen you come close!",
         "crystal": "Beat the monkey and the flying snake\nto open the crystal"
       }
+    },
+    "level17": {
+      "name": "Forest House",
+      "signs": {
+        "forest": "The last forest level —\nthe hardest of all!",
+        "monkey": "The monkey sleeps up ahead.\nYou can beat it anywhere!",
+        "house": "A house at the end —\nwho lives there?",
+        "grandma": "Grandma has 4 lives —\nwatch out for her sticks!"
+      }
     }
   }
 }

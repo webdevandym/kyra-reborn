@@ -146,6 +146,15 @@
         "monkey": "Małpka budzi się,\ngdy podejdziesz blisko!",
         "crystal": "Pokonaj małpkę i latającego węża,\nby otworzyć kryształ"
       }
+    },
+    "level17": {
+      "name": "Leśny domek",
+      "signs": {
+        "forest": "Ostatni leśny poziom —\nnajtrudniejszy ze wszystkich!",
+        "monkey": "Przed tobą śpi małpka.\nMożesz ją pokonać wszędzie!",
+        "house": "Na końcu stoi domek —\nkto w nim mieszka?",
+        "grandma": "Babcia ma 4 życia —\nuważaj na jej patyki!"
+      }
     }
   }
 }
