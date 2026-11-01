@@ -1,6 +1,7 @@
 import { TILE, STEP, CARROT, ZOMBIE, PROPELLER, BEE, FLYER, RULES, STAR, BAT, RAT, SKELETON, GHOST, SPIDER, FIREBALL, BONE, DOLPHIN, FISH, SHARK, SHELL } from '../config.js';
 import { applyGravity, moveAndCollide } from './physics.js';
 import { tileAt, roomAt } from './level.js';
+import { shooterState, updateShooter, stompShooter } from './shooter.js';
 
 function baseEnemy(spec, w, h, speed) {
   return {
@@ -279,70 +280,24 @@ function spiderShot(e) {
   };
 }
 
+const SPIDER_RULES = {
+  cfg: SPIDER,
+  minVolley: 1,
+  maxVolley: 3,
+  inRange(e, level, player) {
+    const reach = Math.abs(player.x - e.x);
+    return !player.dead && roomAt(level, player.x) === e.room && reach >= SPIDER.minRange * TILE && reach <= SPIDER.maxRange * TILE;
+  },
+  shoot: spiderShot,
+};
+
 const spider = {
-  create: (spec) => ({
-    ...baseEnemy(spec, SPIDER.w, SPIDER.h, 0),
-    lives: SPIDER.lives,
-    dizzy: 0,
-    cooldown: SPIDER.fireEvery,
-    winding: false,
-    volleySize: 1,
-    volleyHigh: false,
-    nextHigh: false,
-    shotsLeft: 0,
-    gap: 0,
-    room: null,
-  }),
+  create: (spec) => ({ ...baseEnemy(spec, SPIDER.w, SPIDER.h, 0), ...shooterState(SPIDER, SPIDER_RULES.minVolley), room: null }),
   update(e, dt, level, player) {
     e.room ??= roomAt(level, e.x);
-    e.anim += dt;
-    if (player && player.x !== e.x) e.dir = Math.sign(player.x - e.x);
-    if (e.dizzy > 0) {
-      e.dizzy = Math.max(0, e.dizzy - dt);
-      e.winding = false;
-      return null;
-    }
-    if (!player) return null;
-    const reach = Math.abs(player.x - e.x);
-    const inRange = !player.dead && roomAt(level, player.x) === e.room && reach >= SPIDER.minRange * TILE && reach <= SPIDER.maxRange * TILE;
-    if (!inRange) {
-      e.winding = false;
-      e.shotsLeft = 0;
-      e.cooldown = Math.max(e.cooldown, SPIDER.windup + STEP);
-      return null;
-    }
-    if (e.shotsLeft > 0) {
-      e.gap -= dt;
-      if (e.gap > 0) return null;
-      e.shotsLeft -= 1;
-      if (e.shotsLeft === 0) e.cooldown = SPIDER.fireEvery + e.gap;
-      else e.gap += SPIDER.volleyGap;
-      return spiderShot(e);
-    }
-    e.cooldown -= dt;
-    e.winding = e.cooldown <= SPIDER.windup;
-    if (e.cooldown > 0) return null;
-    e.winding = false;
-    e.volleyHigh = e.nextHigh;
-    e.nextHigh = !e.nextHigh;
-    e.shotsLeft = e.volleySize - 1;
-    e.volleySize = (e.volleySize % 3) + 1;
-    if (e.shotsLeft === 0) e.cooldown += SPIDER.fireEvery;
-    else e.gap = SPIDER.volleyGap + e.cooldown;
-    return spiderShot(e);
+    return updateShooter(e, dt, level, player, SPIDER_RULES);
   },
-  onStomp(e) {
-    if (e.dizzy > 0) return 'bounce';
-    if (e.lives > 1) {
-      e.lives -= 1;
-      e.dizzy = SPIDER.dizzyTime;
-      e.winding = false;
-      e.shotsLeft = 0;
-      e.cooldown = SPIDER.fireEvery;
-      return 'hurt';
-    }
-    return defeat(e);
-  },
+  onStomp: (e) => stompShooter(e, SPIDER, defeat),
 };
 
 const dolphinLives = twoLife(DOLPHIN);
@@ -377,66 +332,18 @@ function sharkShot(e, player) {
   };
 }
 
+const SHARK_RULES = {
+  cfg: SHARK,
+  minVolley: 2,
+  maxVolley: 4,
+  inRange: (e, level, player) => !player.dead && Math.abs(player.x - e.x) <= SHARK.maxRange * TILE,
+  shoot: sharkShot,
+};
+
 const shark = {
-  create: (spec) => ({
-    ...baseEnemy(spec, SHARK.w, SHARK.h, 0),
-    lives: SHARK.lives,
-    dizzy: 0,
-    cooldown: SHARK.fireEvery,
-    winding: false,
-    volleySize: 2,
-    volleyHigh: false,
-    nextHigh: false,
-    shotsLeft: 0,
-    gap: 0,
-  }),
-  update(e, dt, level, player) {
-    e.anim += dt;
-    if (player && player.x !== e.x) e.dir = Math.sign(player.x - e.x);
-    if (e.dizzy > 0) {
-      e.dizzy = Math.max(0, e.dizzy - dt);
-      e.winding = false;
-      return null;
-    }
-    if (!player) return null;
-    if (player.dead || Math.abs(player.x - e.x) > SHARK.maxRange * TILE) {
-      e.winding = false;
-      e.shotsLeft = 0;
-      e.cooldown = Math.max(e.cooldown, SHARK.windup + STEP);
-      return null;
-    }
-    if (e.shotsLeft > 0) {
-      e.gap -= dt;
-      if (e.gap > 0) return null;
-      e.shotsLeft -= 1;
-      if (e.shotsLeft === 0) e.cooldown = SHARK.fireEvery + e.gap;
-      else e.gap += SHARK.volleyGap;
-      return sharkShot(e, player);
-    }
-    e.cooldown -= dt;
-    e.winding = e.cooldown <= SHARK.windup;
-    if (e.cooldown > 0) return null;
-    e.winding = false;
-    e.volleyHigh = e.nextHigh;
-    e.nextHigh = !e.nextHigh;
-    e.shotsLeft = e.volleySize - 1;
-    e.volleySize = e.volleySize === 4 ? 2 : e.volleySize + 1;
-    if (e.shotsLeft === 0) e.cooldown += SHARK.fireEvery;
-    else e.gap = SHARK.volleyGap + e.cooldown;
-    return sharkShot(e, player);
-  },
-  onStomp(e) {
-    if (e.dizzy > 0) return 'bounce';
-    if (e.lives > 1) {
-      e.lives -= 1;
-      e.dizzy = SHARK.dizzyTime;
-      e.winding = false;
-      e.shotsLeft = 0;
-      e.cooldown = SHARK.fireEvery;
-      return 'hurt';
-    }
-    return defeat(e);
-  },
+  create: (spec) => ({ ...baseEnemy(spec, SHARK.w, SHARK.h, 0), ...shooterState(SHARK, SHARK_RULES.minVolley) }),
+  update: (e, dt, level, player) => updateShooter(e, dt, level, player, SHARK_RULES),
+  onStomp: (e) => stompShooter(e, SHARK, defeat),
 };
 
 export const ENEMY_KINDS = {

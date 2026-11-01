@@ -10,6 +10,7 @@ import { createRainCloud, rainPhase, rainRect } from './hazards.js';
 import { createBubble, placeBubble, bubbleRect } from './bubbles.js';
 import { createCrab, updateCrab } from './crab.js';
 import { PROJECTILES } from './projectiles.js';
+import { hurtShooter } from './shooter.js';
 
 const KNOCKBACK = { spider: SPIDER.knockback, shark: SHARK.knockback };
 
@@ -191,11 +192,7 @@ function stepCrabs(world, dt, events) {
   for (const crab of world.crabs) {
     const shark = updateCrab(crab, dt, world.level, sharks);
     if (!shark) continue;
-    shark.lives -= 1;
-    shark.dizzy = SHARK.dizzyTime;
-    shark.winding = false;
-    shark.shotsLeft = 0;
-    shark.cooldown = SHARK.fireEvery;
+    hurtShooter(shark, SHARK);
     const result = shark.lives > 0 ? 'hurt' : 'defeated';
     events.push({ type: 'crabPinch', result, x: shark.x, y: shark.y - shark.h });
     if (result === 'defeated') {
