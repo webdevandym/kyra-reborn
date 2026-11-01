@@ -4,7 +4,7 @@ import { TILE, STEP, GRAVITY, CARROT, ZOMBIE, PROPELLER, BEE, FLYER, PLAYER, STA
 import { createEnemy, updateEnemy, stompEnemy, ENEMY_KINDS } from '../src/core/enemies.js';
 import { bodyRect, overlaps } from '../src/core/rect.js';
 import { parseLevel } from '../src/core/level.js';
-import { testLevel, runSteps, castleMap } from './helpers.js';
+import { testLevel, runSteps, castleMap, near as sharedNear } from './helpers.js';
 
 function track(e, level, steps) {
   let minX = e.x;
@@ -459,7 +459,7 @@ function shotsWithin(e, level, player, seconds) {
   return shots;
 }
 
-const near = (a, b) => Math.abs(a - b) < STEP * 1.5;
+const near = (a, b) => sharedNear(a, b, STEP * 1.5);
 
 function untilMidVolley(e, level, player) {
   for (let i = 0; i < Math.round(6 / STEP); i++) {

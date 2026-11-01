@@ -5,7 +5,7 @@ import { createWorld } from '../src/core/world.js';
 import { createEnemy, updateEnemy, stompEnemy } from '../src/core/enemies.js';
 import { createMover, updateMovers } from '../src/core/platforms.js';
 import { createGame } from '../src/core/game.js';
-import { testLevel, mapFromBottom } from './helpers.js';
+import { testLevel, mapFromBottom, types } from './helpers.js';
 
 const IDLE = { left: false, right: false, jumpHeld: false, jumpPressed: false };
 
@@ -19,8 +19,6 @@ function run(world, seconds, { safe = false } = {}) {
   }
   return events;
 }
-
-const types = (events) => events.map((e) => e.type);
 
 function placePlayer(world, x, y, extra = {}) {
   Object.assign(world.player, { x, y, vx: 0, vy: 0, onGround: true, invuln: 0 }, extra);

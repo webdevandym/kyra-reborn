@@ -56,6 +56,8 @@ async function bootLang(lang) {
 
 const game = createGame(levels, { best: Number(load('kyra.best', 0)) || 0 });
 const camera = createCamera();
+const onScreen = (x) => x > camera.x - 100 && x < camera.x + VIEW_W + 100;
+const snapToPlayer = () => snapCamera(camera, game.world.player, game.world.level);
 const particles = createParticles({ reduced: reducedMotion });
 const audio = createAudio({ muted: load('kyra.muted', false) === true });
 const input = createInput(window);
@@ -111,7 +113,7 @@ function applyView() {
   if (next !== appliedViewWidth) {
     appliedViewWidth = next;
     document.documentElement.style.setProperty('--view-aspect', `${next} / ${VIEW_H}`);
-    snapCamera(camera, game.world.player, game.world.level);
+    snapToPlayer();
   }
   resizeCanvas();
 }
@@ -284,7 +286,7 @@ function syncScreens() {
 
 function pickLevel(index) {
   if (!game.selectLevel(index)) return false;
-  snapCamera(camera, game.world.player, game.world.level);
+  snapToPlayer();
   syncPicker();
   fillStats();
   return true;
@@ -365,20 +367,20 @@ function handleEvents(events) {
         if (e.result === 'defeated') particles.poof(e.x, e.y + 12);
         break;
       case 'throw':
-        if (e.x > camera.x - 100 && e.x < camera.x + VIEW_W + 100) audio.sfx.throw();
+        if (onScreen(e.x)) audio.sfx.throw();
         break;
       case 'boneBreak':
         particles.poof(e.x, e.y - 6);
         break;
       case 'door':
         audio.sfx.door();
-        snapCamera(camera, game.world.player, game.world.level);
+        snapToPlayer();
         break;
       case 'fire':
-        if (e.x > camera.x - 100 && e.x < camera.x + VIEW_W + 100) audio.sfx.fire();
+        if (onScreen(e.x)) audio.sfx.fire();
         break;
       case 'shell':
-        if (e.x > camera.x - 100 && e.x < camera.x + VIEW_W + 100) audio.sfx.shell();
+        if (onScreen(e.x)) audio.sfx.shell();
         break;
       case 'bubble':
         audio.sfx.bubble();
@@ -422,10 +424,10 @@ function handleEvents(events) {
         particles.sparkle(e.from.x, e.from.y - 35, COLORS.portal);
         particles.sparkle(e.to.x, e.to.y - 35, COLORS.portal);
         particles.text(e.to.x + 120, e.to.y - 90, t('checkpoint', prefs.lang), COLORS.ink);
-        snapCamera(camera, game.world.player, game.world.level);
+        snapToPlayer();
         break;
       case 'rainStart':
-        if (e.x > camera.x - 100 && e.x < camera.x + VIEW_W + 100) audio.sfx.rain();
+        if (onScreen(e.x)) audio.sfx.rain();
         break;
       case 'hit':
         audio.sfx.hit();
@@ -435,10 +437,10 @@ function handleEvents(events) {
       case 'levelStart':
         if (touchMode.isActive()) overlay.showHint();
         particles.clear();
-        snapCamera(camera, game.world.player, game.world.level);
+        snapToPlayer();
         break;
       case 'respawn':
-        snapCamera(camera, game.world.player, game.world.level);
+        snapToPlayer();
         break;
       case 'levelComplete':
         audio.sfx.levelComplete();
@@ -468,7 +470,7 @@ function onStateChange() {
   }
   if (game.state === 'title') {
     particles.clear();
-    snapCamera(camera, game.world.player, game.world.level);
+    snapToPlayer();
   }
   syncScreens();
 }
@@ -639,5 +641,5 @@ function frame(now) {
 
 buildPicker();
 applyStrings();
-snapCamera(camera, game.world.player, game.world.level);
+snapToPlayer();
 requestAnimationFrame(frame);

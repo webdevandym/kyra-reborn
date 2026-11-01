@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TILE, RAIN } from '../src/config.js';
 import { createRainCloud, rainPhase, rainRect } from '../src/core/hazards.js';
-import { testLevel } from './helpers.js';
+import { testLevel, near as sharedNear } from './helpers.js';
 
 const PERIOD = RAIN.dry + RAIN.warn + RAIN.rain;
 const START = RAIN.dry + RAIN.warn;
@@ -19,7 +19,7 @@ const LEVEL = testLevel([
 ]);
 const [A, OVER_GAP, ON_PLANK] = LEVEL.rainClouds.map((spec) => createRainCloud(spec, LEVEL));
 const at = (cloud, u) => u - cloud.col * RAIN.phasePerCol + PERIOD * 4;
-const near = (a, b, eps = 1e-6) => Math.abs(a - b) < eps;
+const near = (a, b, eps = 1e-6) => sharedNear(a, b, eps);
 
 test('a rain column runs from under the cloud to the first # or = below it, or to the level bottom over a gap', () => {
   assert.equal(A.x, 2.5 * TILE);

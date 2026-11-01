@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { STEP, RULES, TILE } from '../src/config.js';
 import { createGame } from '../src/core/game.js';
-import { mapFromBottom, castleMap } from './helpers.js';
+import { mapFromBottom, castleMap, types, near } from './helpers.js';
 
 const IDLE = { left: false, right: false, jumpHeld: false, jumpPressed: false };
 const RIGHT = { ...IDLE, right: true };
@@ -36,8 +36,6 @@ function start(game) {
   play(game, IDLE, RULES.introTime + STEP);
   assert.equal(game.state, 'playing');
 }
-
-const types = (events) => events.map((e) => e.type);
 
 test('a new game waits on the title screen with 3 lives and no points', () => {
   const game = createGame([EMPTY_RUN]);
@@ -298,8 +296,6 @@ function playCounting(game, input, seconds) {
   }
   return { playing, events };
 }
-
-const near = (a, b) => Math.abs(a - b) < 1e-9;
 
 test('levelTime starts at 0 and counts only playing steps, not the intro or a pause', () => {
   const game = createGame([EMPTY_RUN]);

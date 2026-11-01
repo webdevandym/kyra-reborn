@@ -2,10 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TILE, STEP, MOVER } from '../src/config.js';
 import { createMover, moverX, updateMovers } from '../src/core/platforms.js';
+import { near } from './helpers.js';
 
 const SPEC = { id: '4,8', col: 4, row: 8, width: 3 * TILE, x: 4 * TILE, y: 8 * TILE };
 const expected = (col, homeX, time) => homeX + MOVER.range * TILE * Math.sin((2 * Math.PI * time) / MOVER.period + col * MOVER.phasePerCol);
-const near = (a, b, eps = 1e-9) => Math.abs(a - b) < eps;
 
 test('a moving cloud keeps its size and top, and starts at its column phase offset', () => {
   const m = createMover(SPEC);

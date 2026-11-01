@@ -15,6 +15,10 @@ export function runSteps(n, fn) {
   for (let i = 0; i < n; i++) fn(i);
 }
 
+export const types = (events) => events.map((e) => e.type);
+
+export const near = (a, b, eps = 1e-9) => Math.abs(a - b) < eps;
+
 const round3 = (n) => String(Math.round(n * 1000) / 1000);
 
 function formatValue(value, strict) {
