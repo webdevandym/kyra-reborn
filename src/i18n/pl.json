@@ -137,6 +137,15 @@
         "monkey": "W bańce śpi małpka.\nMa 5 żyć!",
         "crystal": "Pokonaj małpkę i wszystkie węże,\nby otworzyć kryształ"
       }
+    },
+    "level16": {
+      "name": "Jelenia polana",
+      "signs": {
+        "deer": "Tu jest więcej jeleni!\nNa jelenia skocz dwa razy",
+        "flying": "Ten wąż lata —\nskocz na niego z kłody!",
+        "monkey": "Małpka budzi się,\ngdy podejdziesz blisko!",
+        "crystal": "Pokonaj małpkę i latającego węża,\nby otworzyć kryształ"
+      }
     }
   }
 }

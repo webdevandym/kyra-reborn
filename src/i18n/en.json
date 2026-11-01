@@ -137,6 +137,15 @@
         "monkey": "A monkey sleeps in the bubble.\nIt has 5 lives!",
         "crystal": "Beat the monkey and all snakes\nto open the crystal"
       }
+    },
+    "level16": {
+      "name": "Deer Glade",
+      "signs": {
+        "deer": "More deer here!\nJump on a deer twice",
+        "flying": "This snake flies —\njump on it from the log!",
+        "monkey": "The monkey wakes up\nwhen you come close!",
+        "crystal": "Beat the monkey and the flying snake\nto open the crystal"
+      }
     }
   }
 }

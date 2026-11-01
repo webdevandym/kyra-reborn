@@ -29,6 +29,7 @@ const EXPECTED_COUNTS = {
   level13: { ...EMPTY_LAND, crystals: 20, movers: 4, dolphin: 8, fish: 6, shark: 1, bubble: 2, teal: 1, pearl: 0 },
   level14: { ...EMPTY_LAND, crystals: 18, movers: 4, dolphin: 7, fish: 6, shark: 2, bubble: 2, teal: 1, pearl: 1 },
   level15: { ...EMPTY_LAND, crystals: 27, movers: 0, rabbit: 4, deer: 3, snake: 3, monkey: 1 },
+  level16: { ...EMPTY_LAND, crystals: 30, movers: 0, rabbit: 4, deer: 5, snake: 3, monkey: 1 },
 };
 const ENEMY_KINDS = ['carrot', 'zombie', 'propeller', 'bee', 'star', 'bat', 'rat', 'ghost', 'skeleton', 'spider', 'dolphin', 'fish', 'shark', 'rabbit', 'deer', 'snake', 'monkey'];
 const ENEMY_CHARS = 'cZpb*vmgsSdfH';
@@ -91,9 +92,9 @@ function firstStandableBelow(map, col, row) {
   return ROWS;
 }
 
-test('the level list is level1 to level15, meadow then sky then castle then sea then forest, with difficulty 1-3 that never goes down within a theme', () => {
-  assert.deepEqual(levels.map((def) => def.id), ['level1', 'level2', 'level3', 'level4', 'level5', 'level6', 'level7', 'level8', 'level9', 'level10', 'level11', 'level12', 'level13', 'level14', 'level15']);
-  assert.deepEqual(levels.map((def) => def.theme ?? 'meadow'), ['meadow', 'meadow', 'meadow', 'meadow', 'meadow', 'sky', 'sky', 'sky', 'castle', 'castle', 'castle', 'sea', 'sea', 'sea', 'forest']);
+test('the level list is level1 to level16, meadow then sky then castle then sea then forest, with difficulty 1-3 that never goes down within a theme', () => {
+  assert.deepEqual(levels.map((def) => def.id), ['level1', 'level2', 'level3', 'level4', 'level5', 'level6', 'level7', 'level8', 'level9', 'level10', 'level11', 'level12', 'level13', 'level14', 'level15', 'level16']);
+  assert.deepEqual(levels.map((def) => def.theme ?? 'meadow'), ['meadow', 'meadow', 'meadow', 'meadow', 'meadow', 'sky', 'sky', 'sky', 'castle', 'castle', 'castle', 'sea', 'sea', 'sea', 'forest', 'forest']);
   const last = {};
   for (const def of levels) {
     const theme = def.theme ?? 'meadow';
@@ -101,7 +102,7 @@ test('the level list is level1 to level15, meadow then sky then castle then sea 
     assert.ok(def.difficulty >= (last[theme] ?? 1), `${def.id} is easier than the ${theme} level before it`);
     last[theme] = def.difficulty;
   }
-  assert.deepEqual(levels.map((def) => def.difficulty), [1, 1, 2, 2, 3, 2, 2, 3, 2, 3, 3, 2, 3, 3, 3]);
+  assert.deepEqual(levels.map((def) => def.difficulty), [1, 1, 2, 2, 3, 2, 2, 3, 2, 3, 3, 2, 3, 3, 3, 3]);
 });
 
 test('the house appears only on level 17', () => {

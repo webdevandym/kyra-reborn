@@ -578,3 +578,16 @@ test('level15 can be finished in a scripted run', () => {
   assert.equal(events.filter((ev) => ev.type === 'stomp' && ev.kind === 'monkey').length, MONKEY.lives);
   assert.deepEqual(ofType(events, 'death'), []);
 });
+
+test('level16 can be finished in a scripted run', () => {
+  const def = levels.find((d) => d.id === 'level16');
+  const { game, events } = finishForestLevel(def);
+  const last = levels.indexOf(def) === levels.length - 1;
+  assert.equal(game.state, last ? 'victory' : 'levelComplete');
+  assert.equal(ofType(events, 'savepoint').length, 1);
+  assert.deepEqual(game.checkpoint, { x: game.level.checkpoint.x, y: game.level.checkpoint.y });
+  assert.equal(ofType(events, 'warp').length, 2);
+  assert.equal(ofType(events, 'goalOpen').length, 1);
+  assert.equal(events.filter((ev) => ev.type === 'stomp' && ev.kind === 'monkey').length, MONKEY.lives);
+  assert.deepEqual(ofType(events, 'death'), []);
+});
