@@ -128,6 +128,15 @@
         "pearl": "Dotknij perły —\nkrab ci pomoże!",
         "sharks": "Dwa rekiny!\nKrab ci pomoże"
       }
+    },
+    "level15": {
+      "name": "Sosnowy las",
+      "signs": {
+        "forest": "Las! Zające i jelenie\nbiegają — skacz na nie!",
+        "portal": "Wąż pilnuje portalu —\npokonaj go, by otworzyć drogę!",
+        "monkey": "W bańce śpi małpka.\nMa 5 żyć!",
+        "crystal": "Pokonaj małpkę i wszystkie węże,\nby otworzyć kryształ"
+      }
     }
   }
 }

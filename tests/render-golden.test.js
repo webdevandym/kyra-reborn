@@ -458,6 +458,22 @@ for (const camX of [10 * TILE, 28 * TILE]) {
   });
 }
 
+const LEVEL15 = parsedLevels.findIndex((level) => level.id === 'level15');
+for (const [camLabel, camX] of camXs(parsedLevels[LEVEL15])) {
+  CASES.push({
+    name: `scene forest level ${LEVEL15 + 1} ${camLabel}`,
+    draw: (ctx) => {
+      const game = createGame(levels);
+      game.state = 'playing';
+      game.levelIndex = LEVEL15;
+      game.world = createWorld(game.levels[LEVEL15]);
+      const camera = createCamera();
+      camera.x = camX;
+      createScene(ctx).render({ game, camera, particles: createParticles(), time: BOIL_TIME, lang: 'en', muted: false });
+    },
+  });
+}
+
 const ONE_WAY_RUNS = [
   { levelIndex: 0, start: 55 },
   { levelIndex: 7, start: 106 },

@@ -1,9 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TILE, STEP, PLAYER, PORTAL, RULES } from '../src/config.js';
-import { parseLevel, solidTop } from '../src/core/level.js';
+import { TILE, STEP, PLAYER, PORTAL, RULES, MONKEY } from '../src/config.js';
+import { parseLevel, solidTop, roomIndex } from '../src/core/level.js';
 import { createWorld, goalBlocked } from '../src/core/world.js';
 import { createGame } from '../src/core/game.js';
+import levels from '../src/levels/index.js';
 import { mapFromBottom, castleMap, testLevel, runSteps, types } from './helpers.js';
 
 const WALLS = [12, 25];
@@ -451,4 +452,129 @@ test('a finish without sharks, snakes or a monkey is never locked and a defeat t
   assert.equal(world.goal.locked, false);
   assert.deepEqual(ofType(kill(world, world.enemies[0]), 'goalOpen'), []);
   assert.equal(createWorld(parseLevel(KEEP)).goal.locked, false);
+});
+
+const LOCKS = new Set(['snake', 'monkey', 'grandma']);
+
+function tickRun(run) {
+  const events = run.game.tick(STEP, IDLE);
+  run.events.push(...events);
+  assert.ok(run.game.state === 'playing' || events.some((ev) => ev.type === 'goal'), `the game is ${run.game.state}`);
+  return events;
+}
+
+function tickUntil(run, done, what, limit = 1200) {
+  for (let i = 0; i < limit && !done(); i++) tickRun(run);
+  assert.ok(done(), what);
+}
+
+function startForestLevel(def) {
+  const index = levels.indexOf(def);
+  assert.ok(index >= 0, `${def.id} is in the level list`);
+  const game = createGame(levels);
+  game.selectLevel(index);
+  game.confirm();
+  const run = { game, events: [] };
+  while (game.state === 'intro') run.events.push(...game.tick(STEP, IDLE));
+  assert.equal(game.state, 'playing');
+  return run;
+}
+
+function parkOnGround(run, col) {
+  const { world, level } = run.game;
+  const y = solidTop(level, col);
+  assert.ok(y < level.height, `ground at column ${col}`);
+  standAt(world.player, (col + 0.5) * TILE, y);
+  world.player.invuln = 99;
+}
+
+function stompOnce(run, e) {
+  const y = e.y - e.h + 4;
+  Object.assign(run.game.world.player, { x: e.x, y, prevBottom: y, vx: 0, vy: 120, onGround: false, jumping: false, invuln: 99 });
+  const stomp = tickRun(run).find((ev) => ev.type === 'stomp' && ev.kind === e.kind);
+  assert.ok(stomp, `the ${e.kind} at x ${e.x} is stomped`);
+  return stomp.result;
+}
+
+function stompSnakeOf(run, part) {
+  const { world, level } = run.game;
+  const snake = world.enemies.find((e) => e.kind === 'snake' && roomIndex(level, e.x) === part);
+  assert.ok(snake, `a snake in part ${part + 1}`);
+  const from = run.events.length;
+  assert.equal(stompOnce(run, snake), 'defeated');
+  return run.events.slice(from);
+}
+
+function stompOut(run, e, safeCol) {
+  const lives = e.lives;
+  for (let stomp = 1; stomp <= lives; stomp++) {
+    parkOnGround(run, safeCol);
+    tickUntil(run, () => !e.hidden && !e.inert && e.onGround && e.dizzy === 0, `the ${e.kind} is ready for stomp ${stomp}`);
+    assert.equal(stompOnce(run, e), stomp < lives ? 'hurt' : 'defeated', `stomp ${stomp} of ${lives} on the ${e.kind}`);
+  }
+}
+
+function takePortal(run, index) {
+  const { world, level } = run.game;
+  const gate = world.portals[index];
+  assert.equal(gate.open, true, `portal ${index + 1} is open`);
+  standAt(world.player, gate.x, gate.y);
+  world.player.invuln = 99;
+  const warp = tickRun(run).find((ev) => ev.type === 'warp');
+  const x = level.rooms[index + 1].left + 1.5 * TILE;
+  assert.deepEqual(warp?.to, { x, y: solidTop(level, Math.floor(x / TILE)) }, `portal ${index + 1} drops the chicken at the start of part ${index + 2}`);
+}
+
+function wakeMonkey(run) {
+  const { world, level } = run.game;
+  const monkey = world.enemies.find((e) => e.kind === 'monkey');
+  assert.equal(monkey?.mode, 'asleep');
+  const col = Math.floor(monkey.x / TILE);
+  const near = [-3, 3, -2, 2, -1, 1, 0].map((d) => col + d).find((c) => roomIndex(level, (c + 0.5) * TILE) === 1 && solidTop(level, c) < level.height);
+  parkOnGround(run, near);
+  tickUntil(run, () => monkey.mode === 'awake', 'the monkey wakes');
+  return monkey;
+}
+
+function finishForestLevel(def) {
+  const run = startForestLevel(def);
+  const { game } = run;
+  const { level } = game;
+  const opens = (events, i) => events.some((ev) => ev.type === 'portalOpen' && ev.x === level.portals[i].x);
+
+  assert.ok(opens(stompSnakeOf(run, 0), 0), 'snake 1 opens portal 1');
+  takePortal(run, 0);
+  assert.deepEqual(game.checkpoint, { x: level.checkpoint.x, y: level.checkpoint.y }, 'portal 1 drops the chicken on the savepoint');
+
+  const monkey = wakeMonkey(run);
+  assert.ok(opens(stompSnakeOf(run, 1), 1), 'snake 2 opens portal 2');
+  takePortal(run, 1);
+  assert.equal(monkey.mode, 'arriving', 'the awake monkey follows through portal 2');
+  tickUntil(run, () => monkey.mode === 'awake' && !monkey.hidden, 'the monkey arrives');
+  assert.equal(roomIndex(level, monkey.x), 2, 'the monkey arrives in part 3');
+
+  stompSnakeOf(run, 2);
+  const safeCol = level.rooms[2].left / TILE + 1;
+  const nextLock = () => game.world.enemies.find((o) => LOCKS.has(o.kind));
+  for (let e = nextLock(); e; e = nextLock()) stompOut(run, e, safeCol);
+
+  const { goal, player } = game.world;
+  assert.equal(goal.locked, false, 'every lock is beaten');
+  standAt(player, goal.x, goal.y);
+  player.invuln = 99;
+  assert.ok(tickRun(run).some((ev) => ev.type === 'goal'), 'the chicken takes the crystal');
+  return run;
+}
+
+test('level15 can be finished in a scripted run', () => {
+  const def = levels.find((d) => d.id === 'level15');
+  const { game, events } = finishForestLevel(def);
+  const last = levels.indexOf(def) === levels.length - 1;
+  assert.equal(game.state, last ? 'victory' : 'levelComplete');
+  assert.equal(ofType(events, 'savepoint').length, 1);
+  assert.deepEqual(game.checkpoint, { x: game.level.checkpoint.x, y: game.level.checkpoint.y });
+  assert.equal(ofType(events, 'warp').length, 2);
+  assert.equal(ofType(events, 'goalOpen').length, 1);
+  assert.equal(events.filter((ev) => ev.type === 'stomp' && ev.kind === 'monkey').length, MONKEY.lives);
+  assert.deepEqual(ofType(events, 'death'), []);
 });

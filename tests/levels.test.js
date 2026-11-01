@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { ROWS, MOVER, LIFT, TILE, BAT, GHOST, SPIDER, SHARK, DOLPHIN, FISH, BUBBLE } from '../src/config.js';
-import { parseLevel, roomAt, ROOM_KINDS } from '../src/core/level.js';
+import { parseLevel, roomAt, solidTop, ROOM_KINDS } from '../src/core/level.js';
 import levels from '../src/levels/index.js';
 import { LANGS } from '../src/i18n/index.js';
 
@@ -28,11 +28,12 @@ const EXPECTED_COUNTS = {
   level12: { ...EMPTY_LAND, crystals: 21, movers: 2, dolphin: 5, fish: 5, shark: 1, bubble: 1, teal: 1, pearl: 0 },
   level13: { ...EMPTY_LAND, crystals: 20, movers: 4, dolphin: 8, fish: 6, shark: 1, bubble: 2, teal: 1, pearl: 0 },
   level14: { ...EMPTY_LAND, crystals: 18, movers: 4, dolphin: 7, fish: 6, shark: 2, bubble: 2, teal: 1, pearl: 1 },
+  level15: { ...EMPTY_LAND, crystals: 27, movers: 0, rabbit: 4, deer: 3, snake: 3, monkey: 1 },
 };
-const ENEMY_KINDS = ['carrot', 'zombie', 'propeller', 'bee', 'star', 'bat', 'rat', 'ghost', 'skeleton', 'spider', 'dolphin', 'fish', 'shark'];
+const ENEMY_KINDS = ['carrot', 'zombie', 'propeller', 'bee', 'star', 'bat', 'rat', 'ghost', 'skeleton', 'spider', 'dolphin', 'fish', 'shark', 'rabbit', 'deer', 'snake', 'monkey'];
 const ENEMY_CHARS = 'cZpb*vmgsSdfH';
 const SEA_CHARS = 'dfHoTPV';
-const BANNED = { meadow: `*vR~mgsSOKD${SEA_CHARS}`, sky: `cZpbmgsSOKD${SEA_CHARS}`, castle: `cZpb*vR~${SEA_CHARS}`, sea: 'cZpb*vRmgsSOKD' };
+const BANNED = { meadow: `*vR~mgsSOKD${SEA_CHARS}`, sky: `cZpbmgsSOKD${SEA_CHARS}`, castle: `cZpb*vR~${SEA_CHARS}`, sea: 'cZpb*vRmgsSOKD', forest: `cZpb*vR~mgsSD${SEA_CHARS}` };
 
 function cellsOf(map, chars) {
   const cells = [];
@@ -90,9 +91,9 @@ function firstStandableBelow(map, col, row) {
   return ROWS;
 }
 
-test('the level list is level1 to level14, meadow then sky then castle then sea, with difficulty 1-3 that never goes down within a theme', () => {
-  assert.deepEqual(levels.map((def) => def.id), ['level1', 'level2', 'level3', 'level4', 'level5', 'level6', 'level7', 'level8', 'level9', 'level10', 'level11', 'level12', 'level13', 'level14']);
-  assert.deepEqual(levels.map((def) => def.theme ?? 'meadow'), ['meadow', 'meadow', 'meadow', 'meadow', 'meadow', 'sky', 'sky', 'sky', 'castle', 'castle', 'castle', 'sea', 'sea', 'sea']);
+test('the level list is level1 to level15, meadow then sky then castle then sea then forest, with difficulty 1-3 that never goes down within a theme', () => {
+  assert.deepEqual(levels.map((def) => def.id), ['level1', 'level2', 'level3', 'level4', 'level5', 'level6', 'level7', 'level8', 'level9', 'level10', 'level11', 'level12', 'level13', 'level14', 'level15']);
+  assert.deepEqual(levels.map((def) => def.theme ?? 'meadow'), ['meadow', 'meadow', 'meadow', 'meadow', 'meadow', 'sky', 'sky', 'sky', 'castle', 'castle', 'castle', 'sea', 'sea', 'sea', 'forest']);
   const last = {};
   for (const def of levels) {
     const theme = def.theme ?? 'meadow';
@@ -100,7 +101,13 @@ test('the level list is level1 to level14, meadow then sky then castle then sea,
     assert.ok(def.difficulty >= (last[theme] ?? 1), `${def.id} is easier than the ${theme} level before it`);
     last[theme] = def.difficulty;
   }
-  assert.deepEqual(levels.map((def) => def.difficulty), [1, 1, 2, 2, 3, 2, 2, 3, 2, 3, 3, 2, 3, 3]);
+  assert.deepEqual(levels.map((def) => def.difficulty), [1, 1, 2, 2, 3, 2, 2, 3, 2, 3, 3, 2, 3, 3, 3]);
+});
+
+test('the house appears only on level 17', () => {
+  const withHouse = levels.filter((def) => cellsOf(def.map, 'U').length > 0).map((def) => def.id);
+  assert.ok(withHouse.every((id) => id === 'level17'), `a house on ${withHouse}`);
+  for (const def of levels) assert.ok(cellsOf(def.map, 'U').length <= 1, `${def.id} has more than one house`);
 });
 
 for (const def of levels) {
@@ -123,8 +130,9 @@ for (const def of levels) {
   });
 
   if (theme !== 'castle') {
-    test(`${def.id}: is a single room`, () => {
-      assert.equal(parseLevel(def).rooms.length, 1);
+    const rooms = theme === 'forest' ? 3 : 1;
+    test(`${def.id}: is ${theme === 'forest' ? 'three parts' : 'a single room'}`, () => {
+      assert.equal(parseLevel(def).rooms.length, rooms);
     });
   }
 
@@ -405,6 +413,171 @@ for (const def of levels) {
         for (const at of entrances) assert.ok(Math.abs(col - at) > 5, `'${ch}' at column ${col}, entrance at ${at}`);
       }
       for (const { col } of cellsOf(def.map, 's')) assert.notEqual(roomOf(col), 1, `skeleton at column ${col} is in the spider's room`);
+    });
+  }
+
+  if (theme === 'forest') {
+    const level = parseLevel(def);
+    const walls = wallCols(def.map);
+    const parts = level.rooms.map((room) => ({ first: room.left / TILE, last: room.right / TILE - 1 }));
+    const partOf = (col) => parts.findIndex((p) => col >= p.first && col <= p.last);
+    const inPart = (cells, i) => cells.filter((c) => partOf(c.col) === i);
+    const byCol = (a, b) => a.col - b.col;
+    const [spawn] = cellsOf(def.map, 'C');
+    const [savepoint] = cellsOf(def.map, 'K');
+    const [goal] = cellsOf(def.map, 'G');
+    const bubbles = cellsOf(def.map, 'M');
+    const portals = cellsOf(def.map, 'O').sort(byCol);
+    const snakes = cellsOf(def.map, 'nw').sort(byCol);
+    const ground = (col) => surfaceRow(def.map, col);
+    const open = (col, row) => !standable(def.map[row]?.[col] ?? '#');
+    const drop2 = parts[2].first + 1;
+    const monkeyChases = (col) => partOf(col) > 0;
+
+    test(`${def.id}: has three parts of 55 to 70 columns split by single full-height wall columns`, () => {
+      assert.deepEqual(walls, [parts[0].last + 1, parts[1].last + 1]);
+      for (const p of parts) {
+        const width = p.last - p.first + 1;
+        assert.ok(width >= 55 && width <= 70, `part ${p.first}-${p.last} is ${width} columns wide`);
+      }
+    });
+
+    test(`${def.id}: a forest level has exactly three snakes, one per part`, () => {
+      assert.deepEqual(snakes.map((s) => partOf(s.col)), [0, 1, 2]);
+    });
+
+    test(`${def.id}: each of the first two parts ends in a wall and holds one portal within eight tiles of its snake`, () => {
+      assert.deepEqual(portals.map((o) => partOf(o.col)), [0, 1]);
+      for (const i of [0, 1]) {
+        const [snake] = inPart(snakes, i);
+        const [portal] = inPart(portals, i);
+        const wall = parts[i].last + 1;
+        assert.ok(walls.includes(wall), `part ${i + 1} does not end in a wall`);
+        assert.ok(Math.abs(portal.col - snake.col) <= 8, `portal at column ${portal.col} is ${Math.abs(portal.col - snake.col)} columns from its snake`);
+        for (const [name, cell] of [['snake', snake], ['portal', portal]]) {
+          assert.ok(wall - cell.col <= 12, `the ${name} at column ${cell.col} is not in the dead end before the wall at ${wall}`);
+        }
+        assert.equal(def.map[portal.row + 1][portal.col], '#', `portal at ${portal.col},${portal.row} does not stand on the ground`);
+        assert.ok(open(portal.col, portal.row - 1), `no room above the portal at ${portal.col},${portal.row}`);
+      }
+    });
+
+    test(`${def.id}: the savepoint stands on solid ground at the drop point of portal 1`, () => {
+      assert.equal(savepoint.col, parts[1].first + 1, 'portal 1 drops the chicken 1.5 tiles into part 2');
+      assert.equal(def.map[savepoint.row + 1][savepoint.col], '#');
+      assert.equal(solidTop(level, savepoint.col), level.checkpoint.y, 'the drop height is the savepoint');
+      for (let col = parts[1].first; col <= savepoint.col + 5; col++) {
+        assert.equal(ground(col), savepoint.row + 1, `ground at column ${col} is not level with the savepoint, where the monkey arrives`);
+        for (const row of [savepoint.row - 1, savepoint.row]) assert.ok(open(col, row), `no room for the monkey at ${col},${row}`);
+      }
+    });
+
+    test(`${def.id}: portal 2 drops the chicken on open solid ground in part 3 with room for the monkey ahead`, () => {
+      const floor = ground(drop2);
+      assert.ok(floor < ROWS, `no ground at the drop point, column ${drop2}`);
+      assert.equal(solidTop(level, drop2), floor * TILE, 'the chicken lands on the ground, not on a block above it');
+      for (let col = parts[2].first; col <= drop2 + 5; col++) {
+        assert.equal(ground(col), floor, `ground at column ${col} is not level with the drop point`);
+        for (const row of [floor - 2, floor - 1]) assert.ok(open(col, row), `no room for the monkey at ${col},${row}`);
+      }
+    });
+
+    test(`${def.id}: the monkey bubble is in part 2 and its column lies strictly between the savepoint and portal 2`, () => {
+      assert.equal(bubbles.length, 1);
+      const [bubble] = bubbles;
+      const portal2 = portals[1];
+      assert.equal(partOf(bubble.col), 1, `bubble at column ${bubble.col}`);
+      assert.ok(savepoint.col < bubble.col && bubble.col < portal2.col, `bubble at column ${bubble.col}, savepoint at ${savepoint.col}, portal 2 at ${portal2.col}`);
+      const floor = ground(bubble.col);
+      assert.ok(floor < ROWS, 'the bubble hangs over a pit');
+      assert.ok(floor - bubble.row >= 3, `the bubble at row ${bubble.row} is less than 2 rows above the ground at row ${floor}`);
+      for (let col = bubble.col - 1; col <= bubble.col + 1; col++) {
+        for (let row = bubble.row - 1; row < floor; row++) assert.ok(open(col, row), `the bubble's space is blocked at ${col},${row}`);
+      }
+    });
+
+    test(`${def.id}: the crystal in part 3 is on ground`, () => {
+      assert.equal(partOf(goal.col), 2, `crystal at column ${goal.col}`);
+      for (let col = goal.col - 1; col <= goal.col + 1; col++) assert.equal(ground(col), goal.row + 1, `ground at column ${col}`);
+      assert.ok(open(goal.col, goal.row - 1), 'no room above the crystal');
+    });
+
+    test(`${def.id}: pits lie inside a part, are at most 3 columns wide and 2 where the monkey chases, and the floors across a pit differ by at most 1 tile`, () => {
+      for (const gap of gapsOf(def.map)) {
+        const where = `pit ${gap.start}-${gap.end}`;
+        const part = partOf(gap.start);
+        assert.ok(partOf(gap.start - 1) === part && partOf(gap.end + 1) === part, `${where} touches a wall or the level edge`);
+        const width = gap.end - gap.start + 1;
+        assert.ok(width <= (monkeyChases(gap.start) ? 2 : 3), `${where} is ${width} columns wide`);
+        const diff = Math.abs(ground(gap.start - 1) - ground(gap.end + 1));
+        assert.ok(diff <= 1, `the floors across ${where} differ by ${diff} tiles`);
+      }
+    });
+
+    test(`${def.id}: neighbouring floor heights inside a part differ by at most 3 tiles, 2 where the monkey chases`, () => {
+      for (let col = 1; col < cols; col++) {
+        if (walls.includes(col) || walls.includes(col - 1)) continue;
+        const a = ground(col - 1);
+        const b = ground(col);
+        if (a === ROWS || b === ROWS) continue;
+        assert.ok(Math.abs(a - b) <= (monkeyChases(col) ? 2 : 3), `step of ${Math.abs(a - b)} tiles between columns ${col - 1} and ${col}`);
+      }
+    });
+
+    test(`${def.id}: where the monkey chases, every log is at most 2 tiles above a surface`, () => {
+      for (const run of runsOf(def.map, '=')) {
+        if (!monkeyChases(run.start)) continue;
+        let reachable = false;
+        for (let col = run.start - 1; col <= run.end + 1; col++) {
+          if (walls.includes(col)) continue;
+          for (let row = run.row + 1; row <= run.row + 2; row++) if (standable(def.map[row]?.[col] ?? '.')) reachable = true;
+        }
+        assert.ok(reachable, `log at row ${run.row}, columns ${run.start}-${run.end}`);
+      }
+    });
+
+    test(`${def.id}: every snake can be stomped: a walking one stands on solid ground, a flying one hovers in open air one row above a surface`, () => {
+      for (const { ch, col, row } of snakes) {
+        const where = `'${ch}' at ${col},${row}`;
+        if (ch === 'n') {
+          assert.equal(def.map[row + 1][col], '#', `${where} does not stand on solid ground`);
+          continue;
+        }
+        assert.ok(standable(def.map[row + 1][col]), `${where} does not hover one row above a surface`);
+        for (let c = col - 1; c <= col + 1; c++) {
+          for (let r = row - 2; r <= row; r++) assert.ok(open(c, r), `${where}: its air is blocked at ${c},${r}`);
+        }
+      }
+    });
+
+    test(`${def.id}: rabbits and deer stand on a surface and no tall character is buried in the ground`, () => {
+      for (const { ch, col, row } of cellsOf(def.map, 'ae')) assert.ok(standable(def.map[row + 1][col]), `'${ch}' at ${col},${row} is floating`);
+      for (const { ch, col, row } of cellsOf(def.map, 'eOKG')) assert.ok(open(col, row - 1), `'${ch}' at ${col},${row} has ground on its head`);
+    });
+
+    test(`${def.id}: no rabbit or deer can patrol onto a portal drop point`, () => {
+      for (const { ch, col, row } of cellsOf(def.map, 'ae')) {
+        const walkable = (c) => standable(def.map[row + 1][c] ?? '.') && def.map[row][c] !== '#' && (ch === 'a' || def.map[row - 1][c] !== '#');
+        let left = col;
+        let right = col;
+        while (left > 0 && walkable(left - 1)) left--;
+        while (right < cols - 1 && walkable(right + 1)) right++;
+        for (const at of [savepoint.col, drop2]) assert.ok(at < left - 1 || at > right + 1, `'${ch}' at column ${col} patrols ${left}-${right}, onto the drop point at ${at}`);
+      }
+    });
+
+    test(`${def.id}: no rabbit, deer or snake starts within 5 columns of the chicken start or of a portal drop point`, () => {
+      for (const { ch, col } of cellsOf(def.map, 'aenw')) {
+        for (const at of [spawn.col, savepoint.col, drop2]) assert.ok(Math.abs(col - at) > 5, `'${ch}' at column ${col}, start at ${at}`);
+      }
+    });
+
+    test(`${def.id}: has at least four signs, each on the ground inside a part`, () => {
+      assert.ok(def.signs.length >= 4, `${def.signs.length} signs`);
+      for (const sign of def.signs) {
+        assert.ok(partOf(sign.col) >= 0, `sign at column ${sign.col} is in a wall`);
+        assert.ok(ground(sign.col) < ROWS, `sign at column ${sign.col} stands over a pit`);
+      }
     });
   }
 
