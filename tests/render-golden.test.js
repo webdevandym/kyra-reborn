@@ -324,6 +324,22 @@ for (const [fn, states] of Object.entries(SPRITE_STATES)) {
   for (const [state, draw] of Object.entries(states)) CASES.push({ name: `sprite ${fn} ${state}`, draw });
 }
 
+const ONE_WAY_RUNS = [
+  { levelIndex: 0, start: 55 },
+  { levelIndex: 7, start: 106 },
+  { levelIndex: 8, start: 21 },
+  { levelIndex: 11, start: 28 },
+];
+
+for (const { levelIndex, start } of ONE_WAY_RUNS) {
+  const level = parsedLevels[levelIndex];
+  const camX = (start + 2) * TILE + 13;
+  CASES.push({
+    name: `theme ${level.theme} drawTiles level ${levelIndex + 1} one-way run across the left edge`,
+    draw: (ctx) => THEME_FACTORIES[level.theme](ctx).drawTiles(level, camX),
+  });
+}
+
 for (const [themeName, createTheme] of Object.entries(THEME_FACTORIES)) {
   const levelIndex = parsedLevels.findIndex((level) => level.theme === themeName);
   const level = parsedLevels[levelIndex];
