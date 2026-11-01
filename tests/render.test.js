@@ -452,3 +452,17 @@ test('the scene renders a forest level without errors', () => {
   scene.render({ game, camera, particles, time: 9, lang: 'en', muted: false, debug: true });
   assert.ok(calls.get('stroke') > 50);
 });
+
+test('the scene draws a landed stick for a grandmother that is fetching one', () => {
+  const drawCalls = (stickAt) => {
+    const { ctx, calls } = mockContext();
+    const game = createGame([forestDef()]);
+    const camera = createCamera();
+    camera.x = 1100;
+    game.world.enemies.push({ kind: 'grandma', x: 1450, y: 495, w: 40, h: 78, dir: -1, anim: 1, dizzy: 0, lives: 4, winding: false, phase: 'sticks', hasStick: false, stickAt, alive: true });
+    createScene(ctx).render({ game, camera, particles: createParticles(), time: 1.3, lang: 'en', muted: false });
+    return [...calls.values()].reduce((sum, n) => sum + n, 0);
+  };
+  const bare = drawCalls(null);
+  assert.ok(drawCalls({ x: 1380, y: 480 }) > bare);
+});

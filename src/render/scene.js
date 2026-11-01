@@ -178,6 +178,9 @@ export function createScene(ctx) {
     world.enemies.forEach((e, i) => {
       if (e.alive) ENEMY_DRAWERS[e.kind](ctx, e, time, 200 + i * 37);
     });
+    world.enemies.forEach((e, i) => {
+      if (e.alive && e.kind === 'grandma' && e.stickAt && e.hasStick === false) drawStick(ctx, { x: e.stickAt.x, y: e.stickAt.y, vx: 1, vy: 0 }, time, 1301 + i * 5);
+    });
     world.crabs.forEach((crab, i) => drawCrab(ctx, crab, time, 981 + i * 13));
     world.projectiles.forEach((f, i) => PROJECTILE_DRAWERS[f.kind](ctx, f, time, 581 + i * 7));
 

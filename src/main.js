@@ -345,7 +345,7 @@ const BUTTON_ACTIONS = {
 function popMonkeyBubble() {
   audio.sfx.bubblePop();
   const monkey = game.world.enemies.find((enemy) => enemy.kind === 'monkey');
-  if (monkey) particles.poof(monkey.x, monkey.y - monkey.h / 2);
+  if (monkey) particles.poof(monkey.x, monkey.y - 46);
 }
 
 function handleEvents(events) {
@@ -447,7 +447,7 @@ function handleEvents(events) {
         particles.sparkle(e.x - 14, e.y - 70, COLORS.star);
         break;
       case 'monkeyState':
-        if (e.state === 'awake') popMonkeyBubble();
+        if (e.state === 'awake' && e.lives === config.MONKEY.lives) popMonkeyBubble();
         break;
       case 'grandmaOut':
       case 'houseGone':
