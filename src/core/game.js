@@ -1,6 +1,8 @@
-import { RULES } from '../config.js';
+import { RULES, MONKEY } from '../config.js';
 import { parseLevel } from './level.js';
 import { createWorld } from './world.js';
+
+const sleepingMonkey = () => ({ state: 'asleep', lives: MONKEY.lives });
 
 export function createGame(levelDefs, { best = 0 } = {}) {
   const levels = levelDefs.map(parseLevel);
@@ -15,6 +17,7 @@ export function createGame(levelDefs, { best = 0 } = {}) {
     points: 0,
     collected: new Set(),
     checkpoint: null,
+    monkey: sleepingMonkey(),
     world: createWorld(levels[0]),
     timer: 0,
     levelTime: 0,
@@ -82,7 +85,8 @@ export function createGame(levelDefs, { best = 0 } = {}) {
     game.levelIndex = game.selectedIndex;
     game.collected = new Set();
     game.checkpoint = null;
-    game.world = createWorld(levels[game.selectedIndex]);
+    game.monkey = sleepingMonkey();
+    game.world = createWorld(levels[game.selectedIndex], game.collected, { monkey: game.monkey });
   }
 
   function enterLevel(index) {
@@ -90,7 +94,8 @@ export function createGame(levelDefs, { best = 0 } = {}) {
     game.levelTime = 0;
     game.collected = new Set();
     game.checkpoint = null;
-    game.world = createWorld(levels[index], game.collected);
+    game.monkey = sleepingMonkey();
+    game.world = createWorld(levels[index], game.collected, { monkey: game.monkey });
     game.state = 'intro';
     game.timer = RULES.introTime;
     queue.push({ type: 'levelStart', index });
@@ -112,6 +117,8 @@ export function createGame(levelDefs, { best = 0 } = {}) {
       queue.push({ type: 'death', livesLeft: game.lives });
     } else if (event.type === 'portal') {
       game.checkpoint = { ...event.to };
+    } else if (event.type === 'monkeyState') {
+      game.monkey = { state: event.state, lives: event.lives };
     } else if (event.type === 'goal') {
       if (game.levelIndex + 1 < levels.length) {
         game.state = 'levelComplete';
@@ -126,7 +133,7 @@ export function createGame(levelDefs, { best = 0 } = {}) {
 
   function finishDying() {
     if (game.lives > 0) {
-      game.world = createWorld(game.level, game.collected, { start: game.checkpoint });
+      game.world = createWorld(game.level, game.collected, { start: game.checkpoint, monkey: game.monkey });
       game.state = 'playing';
       queue.push({ type: 'respawn' });
     } else {

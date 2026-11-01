@@ -3,6 +3,7 @@ import { applyGravity, moveAndCollide } from './physics.js';
 import { tileAt, roomAt } from './level.js';
 import { shooterState, updateShooter, stompShooter } from './shooter.js';
 import { aim8 } from './aim.js';
+import { monkey } from './monkey.js';
 
 function baseEnemy(spec, w, h, speed) {
   return {
@@ -413,6 +414,7 @@ export const ENEMY_KINDS = {
   rabbit,
   deer,
   snake,
+  monkey,
 };
 
 export function createEnemy(spec) {

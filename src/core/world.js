@@ -1,4 +1,4 @@
-import { TILE, PLAYER, CRYSTAL, GOAL, RULES, PORTAL, DOOR, SPIDER, SHARK, PEARL, TEAL } from '../config.js';
+import { TILE, PLAYER, CRYSTAL, GOAL, RULES, PORTAL, DOOR, SPIDER, SHARK, MONKEY, PEARL, TEAL } from '../config.js';
 import { createPlayer, updatePlayer } from './player.js';
 import { createEnemy, updateEnemy, stompEnemy } from './enemies.js';
 import { classifyContact } from './combat.js';
@@ -11,15 +11,39 @@ import { createBubble, placeBubble, bubbleRect } from './bubbles.js';
 import { createCrab, updateCrab } from './crab.js';
 import { PROJECTILES } from './projectiles.js';
 import { hurtShooter } from './shooter.js';
+import { startArriving } from './monkey.js';
 
-const KNOCKBACK = { spider: SPIDER.knockback, shark: SHARK.knockback };
+const KNOCKBACK = { spider: SPIDER.knockback, shark: SHARK.knockback, monkey: MONKEY.knockback };
 
-export function createWorld(level, collected = new Set(), { start = null } = {}) {
+function startingEnemies(level, firstRoom, monkey) {
+  const enemies = [];
+  for (const spec of level.enemies) {
+    if (spec.kind !== 'monkey') {
+      if (roomIndex(level, spec.x) >= firstRoom) enemies.push(createEnemy(spec));
+    } else if (monkey?.state !== 'dead') {
+      const e = createEnemy(spec);
+      if (monkey?.state === 'awake') {
+        e.lives = monkey.lives;
+        startArriving(e);
+      }
+      enemies.push(e);
+    }
+  }
+  return enemies;
+}
+
+export function recallMonkey(world) {
+  for (const e of world.enemies) {
+    if (e.kind === 'monkey' && e.mode === 'awake') startArriving(e);
+  }
+}
+
+export function createWorld(level, collected = new Set(), { start = null, monkey = null } = {}) {
   const firstRoom = start ? roomIndex(level, start.x) : 0;
   const world = {
     level,
     player: createPlayer(start ?? level.spawn),
-    enemies: level.enemies.filter((spec) => roomIndex(level, spec.x) >= firstRoom).map(createEnemy),
+    enemies: startingEnemies(level, firstRoom, monkey),
     movers: level.movers.map(createMover),
     rain: level.rainClouds.map((spec) => createRainCloud(spec, level)),
     crystals: level.crystals.filter((c) => !collected.has(c.id)).map((c) => ({ ...c })),
@@ -70,6 +94,7 @@ export function stepWorld(world, dt, input) {
 
   for (const e of world.enemies) {
     const shot = updateEnemy(e, dt, world.level, p);
+    drainPending(e, events);
     if (!shot) continue;
     world.projectiles.push(shot);
     events.push({ type: PROJECTILES[shot.kind].event, x: shot.x, y: shot.y });
@@ -100,6 +125,7 @@ export function stepWorld(world, dt, input) {
   });
 
   for (const e of world.enemies) {
+    if (e.inert) continue;
     const contact = classifyContact(p, e);
     if (contact === 'stomp') {
       const top = e.y - e.h;
@@ -110,6 +136,7 @@ export function stepWorld(world, dt, input) {
       p.invuln = Math.max(p.invuln, PLAYER.stompGrace);
       if (KNOCKBACK[e.kind] && result !== 'defeated') p.vx = e.dir * KNOCKBACK[e.kind];
       events.push({ type: 'stomp', kind: e.kind, result, x: e.x, y: top });
+      drainPending(e, events);
       if (result === 'defeated') onDefeat(world, e, events);
     } else if (contact === 'hit' && p.invuln <= 0) {
       if (!p.shieldAll) return die(world, events);
@@ -155,6 +182,12 @@ export function stepWorld(world, dt, input) {
     events.push({ type: 'goal', x: world.goal.x, y: world.goal.y });
   }
   return events;
+}
+
+function drainPending(e, events) {
+  if (!e.pending?.length) return;
+  events.push(...e.pending);
+  e.pending.length = 0;
 }
 
 function popShield(p, events, grace = PLAYER.spawnGrace) {

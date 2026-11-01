@@ -73,6 +73,7 @@ export const RABBIT = { w: 32, h: 30, speed: 150 };
 export const DEER = { w: 64, h: 70, speed: 80, hurtSpeed: 120, dizzyTime: 0.6 };
 export const SNAKE = { w: 56, h: 32, lives: 1, fireEvery: 1.0, windup: 0.3, volleyGap: 0.12, dizzyTime: 0.5, maxRange: 12, bob: 14, bobPeriod: 1.6, lift: 70 };
 export const CONE = { size: 18, speed: 260 };
+export const MONKEY = { w: 44, h: 52, lives: 5, speed: 190, jump: 820, wakeRange: 4, dizzyTime: 0.8, knockback: 420, arriveDelay: 0.9 };
 export const BUBBLE = { size: 40, range: 3, bob: 18, period: 5, fallSpeed: 130 };
 export const CRAB = { w: 44, h: 30, speed: 170, pinches: 2, pinchGap: 0.9, reach: 6 };
 export const PEARL = { w: 44, h: 36 };
