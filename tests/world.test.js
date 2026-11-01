@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TILE, STEP, PLAYER, RAIN, FIREBALL, SPIDER, BONE } from '../src/config.js';
+import { TILE, STEP, PLAYER, RAIN, FIREBALL, SPIDER, BONE, SHELL } from '../src/config.js';
 import { createWorld, projectileRect } from '../src/core/world.js';
+import { PROJECTILES } from '../src/core/projectiles.js';
 import { parseLevel } from '../src/core/level.js';
 import { bodyRect, overlaps } from '../src/core/rect.js';
 import { rainPhase } from '../src/core/hazards.js';
@@ -560,6 +561,32 @@ test('projectileRect sizes bones and fireballs by kind', () => {
   assert.equal(ball.right - ball.left, FIREBALL.size);
 });
 
+test('PROJECTILES maps each kind to its event and size', () => {
+  assert.equal(PROJECTILES.bone.event, 'throw');
+  assert.equal(PROJECTILES.bone.size, BONE.size);
+  assert.equal(PROJECTILES.fireball.event, 'fire');
+  assert.equal(PROJECTILES.fireball.size, FIREBALL.size);
+  assert.equal(PROJECTILES.shell.event, 'shell');
+  assert.equal(PROJECTILES.shell.size, SHELL.size);
+});
+
 test('a level without a portal has no portal in its world', () => {
   assert.equal(createWorld(testLevel(['C...G', '#####'])).portal, null);
+});
+
+test('a shell fired straight up leaves the world above the top edge', () => {
+  const world = createWorld(testLevel(['C...H...G', '#########'], { theme: 'sea' }));
+  const p = world.player;
+  p.invuln = 99;
+  world.enemies = [];
+  world.projectiles.push({ kind: 'shell', x: p.x, y: p.y - 3 * TILE, vx: 0, vy: -SHELL.speed });
+  const events = [];
+  let steps = 0;
+  while (world.projectiles.length > 0 && steps < Math.round(3 / STEP)) {
+    events.push(...world.step(STEP, IDLE));
+    steps++;
+  }
+  assert.equal(world.projectiles.length, 0);
+  assert.ok(steps * STEP < 3);
+  assert.equal(types(events).includes('hit'), false);
 });

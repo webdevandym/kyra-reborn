@@ -1,16 +1,16 @@
-import { TILE, PLAYER, CRYSTAL, GOAL, RULES, FIREBALL, BONE, PORTAL, DOOR, SPIDER, SHARK, SHELL, PEARL, TEAL } from '../config.js';
+import { TILE, PLAYER, CRYSTAL, GOAL, RULES, PORTAL, DOOR, SPIDER, SHARK, PEARL, TEAL } from '../config.js';
 import { createPlayer, updatePlayer } from './player.js';
 import { createEnemy, updateEnemy, stompEnemy } from './enemies.js';
 import { classifyContact } from './combat.js';
 import { bodyRect, centeredRect, overlaps } from './rect.js';
 import { shiftX } from './physics.js';
-import { roomIndex, solidTop, tileAt } from './level.js';
+import { roomIndex, solidTop } from './level.js';
 import { createMover, updateMovers } from './platforms.js';
 import { createRainCloud, rainPhase, rainRect } from './hazards.js';
 import { createBubble, placeBubble, bubbleRect } from './bubbles.js';
 import { createCrab, updateCrab } from './crab.js';
+import { PROJECTILES } from './projectiles.js';
 
-const SHOT_EVENTS = { bone: 'throw', fireball: 'fire', shell: 'shell' };
 const KNOCKBACK = { spider: SPIDER.knockback, shark: SHARK.knockback };
 
 export function createWorld(level, collected = new Set(), { start = null } = {}) {
@@ -39,32 +39,9 @@ export function createWorld(level, collected = new Set(), { start = null } = {})
   return world;
 }
 
-const PROJECTILE_SIZE = { bone: BONE.size, shell: SHELL.size, fireball: FIREBALL.size };
-
 export function projectileRect(f) {
-  const size = PROJECTILE_SIZE[f.kind];
+  const { size } = PROJECTILES[f.kind];
   return centeredRect(f.x, f.y, size, size);
-}
-
-function moveProjectile(f, dt, level, events) {
-  if (f.kind === 'bone') {
-    f.vy += BONE.gravity * dt;
-    f.x += f.vx * dt;
-    f.y += f.vy * dt;
-    if (tileAt(level, Math.floor(f.x / TILE), Math.floor(f.y / TILE)) !== 'solid') return true;
-    events.push({ type: 'boneBreak', x: f.x, y: f.y });
-    return false;
-  }
-  if (f.kind === 'shell') {
-    f.x += f.vx * dt;
-    f.y += f.vy * dt;
-    const leadX = f.x + Math.sign(f.vx) * (SHELL.size / 2);
-    const leadY = f.y + Math.sign(f.vy) * (SHELL.size / 2);
-    return f.y > -TILE && tileAt(level, Math.floor(leadX / TILE), Math.floor(leadY / TILE)) !== 'solid';
-  }
-  f.x += f.vx * dt;
-  const lead = f.x + Math.sign(f.vx) * (FIREBALL.size / 2);
-  return tileAt(level, Math.floor(lead / TILE), Math.floor(f.y / TILE)) !== 'solid';
 }
 
 export function stepWorld(world, dt, input) {
@@ -94,10 +71,10 @@ export function stepWorld(world, dt, input) {
     const shot = updateEnemy(e, dt, world.level, p);
     if (!shot) continue;
     world.projectiles.push(shot);
-    events.push({ type: SHOT_EVENTS[shot.kind], x: shot.x, y: shot.y });
+    events.push({ type: PROJECTILES[shot.kind].event, x: shot.x, y: shot.y });
   }
   stepCrabs(world, dt, events);
-  world.projectiles = world.projectiles.filter((f) => moveProjectile(f, dt, world.level, events));
+  world.projectiles = world.projectiles.filter((f) => PROJECTILES[f.kind].move(f, dt, world.level, events));
 
   const playerBox = bodyRect(p);
   stepBubbles(world, events);
