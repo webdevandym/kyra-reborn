@@ -1,7 +1,8 @@
 import { TILE, VIEW_W, VIEW_W_MAX, COLORS } from '../config.js';
 import { tileAt, roomAt } from '../core/level.js';
 import { mulberry32, inkShape, inkLine, inkRect } from './ink.js';
-import { hashString, visibleCols } from './layout.js';
+import { hashString, visibleCols, eachRun } from './layout.js';
+import { fillSolidTiles, inkTileEdges } from './tiles.js';
 import { drawPrincess } from './castle-sprites.js';
 import { ROOM_PROPS, ROOM_TINTS } from './castle-props.js';
 
@@ -40,10 +41,7 @@ export function createCastleTheme(ctx) {
     const [c0, c1] = visibleCols(level, camX);
     const solid = (c, r) => tileAt(level, c, r) === 'solid';
 
-    ctx.fillStyle = COLORS.stone;
-    for (let c = c0; c <= c1; c++) {
-      for (let r = 0; r < level.rows; r++) if (solid(c, r)) ctx.fillRect(c * TILE, r * TILE, TILE + 0.5, TILE + 0.5);
-    }
+    fillSolidTiles(ctx, level, c0, c1, COLORS.stone);
 
     ctx.strokeStyle = COLORS.stoneShade;
     ctx.lineWidth = 1.5;
@@ -68,10 +66,7 @@ export function createCastleTheme(ctx) {
     for (let c = c0; c <= c1; c++) {
       for (let r = 0; r < level.rows; r++) {
         if (!solid(c, r)) continue;
-        if (!solid(c - 1, r)) inkLine(ctx, [[c * TILE, r * TILE], [c * TILE, (r + 1) * TILE]], { width: 2.4, seed: c * 17 + r });
-        if (!solid(c + 1, r)) inkLine(ctx, [[(c + 1) * TILE, r * TILE], [(c + 1) * TILE, (r + 1) * TILE]], { width: 2.4, seed: c * 19 + r });
-        if (!solid(c, r - 1) && r > 0) inkLine(ctx, [[c * TILE, r * TILE], [(c + 1) * TILE, r * TILE]], { width: 2.6, seed: c * 23 + r });
-        if (!solid(c, r + 1) && r < level.rows - 1) inkLine(ctx, [[c * TILE, (r + 1) * TILE], [(c + 1) * TILE, (r + 1) * TILE]], { width: 2.6, seed: c * 29 + r });
+        inkTileEdges(ctx, level, c, r);
         const rand = mulberry32(c * 131 + r * 7);
         if (rand() < 0.18) {
           const x = c * TILE + 8 + rand() * (TILE - 22);
@@ -82,19 +77,7 @@ export function createCastleTheme(ctx) {
     }
 
     for (let r = 0; r < level.rows; r++) {
-      let c = c0;
-      while (c <= c1) {
-        if (tileAt(level, c, r) !== 'oneway') {
-          c++;
-          continue;
-        }
-        let start = c;
-        while (tileAt(level, start - 1, r) === 'oneway') start--;
-        let end = c;
-        while (tileAt(level, end, r) === 'oneway') end++;
-        drawShelf(start * TILE + 2, end * TILE - 2, r * TILE, start * 37 + r);
-        c = end;
-      }
+      eachRun(c0, c1, (c) => tileAt(level, c, r) === 'oneway', (start, end) => drawShelf(start * TILE + 2, end * TILE - 2, r * TILE, start * 37 + r));
     }
   }
 

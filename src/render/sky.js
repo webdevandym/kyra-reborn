@@ -1,7 +1,8 @@
 import { TILE, VIEW_W, VIEW_W_MAX, COLORS } from '../config.js';
 import { tileAt } from '../core/level.js';
 import { mulberry32, inkShape, inkLine, inkPoly } from './ink.js';
-import { hashString, visibleCols } from './layout.js';
+import { hashString, visibleCols, eachRun } from './layout.js';
+import { fillSolidTiles } from './tiles.js';
 import { cloudPoints, drawMoon } from './sky-sprites.js';
 
 export function createSkyTheme(ctx) {
@@ -42,22 +43,6 @@ export function createSkyTheme(ctx) {
     }
   }
 
-  function eachRun(c0, c1, pred, draw) {
-    let c = c0;
-    while (c <= c1) {
-      if (!pred(c)) {
-        c++;
-        continue;
-      }
-      let start = c;
-      while (pred(start - 1)) start--;
-      let end = c;
-      while (pred(end)) end++;
-      draw(start, end);
-      c = end;
-    }
-  }
-
   function drawCloudTop(x0, x1, top, seed) {
     const bumps = Math.max(1, Math.round((x1 - x0) / 34));
     const n = bumps * 6;
@@ -86,10 +71,7 @@ export function createSkyTheme(ctx) {
     const [c0, c1] = visibleCols(level, camX);
     const solid = (c, r) => tileAt(level, c, r) === 'solid';
 
-    ctx.fillStyle = COLORS.cloud;
-    for (let c = c0; c <= c1; c++) {
-      for (let r = 0; r < level.rows; r++) if (solid(c, r)) ctx.fillRect(c * TILE, r * TILE, TILE + 0.5, TILE + 0.5);
-    }
+    fillSolidTiles(ctx, level, c0, c1, COLORS.cloud);
 
     for (let r = 0; r < level.rows; r++) {
       eachRun(c0, c1, (c) => solid(c, r) && !solid(c, r + 1), (start, end) => drawCloudBottom(start * TILE, end * TILE, (r + 1) * TILE, start * 23 + r));

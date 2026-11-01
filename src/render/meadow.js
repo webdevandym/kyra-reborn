@@ -3,7 +3,8 @@ import { tileAt } from '../core/level.js';
 import { mulberry32, inkShape, inkEllipse, inkLine } from './ink.js';
 import { drawGreenCrystal } from './sprites.js';
 import { cloudPoints } from './sky-sprites.js';
-import { hashString, visibleCols } from './layout.js';
+import { hashString, visibleCols, eachRun } from './layout.js';
+import { fillSolidTiles } from './tiles.js';
 
 const GROUND_Y = 10 * TILE;
 
@@ -56,10 +57,7 @@ export function createMeadowTheme(ctx) {
     const [c0, c1] = visibleCols(level, camX);
     const solid = (c, r) => tileAt(level, c, r) === 'solid';
 
-    ctx.fillStyle = COLORS.dirt;
-    for (let c = c0; c <= c1; c++) {
-      for (let r = 0; r < level.rows; r++) if (solid(c, r)) ctx.fillRect(c * TILE, r * TILE, TILE + 0.5, TILE + 0.5);
-    }
+    fillSolidTiles(ctx, level, c0, c1, COLORS.dirt);
 
     ctx.strokeStyle = COLORS.inkSoft;
     ctx.lineWidth = 1.5;
@@ -89,35 +87,11 @@ export function createMeadowTheme(ctx) {
     }
 
     for (let r = 0; r < level.rows; r++) {
-      let c = c0;
-      while (c <= c1) {
-        if (!(solid(c, r) && !solid(c, r - 1))) {
-          c++;
-          continue;
-        }
-        let start = c;
-        while (solid(start - 1, r) && !solid(start - 1, r - 1)) start--;
-        let end = c;
-        while (solid(end, r) && !solid(end, r - 1)) end++;
-        drawGrassRun(start * TILE, end * TILE, r * TILE, start * 13 + r);
-        c = end;
-      }
+      eachRun(c0, c1, (c) => solid(c, r) && !solid(c, r - 1), (start, end) => drawGrassRun(start * TILE, end * TILE, r * TILE, start * 13 + r));
     }
 
     for (let r = 0; r < level.rows; r++) {
-      let c = c0;
-      while (c <= c1) {
-        if (tileAt(level, c, r) !== 'oneway') {
-          c++;
-          continue;
-        }
-        let start = c;
-        while (tileAt(level, start - 1, r) === 'oneway') start--;
-        let end = c;
-        while (tileAt(level, end, r) === 'oneway') end++;
-        drawPlank(start * TILE + 2, end * TILE - 2, r * TILE, start * 29 + r);
-        c = end;
-      }
+      eachRun(c0, c1, (c) => tileAt(level, c, r) === 'oneway', (start, end) => drawPlank(start * TILE + 2, end * TILE - 2, r * TILE, start * 29 + r));
     }
   }
 

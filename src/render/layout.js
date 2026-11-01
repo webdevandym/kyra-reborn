@@ -11,3 +11,19 @@ export function visibleCols(level, camX) {
   const last = Math.min(level.cols - 1, first + Math.ceil(VIEW_W / TILE) + 2);
   return [first, last];
 }
+
+export function eachRun(c0, c1, pred, draw) {
+  let c = c0;
+  while (c <= c1) {
+    if (!pred(c)) {
+      c++;
+      continue;
+    }
+    let start = c;
+    while (pred(start - 1)) start--;
+    let end = c;
+    while (pred(end)) end++;
+    draw(start, end);
+    c = end;
+  }
+}
