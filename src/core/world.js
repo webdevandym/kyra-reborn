@@ -27,10 +27,7 @@ function startingEnemies(level, firstRoom, monkey) {
       if (roomIndex(level, spec.x) >= firstRoom) enemies.push(createEnemy(spec));
     } else if (monkey?.state !== 'dead') {
       const e = createEnemy(spec);
-      if (monkey?.state === 'awake') {
-        e.lives = monkey.lives;
-        startArriving(e);
-      }
+      if (monkey) e.lives = monkey.lives;
       enemies.push(e);
     }
   }

@@ -447,7 +447,7 @@ function handleEvents(events) {
         particles.sparkle(e.x - 14, e.y - 70, COLORS.star);
         break;
       case 'monkeyState':
-        if (e.state === 'awake' && e.lives === config.MONKEY.lives) popMonkeyBubble();
+        if (e.state === 'awake' && e.woke) popMonkeyBubble();
         break;
       case 'grandmaOut':
       case 'houseGone':

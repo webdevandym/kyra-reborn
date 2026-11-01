@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { TILE, STEP, ROWS, PLAYER, RULES, MONKEY } from '../src/config.js';
 import { createEnemy, updateEnemy, stompEnemy } from '../src/core/enemies.js';
 import { createWorld, recallMonkey } from '../src/core/world.js';
+import { startArriving } from '../src/core/monkey.js';
 import { createGame } from '../src/core/game.js';
 import { parseLevel, tileAt, roomAt } from '../src/core/level.js';
 import { runSteps, types } from './helpers.js';
@@ -153,15 +154,20 @@ test('it wakes inside the wake range in its room and not outside it', () => {
     assert.equal(m.mode, 'awake');
     assert.equal(m.inert, false);
     assert.equal(m.hidden, false);
-    assert.deepEqual(m.pending, [{ type: 'monkeyState', state: 'awake', lives: MONKEY.lives }]);
+    assert.deepEqual(m.pending, [{ type: 'monkeyState', state: 'awake', lives: MONKEY.lives, woke: true }]);
   }
 
   const world = createWorld(forest());
   const m = monkeyOf(world);
   standAt(world.player, m.x - 3 * TILE);
   const events = world.step(STEP, IDLE);
-  assert.deepEqual(monkeyEvents(events), [{ type: 'monkeyState', state: 'awake', lives: MONKEY.lives }]);
+  assert.deepEqual(monkeyEvents(events), [{ type: 'monkeyState', state: 'awake', lives: MONKEY.lives, woke: true }]);
   assert.deepEqual(m.pending, [], 'the world drains the wake event');
+});
+
+test('the monkey chases lazily at 150, well below the chicken walk speed', () => {
+  assert.equal(MONKEY.speed, 150);
+  assert.ok(MONKEY.speed < PLAYER.walkSpeed);
 });
 
 test('an awake monkey chases the chicken and jumps a wall and a gap', () => {
@@ -279,7 +285,11 @@ test('a monkey that falls below the map comes back next to the chicken', () => {
 });
 
 test('an arriving monkey never lands inside a block or over a pit, and waits hidden while there is nowhere to stand', () => {
-  const arriving = (level) => monkeyOf(createWorld(level, new Set(), { monkey: { state: 'awake', lives: 2 } }));
+  const arriving = (level) => {
+    const m = monkeyOf(createWorld(level));
+    startArriving(m);
+    return m;
+  };
   const arriveSteps = Math.ceil(MONKEY.arriveDelay / STEP) + 1;
 
   const blocked = forest({ blocks: { 36: 3 } });
@@ -309,7 +319,7 @@ test('the monkey progress on game follows monkeyState events', () => {
   while (game.state === 'intro') game.tick(STEP, IDLE);
 
   const { m, events } = wake(game);
-  assert.deepEqual(monkeyEvents(events), [{ type: 'monkeyState', state: 'awake', lives: MONKEY.lives }], 'the event reaches the game queue');
+  assert.deepEqual(monkeyEvents(events), [{ type: 'monkeyState', state: 'awake', lives: MONKEY.lives, woke: true }], 'the event reaches the game queue');
   assert.deepEqual(game.monkey, { state: 'awake', lives: MONKEY.lives });
 
   stompAndWait(game.world.player, m, tick(game));
@@ -347,7 +357,7 @@ test('a monkey killed in part 2 is not rebuilt after the chicken dies in part 3'
   assert.deepEqual(game.monkey, { state: 'dead', lives: 0 });
 });
 
-test('an awake monkey keeps its lives and arrives behind the chicken after a respawn, never inside a wall', () => {
+test('after a respawn an awake monkey is back asleep in its bubble with the lives it had left, visible and inert, and wakes again near the chicken with a woke-flagged event', () => {
   const game = startGame();
   const { m } = wake(game);
   stompAndWait(game.world.player, m, tick(game));
@@ -356,35 +366,31 @@ test('an awake monkey keeps its lives and arrives behind the chicken after a res
   game.checkpoint = { ...game.level.checkpoint };
   dieAndRespawn(game);
   const level = game.level;
+  const spec = level.enemies.find((e) => e.kind === 'monkey');
   const p = game.world.player;
   const back = monkeyOf(game.world);
-  assert.deepEqual([p.x, p.y, p.facing], [level.checkpoint.x, level.checkpoint.y, 1]);
-  assert.equal(back.mode, 'arriving');
-  assert.equal(back.hidden, true);
+  assert.deepEqual([p.x, p.y], [level.checkpoint.x, level.checkpoint.y]);
+  assert.equal(back.mode, 'asleep');
+  assert.equal(back.hidden, false);
   assert.equal(back.inert, true);
   assert.equal(back.lives, MONKEY.lives - 1);
+  assert.deepEqual([back.x, back.y], [spec.x, spec.y]);
 
-  Object.assign(back, { x: p.x, y: p.y });
+  assert.ok(Math.abs(back.x - p.x) > MONKEY.wakeRange * TILE, 'the savepoint is outside the wake range');
   p.invuln = 0;
-  const events = [];
-  let steps = 0;
-  while (back.mode === 'arriving' && steps < 5 / STEP) {
-    events.push(...game.tick(STEP, IDLE));
-    steps++;
-  }
-  assert.ok(!types(events).includes('hit') && !types(events).includes('stomp'), 'a hidden monkey has no contact');
+  const waiting = [];
+  runSteps(Math.round(2 / STEP), () => waiting.push(...game.tick(STEP, IDLE)));
+  assert.equal(back.mode, 'asleep', 'it stays in its bubble until she comes near');
+  assert.equal(back.inert, true);
+  assert.deepEqual([back.x, back.y], [spec.x, spec.y]);
+  assert.deepEqual(monkeyEvents(waiting), []);
   assert.equal(p.dead, false);
-  assert.ok(Math.abs(steps * STEP - MONKEY.arriveDelay) <= 1.5 * STEP, `arrived after ${steps} steps`);
 
-  assert.equal(back.mode, 'awake');
-  assert.equal(back.hidden, false);
+  const { events } = wake(game);
+  assert.deepEqual(monkeyEvents(events), [{ type: 'monkeyState', state: 'awake', lives: MONKEY.lives - 1, woke: true }]);
   assert.equal(back.inert, false);
+  assert.equal(back.hidden, false);
   assert.equal(back.lives, MONKEY.lives - 1);
-  assert.notEqual(roomAt(level, p.x - 4 * TILE), roomAt(level, p.x), 'four tiles behind the savepoint is past the wall');
-  assert.equal(back.x, p.x + 4 * TILE, 'so it arrives on her other side');
-  assert.equal(roomAt(level, back.x), roomAt(level, p.x));
-  assert.equal(back.y, FLOOR);
-  assert.equal(insideSolid(level, back), false);
   assert.deepEqual(game.monkey, { state: 'awake', lives: MONKEY.lives - 1 });
 });
 

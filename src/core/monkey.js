@@ -5,8 +5,8 @@ import { tileAt, roomAt } from './level.js';
 const EPS = 0.001;
 const ARRIVE_TILES = 4;
 
-function report(e, state) {
-  e.pending.push({ type: 'monkeyState', state, lives: e.lives });
+function report(e, state, extra = {}) {
+  e.pending.push({ type: 'monkeyState', state, lives: e.lives, ...extra });
 }
 
 const chasing = (player) => Boolean(player) && !player.dead;
@@ -26,7 +26,7 @@ function sleep(e, level, player) {
   if (!near) return;
   e.mode = 'awake';
   e.inert = false;
-  report(e, 'awake');
+  report(e, 'awake', { woke: true });
 }
 
 function gapAhead(e, level) {

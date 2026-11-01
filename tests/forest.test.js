@@ -420,7 +420,7 @@ test('with the monkey already dead on respawn the lock does not wait for it', ()
   const fromSavepoint = (monkey) => createWorld(level, new Set(), { start: level.checkpoint, monkey });
 
   const awake = fromSavepoint({ state: 'awake', lives: 2 });
-  assert.equal(monkeyOf(awake).mode, 'arriving');
+  assert.equal(monkeyOf(awake).mode, 'asleep');
   for (const snake of snakesOf(awake)) kill(awake, snake);
   assert.equal(awake.goal.locked, true, 'an awake monkey still holds the lock');
 

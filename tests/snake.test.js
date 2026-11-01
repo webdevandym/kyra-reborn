@@ -44,7 +44,7 @@ function shotsOver(e, level, steps, player) {
   return shots;
 }
 
-function firstShot(e, level, player, limit = 200) {
+function firstShot(e, level, player, limit = 2 * Math.round(SNAKE.fireEvery / STEP)) {
   for (let step = 1; step <= limit; step++) {
     const shot = updateEnemy(e, STEP, level, player);
     if (shot) return shot;
@@ -166,7 +166,7 @@ test('a snake dies in one stomp', () => {
   }
   const level = groundLevel();
   const winding = snakeAt(10, 10);
-  runSteps(100, () => updateEnemy(winding, STEP, level, chickenAt(14, 10)));
+  runSteps(Math.round((SNAKE.fireEvery - SNAKE.windup / 2) / STEP), () => updateEnemy(winding, STEP, level, chickenAt(14, 10)));
   assert.equal(winding.winding, true, 'the snake is mid wind-up');
   assert.equal(stompEnemy(winding), 'defeated');
 });
