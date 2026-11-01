@@ -15,9 +15,15 @@ const ENEMY_CHARS = {
   d: 'dolphin',
   f: 'fish',
   H: 'shark',
+  a: 'rabbit',
+  e: 'deer',
+  n: 'snake',
+  w: 'snake',
+  M: 'monkey',
 };
 const KNOWN_CHARS = new Set(['.', '#', '=', 'C', 'c', 'Z', 'p', 'b', 'r', 'G', '*', 'v', 'R', '~', 'm', 'g', 's', 'S', 'O', 'K', 'D', 'd', 'f', 'H', 'o', 'T', 'P', 'V']);
-const THEMES = new Set(['meadow', 'sky', 'castle', 'sea']);
+const FOREST_CHARS = new Set(['a', 'e', 'n', 'w', 'M', 'U']);
+const THEMES = new Set(['meadow', 'sky', 'castle', 'sea', 'forest']);
 export const ROOM_KINDS = ['hall', 'library', 'kitchen', 'dungeon', 'throne'];
 
 export function parseLevel(def) {
@@ -39,6 +45,8 @@ export function parseLevel(def) {
   let spawn = null;
   let goal = null;
   let portal = null;
+  const portals = [];
+  let house = null;
   let checkpoint = null;
   const doors = [];
 
@@ -48,7 +56,7 @@ export function parseLevel(def) {
     }
     const tileRow = [];
     [...line].forEach((ch, col) => {
-      if (!KNOWN_CHARS.has(ch)) throw new Error(`${id}: unknown character '${ch}' at ${col},${row}`);
+      if (!KNOWN_CHARS.has(ch) && !(theme === 'forest' && FOREST_CHARS.has(ch))) throw new Error(`${id}: unknown character '${ch}' at ${col},${row}`);
       tileRow.push(TILE_KINDS[ch] ?? 'empty');
       const feet = { x: (col + 0.5) * TILE, y: (row + 1) * TILE };
       if (ch === 'C') {
@@ -57,9 +65,14 @@ export function parseLevel(def) {
       } else if (ch === 'G') {
         if (goal) throw new Error(`${id}: more than one green crystal 'G'`);
         goal = feet;
+      } else if (ch === 'O' && theme === 'forest') {
+        portals.push(feet);
       } else if (ch === 'O') {
         if (portal) throw new Error(`${id}: more than one portal 'O'`);
         portal = feet;
+      } else if (ch === 'U') {
+        if (house) throw new Error(`${id}: more than one house 'U'`);
+        house = feet;
       } else if (ch === 'K') {
         if (checkpoint) throw new Error(`${id}: more than one checkpoint 'K'`);
         checkpoint = feet;
@@ -68,6 +81,7 @@ export function parseLevel(def) {
       } else if (ENEMY_CHARS[ch]) {
         const spec = { kind: ENEMY_CHARS[ch], ...feet };
         if (ch === 'd' || ch === 'f') spec.swim = !'#='.includes(map[row + 1]?.[col] ?? '#');
+        if (ch === 'w') spec.fly = true;
         enemies.push(spec);
       } else if (ch === 'o') {
         bubbles.push({ id: `${col},${row}`, x: feet.x, y: (row + 0.5) * TILE });
@@ -92,6 +106,7 @@ export function parseLevel(def) {
     tiles.push(tileRow);
   });
 
+  portals.sort((a, b) => a.x - b.x);
   if (!spawn) throw new Error(`${id}: missing chicken start 'C'`);
   if (!goal) throw new Error(`${id}: missing green crystal 'G'`);
   if (theme === 'sea' && !enemies.some((e) => e.kind === 'shark')) throw new Error(`${id}: a sea level needs a shark 'H'`);
@@ -115,6 +130,8 @@ export function parseLevel(def) {
     spawn,
     goal,
     portal,
+    portals,
+    house,
     checkpoint,
     doors,
     enemies,
@@ -127,6 +144,7 @@ export function parseLevel(def) {
     signs: [],
   };
   markGuards(level);
+  if (theme === 'forest') validateForest(level);
   for (const door of doors) {
     if (roomIndex(level, door.x) === level.rooms.length - 1) throw new Error(`${id}: the door at column ${Math.floor(door.x / TILE)} has no room after it`);
   }
@@ -138,6 +156,31 @@ export function parseLevel(def) {
     y: solidTop(level, sign.col),
   }));
   return level;
+}
+
+function validateForest(level) {
+  const { id, rooms, enemies, checkpoint, portals } = level;
+  if (rooms.length !== 3) throw new Error(`${id}: a forest level needs exactly three rooms`);
+  const snakes = enemies.filter((e) => e.kind === 'snake');
+  if (snakes.length !== 3) throw new Error(`${id}: a forest level needs exactly three snakes 'n' or 'w'`);
+  if (!rooms.every((_, i) => snakes.filter((e) => roomIndex(level, e.x) === i).length === 1)) {
+    throw new Error(`${id}: a forest level needs exactly one snake in each room`);
+  }
+  const monkeys = enemies.filter((e) => e.kind === 'monkey');
+  if (monkeys.length !== 1) throw new Error(`${id}: a forest level needs exactly one monkey 'M'`);
+  if (roomIndex(level, monkeys[0].x) !== 1) throw new Error(`${id}: the monkey 'M' must be in the second room`);
+  if (!checkpoint) throw new Error(`${id}: a forest level needs a checkpoint 'K'`);
+  if (roomIndex(level, checkpoint.x) !== 1) throw new Error(`${id}: the checkpoint 'K' must be in the second room`);
+  if (checkpoint.x !== rooms[1].left + 1.5 * TILE) {
+    throw new Error(`${id}: the checkpoint 'K' must stand 1.5 tiles inside the second room, where the first portal drops the chicken`);
+  }
+  if (tileAt(level, Math.floor(checkpoint.x / TILE), checkpoint.y / TILE) !== 'solid') {
+    throw new Error(`${id}: the checkpoint 'K' must stand on solid ground`);
+  }
+  if (portals.length !== 2) throw new Error(`${id}: a forest level needs exactly two portals 'O'`);
+  if (portals.some((portal, i) => roomIndex(level, portal.x) !== i)) {
+    throw new Error(`${id}: a forest level needs one portal 'O' in the first room and one in the second room`);
+  }
 }
 
 function roomsOf(tiles, cols, kinds, id) {
