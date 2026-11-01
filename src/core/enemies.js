@@ -323,9 +323,10 @@ const fish = {
   onStomp: defeat,
 };
 
+const sharkOverhead = (e, player) => Math.abs(player.x - e.x) <= SHARK.overhead * TILE && player.y < e.y - e.h;
+
 function sharkShot(e, player) {
-  const above = Math.abs(player.x - e.x) <= SHARK.overhead * TILE && player.y < e.y - e.h;
-  if (above) return { kind: 'shell', x: e.x, y: e.y - e.h - SHELL.size / 2, vx: 0, vy: -SHELL.speed };
+  if (sharkOverhead(e, player)) return { kind: 'shell', x: e.x, y: e.y - e.h - SHELL.size / 2, vx: 0, vy: -SHELL.speed };
   return {
     kind: 'shell',
     x: e.x + e.dir * (e.w / 2 + SHELL.size / 2),
@@ -340,6 +341,7 @@ const SHARK_RULES = {
   minVolley: 2,
   maxVolley: 4,
   inRange: (e, level, player) => !player.dead && Math.abs(player.x - e.x) <= SHARK.maxRange * TILE,
+  overhead: (e, level, player) => sharkOverhead(e, player),
   shoot: sharkShot,
 };
 
@@ -366,6 +368,7 @@ const SNAKE_RULES = {
     const rows = Math.abs(player.y - player.h / 2 - (e.y - e.h / 2)) / TILE;
     return !player.dead && roomAt(level, player.x) === e.room && Math.abs(player.x - e.x) <= SNAKE.maxRange * TILE && rows <= SNAKE_REACH_ROWS;
   },
+  overhead: (e, level, player) => player.y < e.y - e.h && Math.abs(player.x - e.x) <= SNAKE.overhead * TILE,
   shoot: snakeShot,
 };
 

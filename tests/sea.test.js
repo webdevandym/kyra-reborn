@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TILE, STEP, SHARK, SHELL, BUBBLE, CRAB, LIFT, DOLPHIN, FISH } from '../src/config.js';
+import { TILE, STEP, GRAVITY, PLAYER, SHARK, SHELL, BUBBLE, CRAB, LIFT, DOLPHIN, FISH } from '../src/config.js';
 import { createWorld } from '../src/core/world.js';
 import { createEnemy, updateEnemy, stompEnemy } from '../src/core/enemies.js';
 import { createMover, updateMovers } from '../src/core/platforms.js';
@@ -139,19 +139,43 @@ test('a shark fires volleys of 2, 3 and 4 shells at the chicken, low and high in
   assert.equal(world.projectiles.length, 0);
 });
 
-test('a shark shoots straight up when the chicken is above it', () => {
+test('a chicken that stays above a shark is shot straight up after the pause', () => {
   const world = createWorld(arena());
   const shark = world.enemies[0];
   shark.cooldown = 0.01;
   let shell = null;
-  for (let i = 0; i < 20 && !shell; i++) {
+  let steps = 0;
+  while (!shell && steps < 2 / STEP) {
     placePlayer(world, shark.x + 10, shark.y - shark.h - 3 * TILE, { onGround: false, invuln: 99 });
     world.step(STEP, IDLE);
+    steps++;
     shell = world.projectiles[0];
   }
+  const t = steps * STEP;
   assert.ok(shell, 'fired');
+  assert.ok(t >= SHARK.overheadDelay + SHARK.windup - STEP / 2, `shot after ${t} s`);
+  assert.ok(t <= SHARK.overheadDelay + SHARK.windup + 3 * STEP, `shot after ${t} s`);
   assert.equal(shell.vx, 0);
   assert.ok(shell.vy < 0);
+});
+
+test('a chicken that jumps over a shark in a normal jump is not shot', () => {
+  const level = arena();
+  const e = createEnemy(level.enemies[0]);
+  const jumpTime = (2 * PLAYER.jumpVelocity) / GRAVITY;
+  const fromX = e.x - (PLAYER.walkSpeed * jumpTime) / 2;
+  const at = (t) => ({ x: fromX + PLAYER.walkSpeed * t, y: e.y - (PLAYER.jumpVelocity * t - (GRAVITY * t * t) / 2), h: PLAYER.h, facing: 1, dead: false });
+  const limit = Math.round(e.cooldown / STEP);
+  for (let i = 0; i < limit && !e.winding; i++) assert.equal(updateEnemy(e, STEP, level, at(0)), null);
+  assert.equal(e.winding, true, 'the wind-up has started');
+  const shells = [];
+  let longest = 0;
+  for (let step = 1; step <= Math.round(jumpTime / STEP); step++) {
+    if (updateEnemy(e, STEP, level, at(step * STEP))) shells.push(step);
+    longest = Math.max(longest, e.overheadFor);
+  }
+  assert.deepEqual(shells, [], 'a shell during the jump');
+  assert.ok(longest > SHARK.windup, `overhead for ${longest} s, longer than the wind-up`);
 });
 
 test('a shell that hits a wall or leaves the top of the level disappears', () => {

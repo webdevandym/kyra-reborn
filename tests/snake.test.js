@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TILE, STEP, PLAYER, SNAKE, CONE, RABBIT, DEER } from '../src/config.js';
+import { TILE, STEP, GRAVITY, PLAYER, SNAKE, CONE, RABBIT, DEER } from '../src/config.js';
 import { aim8 } from '../src/core/aim.js';
 import { createEnemy, updateEnemy, stompEnemy } from '../src/core/enemies.js';
 import { PROJECTILES } from '../src/core/projectiles.js';
@@ -348,4 +348,50 @@ test('a world adds the snake cone as a projectile and a cone event, and the cone
   const x = cone.x;
   world.step(STEP, IDLE);
   assert.ok(cone.x > x, 'the world moves the cone every step');
+});
+
+const JUMP_TIME = (2 * PLAYER.jumpVelocity) / GRAVITY;
+
+function standUntilWinding(e, level, player) {
+  const limit = Math.round(e.cooldown / STEP);
+  for (let i = 0; i < limit && !e.winding; i++) assert.equal(updateEnemy(e, STEP, level, player), null);
+  assert.equal(e.winding, true, 'the wind-up has started');
+}
+
+test('a chicken that jumps over a snake in a normal jump is not shot', () => {
+  const level = groundLevel();
+  for (const fly of [false, true]) {
+    const e = snakeAt(10, 10, { fly });
+    const fromX = e.x - (PLAYER.walkSpeed * JUMP_TIME) / 2;
+    const at = (t) => ({ x: fromX + PLAYER.walkSpeed * t, y: 11 * TILE - (PLAYER.jumpVelocity * t - (GRAVITY * t * t) / 2), h: PLAYER.h, facing: 1, dead: false });
+    standUntilWinding(e, level, at(0));
+    const cones = [];
+    let longest = 0;
+    for (let step = 1; step <= Math.round(JUMP_TIME / STEP); step++) {
+      if (updateEnemy(e, STEP, level, at(step * STEP))) cones.push(step);
+      longest = Math.max(longest, e.overheadFor);
+    }
+    assert.deepEqual(cones, [], `fly ${fly}: a cone during the jump`);
+    assert.ok(longest > SNAKE.windup, `fly ${fly}: overhead for ${longest} s, longer than the wind-up`);
+  }
+});
+
+test('a chicken that stays above a snake is shot straight up after the pause', () => {
+  const level = groundLevel();
+  for (const fly of [false, true]) {
+    const e = snakeAt(10, 10, { fly });
+    standUntilWinding(e, level, chickenAt(13, 10));
+    const above = chickenCentredAt(e.x, bodyCentreY(e) - 3 * TILE);
+    let shot = null;
+    let steps = 0;
+    while (!shot && steps < 2 / STEP) {
+      steps++;
+      shot = updateEnemy(e, STEP, level, above);
+    }
+    const t = steps * STEP;
+    assert.ok(shot, `fly ${fly}: no cone`);
+    assert.ok(t >= SNAKE.overheadDelay + SNAKE.windup - STEP / 2, `fly ${fly}: shot after ${t} s`);
+    assert.ok(t <= SNAKE.overheadDelay + SNAKE.windup + 3 * STEP, `fly ${fly}: shot after ${t} s`);
+    assert.ok(near(shot.vx, 0, 1e-6) && near(shot.vy, -CONE.speed, 1e-6), `fly ${fly}: ${shot.vx}, ${shot.vy}`);
+  }
 });

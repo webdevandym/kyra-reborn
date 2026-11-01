@@ -1,7 +1,7 @@
 import { STEP } from '../config.js';
 
 export function shooterState(cfg, minVolley) {
-  return { lives: cfg.lives, dizzy: 0, cooldown: cfg.fireEvery, winding: false, volleySize: minVolley, volleyHigh: false, nextHigh: false, shotsLeft: 0, gap: 0 };
+  return { lives: cfg.lives, dizzy: 0, cooldown: cfg.fireEvery, winding: false, volleySize: minVolley, volleyHigh: false, nextHigh: false, shotsLeft: 0, gap: 0, overheadFor: 0 };
 }
 
 export function updateShooter(e, dt, level, player, rules) {
@@ -19,6 +19,17 @@ export function updateShooter(e, dt, level, player, rules) {
     e.shotsLeft = 0;
     e.cooldown = Math.max(e.cooldown, cfg.windup + STEP);
     return null;
+  }
+  if (rules.overhead?.(e, level, player)) {
+    e.overheadFor += dt;
+    if (e.overheadFor < cfg.overheadDelay) {
+      e.winding = false;
+      e.shotsLeft = 0;
+      e.cooldown = Math.max(e.cooldown, cfg.windup + STEP);
+      return null;
+    }
+  } else {
+    e.overheadFor = 0;
   }
   if (e.shotsLeft > 0) {
     e.gap -= dt;
@@ -47,6 +58,7 @@ export function hurtShooter(e, cfg) {
   e.winding = false;
   e.shotsLeft = 0;
   e.cooldown = cfg.fireEvery;
+  e.overheadFor = 0;
 }
 
 export function stompShooter(e, cfg, defeat) {
