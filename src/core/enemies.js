@@ -4,6 +4,7 @@ import { tileAt, roomAt } from './level.js';
 import { shooterState, updateShooter, stompShooter } from './shooter.js';
 import { aim8 } from './aim.js';
 import { monkey } from './monkey.js';
+import { grandma } from './grandma.js';
 
 function baseEnemy(spec, w, h, speed) {
   return {
@@ -415,6 +416,7 @@ export const ENEMY_KINDS = {
   deer,
   snake,
   monkey,
+  grandma,
 };
 
 export function createEnemy(spec) {

@@ -1,5 +1,15 @@
-import { TILE, BONE, SHELL, FIREBALL, CONE } from '../config.js';
+import { TILE, BONE, SHELL, FIREBALL, CONE, STICK, BALL } from '../config.js';
 import { tileAt } from './level.js';
+
+function flyStraight(f, dt, level, size) {
+  f.x += f.vx * dt;
+  f.y += f.vy * dt;
+  const along = size / 2 / (Math.hypot(f.vx, f.vy) || 1);
+  const leadX = f.x + f.vx * along;
+  const leadY = f.y + f.vy * along;
+  const inside = f.x >= -TILE && f.x <= level.width + TILE && f.y >= -TILE && f.y <= level.height + TILE;
+  return inside && tileAt(level, Math.floor(leadX / TILE), Math.floor(leadY / TILE)) !== 'solid';
+}
 
 export const PROJECTILES = {
   bone: {
@@ -37,14 +47,20 @@ export const PROJECTILES = {
   cone: {
     event: 'cone',
     size: CONE.size,
+    move: (f, dt, level) => flyStraight(f, dt, level, CONE.size),
+  },
+  stick: {
+    event: 'stickThrow',
+    size: STICK.size,
     move(f, dt, level) {
-      f.x += f.vx * dt;
-      f.y += f.vy * dt;
-      const along = CONE.size / 2 / (Math.hypot(f.vx, f.vy) || 1);
-      const leadX = f.x + f.vx * along;
-      const leadY = f.y + f.vy * along;
-      const inside = f.x >= -TILE && f.x <= level.width + TILE && f.y >= -TILE && f.y <= level.height + TILE;
-      return inside && tileAt(level, Math.floor(leadX / TILE), Math.floor(leadY / TILE)) !== 'solid';
+      if (flyStraight(f, dt, level, STICK.size)) return true;
+      if (f.owner) f.owner.stickAt = { x: f.x, y: f.y };
+      return false;
     },
+  },
+  ball: {
+    event: 'ball',
+    size: BALL.size,
+    move: (f, dt, level) => flyStraight(f, dt, level, BALL.size),
   },
 };

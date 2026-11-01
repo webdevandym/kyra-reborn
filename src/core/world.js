@@ -1,4 +1,4 @@
-import { TILE, PLAYER, CRYSTAL, GOAL, RULES, PORTAL, DOOR, SPIDER, SHARK, MONKEY, PEARL, TEAL } from '../config.js';
+import { TILE, PLAYER, CRYSTAL, GOAL, RULES, PORTAL, DOOR, SPIDER, SHARK, MONKEY, GRANDMA, PEARL, TEAL } from '../config.js';
 import { createPlayer, updatePlayer } from './player.js';
 import { createEnemy, updateEnemy, stompEnemy } from './enemies.js';
 import { classifyContact } from './combat.js';
@@ -13,7 +13,7 @@ import { PROJECTILES } from './projectiles.js';
 import { hurtShooter } from './shooter.js';
 import { startArriving } from './monkey.js';
 
-const KNOCKBACK = { spider: SPIDER.knockback, shark: SHARK.knockback, monkey: MONKEY.knockback };
+const KNOCKBACK = { spider: SPIDER.knockback, shark: SHARK.knockback, monkey: MONKEY.knockback, grandma: GRANDMA.knockback };
 const GOAL_BLOCKERS = new Set(['shark', 'snake', 'monkey', 'grandma']);
 
 export function goalBlocked(world) {
@@ -60,6 +60,8 @@ export function createWorld(level, collected = new Set(), { start = null, monkey
     portal: level.portal ? { x: level.portal.x, y: level.portal.y, w: PORTAL.w, h: PORTAL.h, open: false, openedAt: 0 } : null,
     portals: level.portals.map((g) => ({ x: g.x, y: g.y, w: PORTAL.w, h: PORTAL.h, open: false, openedAt: 0, room: roomIndex(level, g.x) })),
     doors: level.doors.map((d) => ({ x: d.x, y: d.y, w: DOOR.w, h: DOOR.h })),
+    house: level.house ? { x: level.house.x, y: level.house.y } : null,
+    grandmaOut: false,
     checkpointReached: Boolean(start),
     goal: { x: level.goal.x, y: level.goal.y, w: GOAL.w, h: GOAL.h, locked: false },
     time: 0,
@@ -254,6 +256,11 @@ function stepCrabs(world, dt, events) {
 
 function onDefeat(world, e, events) {
   const p = world.player;
+  // Must run before the lock re-check: a standing house keeps goalBlocked true.
+  if (e.kind === 'grandma' && world.house) {
+    events.push({ type: 'houseGone', x: world.house.x, y: world.house.y });
+    world.house = null;
+  }
   if (world.goal.locked && !goalBlocked(world)) {
     world.goal.locked = false;
     events.push({ type: 'goalOpen', x: world.goal.x, y: world.goal.y });
@@ -273,6 +280,15 @@ function onDefeat(world, e, events) {
     gate.openedAt = world.time;
     events.push({ type: 'portalOpen', x: gate.x, y: gate.y });
   }
+  if (e.kind === 'snake') callGrandma(world, events);
+}
+
+function callGrandma(world, events) {
+  if (!world.house || world.grandmaOut || world.enemies.some((o) => o.alive && o.kind === 'snake')) return;
+  const { x, y } = world.house;
+  world.grandmaOut = true;
+  world.enemies.push(createEnemy({ kind: 'grandma', x, y }));
+  events.push({ type: 'grandmaOut', x, y });
 }
 
 function enterRoom(world, index) {
