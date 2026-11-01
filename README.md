@@ -1,6 +1,6 @@
 # Kyra Reborn
 
-A notebook-doodle platformer for kids aged 8–10. Kyra the chicken («кура») walks, jumps, collects red crystals and stomps carrots, zombies, propeller carrots and bees across five meadow levels, crosses a cloud track in the evening sky, past two-life stars, bats and rain clouds, to the sleeping Moon, and then walks through four rooms of each castle level — halls, kitchens, libraries, dungeons and a throne room — past rats, bone-throwing skeletons, shy ghosts and a fire-spitting spider, to the princess, and finally dives into three underwater levels full of dolphins, fish, bubbles and sharks. There are fourteen levels. The game design and the characters come from a young designer's voice note and notebook drawing.
+A notebook-doodle platformer for kids aged 8–10. Kyra the chicken («кура») walks, jumps, collects red crystals and stomps carrots, zombies, propeller carrots and bees across five meadow levels, crosses a cloud track in the evening sky, past two-life stars, bats and rain clouds, to the sleeping Moon, and then walks through four rooms of each castle level — halls, kitchens, libraries, dungeons and a throne room — past rats, bone-throwing skeletons, shy ghosts and a fire-spitting spider, to the princess, then dives into three underwater levels full of dolphins, fish, bubbles and sharks, and finally walks through three forest levels of trees and bushes, past rabbits, deer, snakes and a monkey, to a grandmother's house. There are seventeen levels. The game design and the characters come from a young designer's voice note and notebook drawing.
 
 ## Play
 
@@ -57,6 +57,12 @@ On wide phones the game fills the whole landscape screen, edge to edge (the HUD 
 - The turquoise crystal near the start of each sea level is a shield: it takes one touch from a dolphin, fish or shell.
 - A shark waits at the end of every sea level. It has three lives and fires fast volleys of two, three and four shells, low and high in turn, and straight up when you are above it. The finish crystal stays in its bubble until every shark is beaten.
 - The last sea level has two sharks and a pearl: touch it and a crab comes out and pinches the nearest shark twice.
+- In the forest, rabbits (one life, fast) and deer (two lives, slower) walk between the trees and bushes, and none of them throw anything. Jump on them from above.
+- Each forest level has three parts. A snake waits in a dead end at the end of the first part and another at the end of the second. A snake has one life and throws pine cones quickly in eight directions: up, down, sideways and diagonally. Some snakes walk, some fly. Beat it and a round green-red-yellow portal opens and takes you to the next part. The third snake guards the end.
+- A savepoint flag stands where the first portal drops you. You do not need to touch it: from then on, if you lose a life, you restart there instead of at the start of the level.
+- A monkey sleeps in an orange bubble in the second part. When you come near, it wakes, jumps out and chases you for the rest of the level. It is a bit slower than Kyra but it jumps. Jump on it five times to beat it. If you lose a life it keeps the hits you gave it, and once beaten it stays beaten.
+- The finish crystal is locked in a cage until the monkey and every snake are beaten, and on level 17 the grandmother too.
+- Level 17 has a house beside the crystal. When the last snake falls, a grandmother with a stick comes out. She has four lives and jumps. She throws her stick three times, running to fetch it each time, and then throws balls without end, in all directions. Jump on her four times: the house disappears and the crystal opens.
 - The level-complete and victory cards show how long the level took (only time spent playing counts).
 
 ## Develop
