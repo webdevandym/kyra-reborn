@@ -1,21 +1,10 @@
 import { COLORS, PLAYER, ZOMBIE, BEE } from '../config.js';
 import { inkShape, inkEllipse, inkLine, inkPoly, inkRect } from './ink.js';
-
-const INK_W = 2.6;
+import { INK_W, flip, starPoints } from './kit.js';
 
 function marker(ctx, points, color, width, seed) {
   inkLine(ctx, points, { stroke: color, width: width + 2, seed: seed + 5, jitter: 0.6 });
   inkLine(ctx, points, { width: 1.6, seed });
-}
-
-function starPoints(r, inner = 0.42, spikes = 4) {
-  const points = [];
-  for (let i = 0; i < spikes * 2; i++) {
-    const rr = i % 2 === 0 ? r : r * inner;
-    const a = (i / (spikes * 2)) * Math.PI * 2 - Math.PI / 2;
-    points.push([Math.cos(a) * rr, Math.sin(a) * rr]);
-  }
-  return points;
 }
 
 export function drawStar(ctx, x, y, r, color = COLORS.star, seed = 1) {
@@ -93,8 +82,7 @@ export function drawCarrot(ctx, carrot, time, seed = 21) {
   const step = Math.sin(anim * 1.6) * 3;
   const wave = Math.sin(time * 5 + seed) * 3;
   ctx.save();
-  ctx.translate(x, y);
-  ctx.scale(dir < 0 ? -1 : 1, 1);
+  flip(ctx, x, y, dir);
 
   inkLine(ctx, [[-3, -7], [-5 + step, 0]], { width: 2.2, seed: seed + 1 });
   inkLine(ctx, [[3, -7], [5 - step, 0]], { width: 2.2, seed: seed + 2 });
@@ -111,8 +99,7 @@ export function drawPropellerCarrot(ctx, flyer, time, seed = 221) {
   const flap = Math.sin(time * 9 + seed) * 4;
   const spin = Math.cos(time * 25 + seed);
   ctx.save();
-  ctx.translate(x, y);
-  ctx.scale(dir < 0 ? -1 : 1, 1);
+  flip(ctx, x, y, dir);
 
   inkLine(ctx, [[-3, -7], [-4 + dangle, 1]], { width: 2.2, seed: seed + 1 });
   inkLine(ctx, [[3, -7], [4 - dangle, 1]], { width: 2.2, seed: seed + 2 });
@@ -151,8 +138,7 @@ export function drawBee(ctx, bee, time, seed = 251) {
   const { x, y, dir = -1 } = bee;
   const flap = Math.abs(Math.sin(time * 38 + seed));
   ctx.save();
-  ctx.translate(x, y - BEE.h / 2);
-  ctx.scale(dir < 0 ? -1 : 1, 1);
+  flip(ctx, x, y - BEE.h / 2, dir);
 
   for (const k of [0, 1, 2]) {
     inkLine(ctx, [[-23 - k * 3, -6 + k * 6], [-31 - k * 3, -6 + k * 6]], { stroke: COLORS.inkSoft, width: 1.4, seed: seed + k });

@@ -1,35 +1,14 @@
 import { COLORS, GHOST, DOOR } from '../config.js';
 import { inkShape, inkEllipse, inkLine, inkPoly, inkRect } from './ink.js';
-import { drawChicken, drawHeart, drawStar } from './sprites.js';
-
-const INK_W = 2.6;
-
-function dot(ctx, x, y, r, color = COLORS.ink) {
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fill();
-}
-
-export function hearts(ctx, lives, y, time, seed) {
-  for (let i = 0; i < lives; i++) {
-    drawHeart(ctx, (i - (lives - 1) / 2) * 13, y + Math.sin(time * 5 + i) * 2, 5, seed + i);
-  }
-}
-
-export function dizzyStars(ctx, y, time, seed) {
-  for (let i = 0; i < 3; i++) {
-    const a = time * 6 + (i * Math.PI * 2) / 3;
-    drawStar(ctx, Math.cos(a) * 18, y + Math.sin(a) * 5, 5, COLORS.star, seed + i);
-  }
-}
+import { drawChicken, drawHeart } from './sprites.js';
+import { INK_W, dot, flip } from './kit.js';
+import { hearts, dizzyStars } from './status.js';
 
 export function drawRat(ctx, rat, time, seed = 471) {
   const { x, y, dir = -1, anim = 0, guard = false } = rat;
   const step = Math.sin(anim * 2.2) * 3;
   ctx.save();
-  ctx.translate(x, y);
-  ctx.scale(dir < 0 ? -1 : 1, 1);
+  flip(ctx, x, y, dir);
   const tail = [];
   for (let i = 0; i <= 6; i++) tail.push([-14 - i * 3, -9 - i * 1.2 + Math.sin(time * 8 + i * 0.9) * 2.2]);
   inkLine(ctx, tail, { stroke: COLORS.ratEar, width: 2.4, seed: seed + 1 });
@@ -77,8 +56,7 @@ export function drawGhost(ctx, ghost, time, seed = 491) {
   const cy = y - h / 2;
   inkShape(ctx, ghostSheet(x, cy, time), { fill: COLORS.ghost, width: INK_W, seed: seed + 10 });
   ctx.save();
-  ctx.translate(x, cy);
-  ctx.scale(dir < 0 ? -1 : 1, 1);
+  flip(ctx, x, cy, dir);
   if (shy) {
     inkEllipse(ctx, -3, -4, 5, 4, { fill: COLORS.paper, width: 1.6, seed: seed + 11 });
     inkEllipse(ctx, 7, -4, 5, 4, { fill: COLORS.paper, width: 1.6, seed: seed + 12 });
@@ -95,8 +73,7 @@ export function drawSkeleton(ctx, skeleton, time, seed = 511) {
   const { x, y, dir = -1, anim = 0, lives = 2, dizzy = 0 } = skeleton;
   const step = Math.sin(anim * 1.6) * 4;
   ctx.save();
-  ctx.translate(x, y);
-  ctx.scale(dir < 0 ? -1 : 1, 1);
+  flip(ctx, x, y, dir);
   inkLine(ctx, [[-4, -16], [-6 + step, 0]], { stroke: COLORS.bone, width: 4, seed: seed + 1 });
   inkLine(ctx, [[-4, -16], [-6 + step, 0]], { width: 1.4, seed: seed + 2 });
   inkLine(ctx, [[4, -16], [6 - step, 0]], { stroke: COLORS.bone, width: 4, seed: seed + 3 });
@@ -145,8 +122,7 @@ export function drawSpider(ctx, spider, time, seed = 541) {
   inkLine(ctx, [[x, y - 50], [x, y - 84]], { stroke: COLORS.inkSoft, width: 1.2, seed: seed + 50 });
   const rear = winding ? 6 : 0;
   ctx.save();
-  ctx.translate(x, y);
-  ctx.scale(dir < 0 ? -1 : 1, 1);
+  flip(ctx, x, y, dir);
   for (let i = 0; i < 4; i++) {
     const wiggle = Math.sin(time * 6 + i) * 2;
     for (const side of [-1, 1]) {

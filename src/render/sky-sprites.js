@@ -1,8 +1,8 @@
 import { COLORS, BAT, RAIN } from '../config.js';
 import { inkShape, inkEllipse, inkLine, inkPoly, inkRect } from './ink.js';
-import { drawHeart, drawStar } from './sprites.js';
-
-const INK_W = 2.6;
+import { drawStar } from './sprites.js';
+import { INK_W, flip, starPoints } from './kit.js';
+import { hearts } from './status.js';
 
 export function cloudPoints(cx, cy, rx, ry, bumps = 3) {
   const points = [];
@@ -29,16 +29,6 @@ export function cloudBand(x0, x1, top, depth) {
   return points;
 }
 
-function starOutline(r, inner) {
-  const points = [];
-  for (let i = 0; i < 10; i++) {
-    const rr = i % 2 === 0 ? r : r * inner;
-    const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
-    points.push([Math.cos(a) * rr, Math.sin(a) * rr]);
-  }
-  return points;
-}
-
 function eye(ctx, x, y, seed) {
   inkEllipse(ctx, x, y, 3.6, 4.2, { fill: COLORS.eyeWhite, width: 1.5, seed });
   ctx.fillStyle = COLORS.ink;
@@ -51,8 +41,7 @@ export function drawStarEnemy(ctx, star, time, seed = 301) {
   const { x, y, dir = -1, anim = 0, lives = 2, dizzy = 0 } = star;
   const step = Math.sin(anim * 1.6) * 3;
   ctx.save();
-  ctx.translate(x, y);
-  ctx.scale(dir < 0 ? -1 : 1, 1);
+  flip(ctx, x, y, dir);
 
   inkLine(ctx, [[-6, -6], [-8 + step, 0]], { width: 2.4, seed: seed + 1 });
   inkLine(ctx, [[6, -6], [8 - step, 0]], { width: 2.4, seed: seed + 2 });
@@ -60,7 +49,7 @@ export function drawStarEnemy(ctx, star, time, seed = 301) {
   ctx.save();
   ctx.translate(0, -21);
   ctx.rotate(Math.sin(time * 4 + seed) * 0.06);
-  inkPoly(ctx, starOutline(21, 0.5), { fill: COLORS.starEnemy, width: INK_W, seed: seed + 3, jitter: 0.7 });
+  inkPoly(ctx, starPoints(21, 0.5, 5), { fill: COLORS.starEnemy, width: INK_W, seed: seed + 3, jitter: 0.7 });
   eye(ctx, -5, -2, seed + 4);
   eye(ctx, 5, -2, seed + 5);
   inkLine(ctx, [[-9, -9], [-2, -6.5]], { width: 2.2, seed: seed + 6 });
@@ -77,9 +66,7 @@ export function drawStarEnemy(ctx, star, time, seed = 301) {
   }
   ctx.restore();
 
-  for (let i = 0; i < lives; i++) {
-    drawHeart(ctx, (i - (lives - 1) / 2) * 13, -54 + Math.sin(time * 5 + i) * 2, 5, seed + 12 + i);
-  }
+  hearts(ctx, lives, -54, time, seed + 12);
   if (dizzy > 0) {
     for (let i = 0; i < 3; i++) {
       const a = time * 6 + (i * Math.PI * 2) / 3;
@@ -93,8 +80,7 @@ export function drawBat(ctx, bat, time, seed = 331) {
   const { x, y, dir = -1 } = bat;
   const lift = -10 * Math.sin(time * 18 + seed);
   ctx.save();
-  ctx.translate(x, y - BAT.h / 2);
-  ctx.scale(dir < 0 ? -1 : 1, 1);
+  flip(ctx, x, y - BAT.h / 2, dir);
   for (const side of [-1, 1]) {
     const wing = [
       [side * 6, -4],

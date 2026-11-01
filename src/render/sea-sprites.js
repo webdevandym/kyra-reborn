@@ -1,21 +1,8 @@
 import { COLORS, FISH, SHARK } from '../config.js';
 import { inkShape, inkEllipse, inkLine, inkPoly } from './ink.js';
 import { drawGem, drawStar } from './sprites.js';
-import { hearts, dizzyStars } from './castle-sprites.js';
-
-const INK_W = 2.6;
-
-function dot(ctx, x, y, r, color = COLORS.ink) {
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fill();
-}
-
-function flip(ctx, x, y, dir) {
-  ctx.translate(x, y);
-  ctx.scale(dir < 0 ? -1 : 1, 1);
-}
+import { INK_W, dot, flip } from './kit.js';
+import { hearts, dizzyStars } from './status.js';
 
 export function drawDolphin(ctx, dolphin, time, seed = 801) {
   const { x, y, dir = -1, anim = 0, lives = 2, dizzy = 0 } = dolphin;

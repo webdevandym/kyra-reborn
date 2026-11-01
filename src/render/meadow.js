@@ -2,6 +2,7 @@ import { TILE, VIEW_W, VIEW_W_MAX, COLORS } from '../config.js';
 import { tileAt } from '../core/level.js';
 import { mulberry32, inkShape, inkEllipse, inkLine } from './ink.js';
 import { drawGreenCrystal } from './sprites.js';
+import { cloudPoints } from './sky-sprites.js';
 import { hashString, visibleCols } from './layout.js';
 
 const GROUND_Y = 10 * TILE;
@@ -37,13 +38,7 @@ export function createMeadowTheme(ctx) {
     for (const c of clouds) {
       const cx = c.x - camX * 0.3;
       if (cx < -120 || cx > VIEW_W + 120) continue;
-      const points = [];
-      for (let i = 0; i < 22; i++) {
-        const a = (i / 22) * Math.PI * 2;
-        const bump = 1 + 0.18 * Math.abs(Math.sin(a * 3));
-        points.push([cx + Math.cos(a) * 52 * c.s * bump, c.y + Math.sin(a) * 20 * c.s * bump]);
-      }
-      inkShape(ctx, points, { fill: COLORS.paper, stroke: COLORS.inkSoft, width: 2, seed: c.seed });
+      inkShape(ctx, cloudPoints(cx, c.y, 52 * c.s, 20 * c.s), { fill: COLORS.paper, stroke: COLORS.inkSoft, width: 2, seed: c.seed });
     }
     for (const h of hills) {
       const hx = h.x - camX * 0.5;
