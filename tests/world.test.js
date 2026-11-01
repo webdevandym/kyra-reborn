@@ -6,7 +6,7 @@ import { PROJECTILES } from '../src/core/projectiles.js';
 import { parseLevel } from '../src/core/level.js';
 import { bodyRect, overlaps } from '../src/core/rect.js';
 import { rainPhase } from '../src/core/hazards.js';
-import { testLevel, castleMap } from './helpers.js';
+import { testLevel, castleMap, types } from './helpers.js';
 
 const IDLE = { left: false, right: false, jumpHeld: false, jumpPressed: false };
 const RIGHT = { ...IDLE, right: true };
@@ -17,8 +17,6 @@ function run(world, input, seconds) {
   for (let i = 0; i < steps; i++) events.push(...world.step(STEP, input));
   return events;
 }
-
-const types = (events) => events.map((e) => e.type);
 
 function dropOnto(world, enemy, height = 100) {
   const p = world.player;
