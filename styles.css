@@ -16,6 +16,7 @@
   --dot-sky: #9b8ad6;
   --dot-castle: #8f8799;
   --dot-sea: #3aa7c9;
+  --dot-forest: #2fa05e;
   color-scheme: light;
 }
 
@@ -332,6 +333,10 @@ canvas {
 
 .carousel__dot[data-theme="sea"] {
   color: var(--dot-sea);
+}
+
+.carousel__dot[data-theme="forest"] {
+  color: var(--dot-forest);
 }
 
 .carousel__dot[data-picked] {

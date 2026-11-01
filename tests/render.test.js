@@ -21,6 +21,8 @@ import { ROOM_PROPS, ROOM_TINTS } from '../src/render/castle-props.js';
 import { createSeaTheme } from '../src/render/sea.js';
 import { drawDolphin, drawFish, drawShark, drawShell, drawBubble, drawPlayerBubble, drawTealCrystal, drawPearl, drawCrab, drawSandStick, drawBubbleCage } from '../src/render/sea-sprites.js';
 import { ROOM_KINDS } from '../src/core/level.js';
+import { createForestTheme } from '../src/render/forest.js';
+import { drawRabbit, drawDeer, drawSnake, drawMonkey, drawGrandma, drawHouse, drawCone, drawStick, drawBall, drawForestPortal, drawCage } from '../src/render/forest-sprites.js';
 
 before(async () => {
   for (const lang of LANGS) await loadLang(lang, { fetchJson: (url) => JSON.parse(readFileSync(url, 'utf8')) });
@@ -360,6 +362,92 @@ test('the scene renders a sea level with swimmers, a shark firing shells, bubble
     if (i % 60 === 0) scene.render({ game, camera, particles, time: i * STEP, lang: 'pl', muted: false, debug: true });
   }
   assert.ok(shells > 0, 'the shark fired while the scene was drawn');
+  game.world.player.won = true;
+  scene.render({ game, camera, particles, time: 9, lang: 'en', muted: false, debug: true });
+  assert.ok(calls.get('stroke') > 50);
+});
+
+const FOREST_FEET = 'C...n......O' + '.' + '.K..M...n.O.' + '.' + '..w.....U..G';
+
+function forestDef() {
+  const upper = '....======' + '.'.repeat(FOREST_FEET.length - 10);
+  const map = mapFromBottom([upper, FOREST_FEET, '#'.repeat(FOREST_FEET.length)]).map((line) => [...line].map((ch, col) => ([12, 25].includes(col) ? '#' : ch)).join(''));
+  return { id: 'woodtest', theme: 'forest', map };
+}
+
+test('every forest sprite draws without errors and with finite coordinates', () => {
+  const { ctx, calls } = mockContext();
+  drawRabbit(ctx, { x: 100, y: 450, dir: 1, anim: 2 }, 0.4);
+  drawRabbit(ctx, { x: 100, y: 450 }, 1.3);
+  drawDeer(ctx, { x: 200, y: 450, dir: -1, anim: 1, lives: 1, dizzy: 0.4 }, 1.2);
+  drawDeer(ctx, { x: 200, y: 450 }, 1.3);
+  drawSnake(ctx, { x: 300, y: 450, dir: 1, anim: 1, fly: false, winding: true, dizzy: 0 }, 0.8);
+  drawSnake(ctx, { x: 300, y: 350, dir: -1, anim: 1, fly: true, winding: false, dizzy: 0.4 }, 0.9);
+  drawSnake(ctx, { x: 300, y: 450 }, 1.3);
+  drawMonkey(ctx, { x: 400, y: 450, dir: -1, anim: 1, mode: 'asleep', hidden: false, lives: 5 }, 0.5);
+  drawMonkey(ctx, { x: 400, y: 450, dir: 1, anim: 2, mode: 'awake', hidden: false, dizzy: 0.5, lives: 3 }, 0.6);
+  drawMonkey(ctx, { x: 400, y: 450 }, 1.3);
+  drawGrandma(ctx, { x: 500, y: 450, dir: -1, anim: 2, dizzy: 0, lives: 4, winding: true, phase: 'sticks' }, 0.5);
+  drawGrandma(ctx, { x: 500, y: 450, dir: 1, anim: 1, dizzy: 0.5, lives: 2, winding: false, phase: 'balls' }, 1.1);
+  drawGrandma(ctx, { x: 500, y: 450 }, 1.3);
+  drawHouse(ctx, { x: 600, y: 450 }, 0.4);
+  for (const [vx, vy] of [[260, 0], [184, 184], [0, 260], [-184, 184], [-260, 0], [-184, -184], [0, -260], [184, -184]]) {
+    drawCone(ctx, { kind: 'cone', x: 700, y: 300, vx, vy }, 0.3);
+    drawStick(ctx, { kind: 'stick', x: 750, y: 300, vx, vy }, 0.3);
+    drawBall(ctx, { kind: 'ball', x: 800, y: 300, vx, vy }, 0.3);
+  }
+  drawCone(ctx, { x: 700, y: 300 }, 1.3);
+  drawStick(ctx, { x: 750, y: 300 }, 1.3);
+  drawBall(ctx, { x: 800, y: 300 }, 1.3);
+  drawForestPortal(ctx, { x: 500, y: 450, w: 50, h: 70 }, 0.5, 0.3);
+  drawForestPortal(ctx, { x: 500, y: 450, w: 50, h: 70 }, 3, 2.1);
+  drawForestPortal(ctx, { x: 500, y: 450 }, 1, 1.3);
+  drawCage(ctx, { x: 900, y: 450 }, 0.7);
+  assert.ok(calls.get('stroke') > 100);
+  assert.ok(calls.get('fill') > 50);
+});
+
+test('a hidden or arriving monkey and a closed forest portal draw nothing', () => {
+  const { ctx, calls } = mockContext();
+  drawMonkey(ctx, { x: 400, y: 450, mode: 'awake', hidden: true, lives: 5 }, 0.6);
+  drawMonkey(ctx, { x: 400, y: 450, mode: 'arriving', hidden: true, lives: 5 }, 0.6);
+  drawForestPortal(ctx, { x: 500, y: 450, w: 50, h: 70 }, 0, 0.1);
+  assert.equal(calls.size, 0);
+});
+
+test('the forest theme paints pale green paper and draws its backdrop, grass, logs and the green crystal, caged until the guards are gone', () => {
+  const { ctx, calls } = mockContext();
+  const theme = createForestTheme(ctx);
+  const level = parseLevel(forestDef());
+  assert.equal(theme.paper, COLORS.forestWash);
+  theme.drawBackdrop(level, 0, 0.5);
+  theme.drawBackdrop(level, 5 * TILE + 13, 4.5);
+  theme.drawTiles(level, 0);
+  theme.drawTiles(level, 7 * TILE + 13);
+  theme.drawGoal({ x: 300, y: 450 }, 1.2, false, true);
+  theme.drawGoal({ x: 300, y: 450 }, 1.2, false, false);
+  assert.ok(calls.get('stroke') > 50);
+  assert.ok(calls.get('fill') > 50);
+});
+
+test('the scene renders a forest level without errors', () => {
+  const { ctx, calls } = mockContext();
+  const game = createGame([forestDef()]);
+  const camera = createCamera();
+  const particles = createParticles();
+  const scene = createScene(ctx);
+  game.confirm();
+  let cones = 0;
+  for (let i = 0; i < 900; i++) {
+    game.tick(STEP, IDLE);
+    game.world.player.invuln = 1;
+    cones = Math.max(cones, game.world.projectiles.filter((f) => f.kind === 'cone').length);
+    if (i === 200) game.world.portals.forEach((g, n) => Object.assign(g, { open: true, openedAt: game.world.time - 0.1 * n }));
+    if (i === 500) game.world.checkpointReached = true;
+    if (i % 60 === 0) scene.render({ game, camera, particles, time: i * STEP, lang: 'pl', muted: false, debug: true });
+  }
+  assert.ok(cones > 0, 'a snake threw a cone while the scene was drawn');
+  assert.ok(game.world.house, 'the house stands while the scene is drawn');
   game.world.player.won = true;
   scene.render({ game, camera, particles, time: 9, lang: 'en', muted: false, debug: true });
   assert.ok(calls.get('stroke') > 50);

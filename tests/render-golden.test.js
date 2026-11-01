@@ -15,6 +15,7 @@ import { createMeadowTheme } from '../src/render/meadow.js';
 import { createSkyTheme } from '../src/render/sky.js';
 import { createCastleTheme } from '../src/render/castle.js';
 import { createSeaTheme } from '../src/render/sea.js';
+import { createForestTheme } from '../src/render/forest.js';
 import {
   drawStar,
   drawChicken,
@@ -45,8 +46,10 @@ import {
   drawBubbleCage,
 } from '../src/render/sea-sprites.js';
 import { drawStarEnemy, drawBat, drawRainCloud, drawMovingCloud, drawMoon } from '../src/render/sky-sprites.js';
+import { drawRabbit, drawDeer, drawSnake, drawMonkey, drawGrandma, drawHouse, drawCone, drawStick, drawBall, drawForestPortal, drawCage } from '../src/render/forest-sprites.js';
 import { LANGS, loadLang } from '../src/i18n/index.js';
 import { recordingContext } from './helpers.js';
+import { mapFromBottom } from './helpers.js';
 
 const GOLDEN_URL = new URL('./golden/render.json', import.meta.url);
 const UPDATE = process.env.UPDATE_GOLDEN === '1';
@@ -305,6 +308,90 @@ const SPRITE_STATES = {
     'awake': (ctx) => drawMoon(ctx, { x: 500, y: 450 }, 2.3, true),
     'minimal': (ctx) => drawMoon(ctx, { x: 500, y: 450 }, 1.3),
   },
+
+  drawRabbit: {
+    'dir -1 hopping': (ctx) => drawRabbit(ctx, { x: 100, y: 450, dir: -1, anim: 2 }, 0.4),
+    'dir 1 hopping': (ctx) => drawRabbit(ctx, { x: 100, y: 450, dir: 1, anim: 2 }, 0.4),
+    'dir 1 resting': (ctx) => drawRabbit(ctx, { x: 100, y: 450, dir: 1, anim: 0 }, 1.2),
+    'minimal': (ctx) => drawRabbit(ctx, { x: 100, y: 450 }, 1.3),
+  },
+  drawDeer: {
+    'dir -1 lives 2': (ctx) => drawDeer(ctx, { x: 200, y: 450, dir: -1, anim: 2, lives: 2, dizzy: 0 }, 0.4),
+    'dir 1 lives 2': (ctx) => drawDeer(ctx, { x: 200, y: 450, dir: 1, anim: 2, lives: 2, dizzy: 0 }, 0.4),
+    'dir -1 lives 1 dizzy': (ctx) => drawDeer(ctx, { x: 200, y: 450, dir: -1, anim: 1, lives: 1, dizzy: 0.4 }, 1.2),
+    'dir 1 lives 1 dizzy': (ctx) => drawDeer(ctx, { x: 200, y: 450, dir: 1, anim: 1, lives: 1, dizzy: 0.4 }, 1.2),
+    'minimal': (ctx) => drawDeer(ctx, { x: 200, y: 450 }, 1.3),
+  },
+  drawSnake: {
+    'walking dir -1': (ctx) => drawSnake(ctx, { x: 300, y: 450, dir: -1, anim: 1, fly: false, winding: false, dizzy: 0 }, 0.5),
+    'walking dir 1': (ctx) => drawSnake(ctx, { x: 300, y: 450, dir: 1, anim: 1, fly: false, winding: false, dizzy: 0 }, 0.5),
+    'walking winding': (ctx) => drawSnake(ctx, { x: 300, y: 450, dir: 1, anim: 1, fly: false, winding: true, dizzy: 0 }, 0.8),
+    'walking winding dir -1': (ctx) => drawSnake(ctx, { x: 300, y: 450, dir: -1, anim: 1, fly: false, winding: true, dizzy: 0 }, 0.8),
+    'walking dizzy': (ctx) => drawSnake(ctx, { x: 300, y: 450, dir: -1, anim: 1, fly: false, winding: false, dizzy: 0.4 }, 0.9),
+    'flying dir -1': (ctx) => drawSnake(ctx, { x: 300, y: 350, dir: -1, anim: 1, fly: true, winding: false, dizzy: 0 }, 0.5),
+    'flying dir 1': (ctx) => drawSnake(ctx, { x: 300, y: 350, dir: 1, anim: 1, fly: true, winding: false, dizzy: 0 }, 0.5),
+    'flying winding': (ctx) => drawSnake(ctx, { x: 300, y: 350, dir: 1, anim: 1, fly: true, winding: true, dizzy: 0 }, 0.8),
+    'flying dizzy dir -1': (ctx) => drawSnake(ctx, { x: 300, y: 350, dir: -1, anim: 1, fly: true, winding: false, dizzy: 0.4 }, 0.9),
+    'minimal': (ctx) => drawSnake(ctx, { x: 300, y: 450 }, 1.3),
+  },
+  drawMonkey: {
+    'asleep in the bubble': (ctx) => drawMonkey(ctx, { x: 400, y: 450, dir: -1, anim: 1, mode: 'asleep', hidden: false, dizzy: 0, lives: 5 }, 0.5),
+    'asleep in the bubble later': (ctx) => drawMonkey(ctx, { x: 400, y: 450, dir: -1, anim: 2, mode: 'asleep', hidden: false, dizzy: 0, lives: 5 }, 1.7),
+    'awake dir -1 lives 5': (ctx) => drawMonkey(ctx, { x: 400, y: 450, dir: -1, anim: 2, mode: 'awake', hidden: false, dizzy: 0, lives: 5 }, 0.6),
+    'awake dir 1 lives 3': (ctx) => drawMonkey(ctx, { x: 400, y: 450, dir: 1, anim: 2, mode: 'awake', hidden: false, dizzy: 0, lives: 3 }, 0.6),
+    'awake dizzy lives 2': (ctx) => drawMonkey(ctx, { x: 400, y: 450, dir: -1, anim: 1, mode: 'awake', hidden: false, dizzy: 0.5, lives: 2 }, 0.9),
+    'hidden draws nothing': (ctx) => drawMonkey(ctx, { x: 400, y: 450, dir: -1, anim: 1, mode: 'awake', hidden: true, dizzy: 0, lives: 5 }, 0.6),
+    'arriving draws nothing': (ctx) => drawMonkey(ctx, { x: 400, y: 450, dir: -1, anim: 1, mode: 'arriving', hidden: true, dizzy: 0, lives: 4 }, 0.6),
+    'minimal': (ctx) => drawMonkey(ctx, { x: 400, y: 450 }, 1.3),
+  },
+  drawGrandma: {
+    'sticks dir -1 lives 4': (ctx) => drawGrandma(ctx, { x: 500, y: 450, dir: -1, anim: 2, dizzy: 0, lives: 4, winding: false, phase: 'sticks' }, 0.5),
+    'sticks dir 1 lives 2': (ctx) => drawGrandma(ctx, { x: 500, y: 450, dir: 1, anim: 1, dizzy: 0, lives: 2, winding: false, phase: 'sticks' }, 0.9),
+    'sticks winding': (ctx) => drawGrandma(ctx, { x: 500, y: 450, dir: 1, anim: 1, dizzy: 0, lives: 3, winding: true, phase: 'sticks' }, 0.9),
+    'sticks without her stick': (ctx) => drawGrandma(ctx, { x: 500, y: 450, dir: -1, anim: 1, dizzy: 0, lives: 3, winding: false, phase: 'sticks', hasStick: false }, 0.9),
+    'balls dir -1': (ctx) => drawGrandma(ctx, { x: 500, y: 450, dir: -1, anim: 2, dizzy: 0, lives: 3, winding: false, phase: 'balls' }, 0.5),
+    'balls winding dir 1': (ctx) => drawGrandma(ctx, { x: 500, y: 450, dir: 1, anim: 2, dizzy: 0, lives: 3, winding: true, phase: 'balls' }, 0.5),
+    'dizzy dir -1': (ctx) => drawGrandma(ctx, { x: 500, y: 450, dir: -1, anim: 1, dizzy: 0.5, lives: 2, winding: false, phase: 'sticks' }, 1.1),
+    'dizzy dir 1': (ctx) => drawGrandma(ctx, { x: 500, y: 450, dir: 1, anim: 1, dizzy: 0.5, lives: 2, winding: false, phase: 'balls' }, 1.1),
+    'minimal': (ctx) => drawGrandma(ctx, { x: 500, y: 450 }, 1.3),
+  },
+  drawHouse: {
+    'standing': (ctx) => drawHouse(ctx, { x: 600, y: 450 }, 0.4),
+    'elsewhere': (ctx) => drawHouse(ctx, { x: 250, y: 360 }, 1.9),
+  },
+  drawCone: {
+    'east': (ctx) => drawCone(ctx, { kind: 'cone', x: 700, y: 300, vx: 260, vy: 0 }, 0.3),
+    'south-east': (ctx) => drawCone(ctx, { kind: 'cone', x: 700, y: 300, vx: 184, vy: 184 }, 0.3),
+    'south': (ctx) => drawCone(ctx, { kind: 'cone', x: 700, y: 300, vx: 0, vy: 260 }, 0.3),
+    'south-west': (ctx) => drawCone(ctx, { kind: 'cone', x: 700, y: 300, vx: -184, vy: 184 }, 0.3),
+    'west': (ctx) => drawCone(ctx, { kind: 'cone', x: 700, y: 300, vx: -260, vy: 0 }, 0.3),
+    'north-west': (ctx) => drawCone(ctx, { kind: 'cone', x: 700, y: 300, vx: -184, vy: -184 }, 0.3),
+    'north': (ctx) => drawCone(ctx, { kind: 'cone', x: 700, y: 300, vx: 0, vy: -260 }, 0.3),
+    'north-east': (ctx) => drawCone(ctx, { kind: 'cone', x: 700, y: 300, vx: 184, vy: -184 }, 0.3),
+    'minimal': (ctx) => drawCone(ctx, { x: 700, y: 300 }, 1.3),
+  },
+  drawStick: {
+    'east': (ctx) => drawStick(ctx, { kind: 'stick', x: 750, y: 300, vx: 300, vy: 0 }, 0.3),
+    'north-west': (ctx) => drawStick(ctx, { kind: 'stick', x: 750, y: 300, vx: -212, vy: -212 }, 0.3),
+    'south': (ctx) => drawStick(ctx, { kind: 'stick', x: 750, y: 300, vx: 0, vy: 300 }, 0.9),
+    'minimal': (ctx) => drawStick(ctx, { x: 750, y: 300 }, 1.3),
+  },
+  drawBall: {
+    'time 0.3': (ctx) => drawBall(ctx, { kind: 'ball', x: 800, y: 300, vx: -230, vy: 0 }, 0.3),
+    'time 1.1': (ctx) => drawBall(ctx, { kind: 'ball', x: 800, y: 300, vx: 163, vy: 163 }, 1.1),
+    'minimal': (ctx) => drawBall(ctx, { x: 800, y: 300 }, 1.3),
+  },
+  drawForestPortal: {
+    'closed draws nothing': (ctx) => drawForestPortal(ctx, portal, 0, 0.1),
+    'half grown': (ctx) => drawForestPortal(ctx, portal, 0.5, 0.3),
+    'exactly grown': (ctx) => drawForestPortal(ctx, portal, 1, 0.7),
+    'open and clamped': (ctx) => drawForestPortal(ctx, portal, 3, 2.1),
+    'minimal': (ctx) => drawForestPortal(ctx, { x: 500, y: 450 }, 1, 1.3),
+  },
+  drawCage: {
+    'time 0.7': (ctx) => drawCage(ctx, { x: 900, y: 450 }, 0.7),
+    'time 2.2': (ctx) => drawCage(ctx, { x: 900, y: 450 }, 2.2),
+  },
 };
 
 const THEME_FACTORIES = { meadow: createMeadowTheme, sky: createSkyTheme, castle: createCastleTheme, sea: createSeaTheme };
@@ -322,6 +409,53 @@ const CASES = [];
 
 for (const [fn, states] of Object.entries(SPRITE_STATES)) {
   for (const [state, draw] of Object.entries(states)) CASES.push({ name: `sprite ${fn} ${state}`, draw });
+}
+
+const FOREST_FEET = 'C...n......O' + '.' + '.K..M...n.O.' + '.' + '..w.....U..G';
+const FOREST_WALLS = [12, 25];
+const FOREST_LOG_START = 4;
+
+function forestTestDef() {
+  const upper = '.'.repeat(FOREST_LOG_START) + '======' + '.'.repeat(FOREST_FEET.length - FOREST_LOG_START - 6);
+  const map = mapFromBottom([upper, FOREST_FEET, '#'.repeat(FOREST_FEET.length)]).map((line) => [...line].map((ch, col) => (FOREST_WALLS.includes(col) ? '#' : ch)).join(''));
+  return { id: 'woodtest', theme: 'forest', map };
+}
+
+const forestLevel = parseLevel(forestTestDef());
+const FOREST_CAMS = [['camX 0', 0], ['camX not a tile multiple', 5 * TILE + 13], ['camX with a log starting left of the first column', (FOREST_LOG_START + 3) * TILE + 13]];
+const FOREST_GOAL_CAM = 33 * TILE + 13;
+
+for (const [camLabel, camX] of FOREST_CAMS) {
+  CASES.push({ name: `theme forest inline drawBackdrop ${camLabel}`, draw: (ctx) => createForestTheme(ctx).drawBackdrop(forestLevel, camX, BOIL_TIME) });
+  CASES.push({ name: `theme forest inline drawTiles ${camLabel}`, draw: (ctx) => createForestTheme(ctx).drawTiles(forestLevel, camX) });
+}
+
+for (const [goalLabel, locked] of [['locked', true], ['free', false]]) {
+  CASES.push({
+    name: `theme forest inline drawGoal ${goalLabel}`,
+    draw: (ctx) => {
+      ctx.translate(-FOREST_GOAL_CAM, 0);
+      createForestTheme(ctx).drawGoal(forestLevel.goal, BOIL_TIME, false, locked);
+    },
+  });
+}
+
+for (const camX of [10 * TILE, 28 * TILE]) {
+  CASES.push({
+    name: `scene forest inline camX ${camX}`,
+    draw: (ctx) => {
+      const game = createGame([forestTestDef()]);
+      game.state = 'playing';
+      game.world.portals[0].open = true;
+      game.world.portals[0].openedAt = -1;
+      game.world.portals[1].open = true;
+      game.world.portals[1].openedAt = -0.15;
+      game.world.checkpointReached = true;
+      const camera = createCamera();
+      camera.x = camX;
+      createScene(ctx).render({ game, camera, particles: createParticles(), time: BOIL_TIME, lang: 'en', muted: false });
+    },
+  });
 }
 
 const ONE_WAY_RUNS = [
@@ -371,6 +505,7 @@ for (const [themeName, createTheme] of Object.entries(THEME_FACTORIES)) {
 }
 
 const DRAWS_NOTHING = new Set(['sprite drawPortal closed draws nothing']);
+for (const name of ['sprite drawMonkey hidden draws nothing', 'sprite drawMonkey arriving draws nothing', 'sprite drawForestPortal closed draws nothing']) DRAWS_NOTHING.add(name);
 const fileSlug = (name) => name.replace(/[^A-Za-z0-9.-]+/g, '_');
 const recorded = {};
 let golden = null;

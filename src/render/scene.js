@@ -8,6 +8,7 @@ import { createMeadowTheme } from './meadow.js';
 import { createSkyTheme } from './sky.js';
 import { createCastleTheme } from './castle.js';
 import { createSeaTheme } from './sea.js';
+import { createForestTheme } from './forest.js';
 import { drawStarEnemy, drawBat, drawRainCloud, drawMovingCloud } from './sky-sprites.js';
 import { drawRat, drawGhost, drawSkeleton, drawSpider, drawFireball, drawBone, drawPortal, drawCheckpoint, drawShield, drawDoor } from './castle-sprites.js';
 import {
@@ -34,6 +35,7 @@ import {
   drawGemIcon,
   drawMutedIcon,
 } from './sprites.js';
+import { HOUSE_SIZE, drawRabbit, drawDeer, drawSnake, drawMonkey, drawGrandma, drawHouse, drawCone, drawStick, drawBall, drawForestPortal } from './forest-sprites.js';
 
 const ENEMY_DRAWERS = {
   carrot: drawCarrot,
@@ -49,14 +51,19 @@ const ENEMY_DRAWERS = {
   dolphin: drawDolphin,
   fish: drawFish,
   shark: drawShark,
+  rabbit: drawRabbit,
+  deer: drawDeer,
+  snake: drawSnake,
+  monkey: drawMonkey,
+  grandma: drawGrandma,
 };
 
-const PROJECTILE_DRAWERS = { bone: drawBone, fireball: drawFireball, shell: drawShell };
+const PROJECTILE_DRAWERS = { bone: drawBone, fireball: drawFireball, shell: drawShell, cone: drawCone, stick: drawStick, ball: drawBall };
 
 const NO_HUD_INSET = { left: 0, right: 0, corner: 0 };
 
 export function createScene(ctx) {
-  const themes = { meadow: createMeadowTheme(ctx), sky: createSkyTheme(ctx), castle: createCastleTheme(ctx), sea: createSeaTheme(ctx) };
+  const themes = { meadow: createMeadowTheme(ctx), sky: createSkyTheme(ctx), castle: createCastleTheme(ctx), sea: createSeaTheme(ctx), forest: createForestTheme(ctx) };
 
   function drawGrid(camX) {
     ctx.lineWidth = 1;
@@ -129,6 +136,8 @@ export function createScene(ctx) {
     world.pearls.forEach((pearl) => box(bodyRect(pearl)));
     world.crabs.forEach((crab) => box(bodyRect(crab)));
     if (world.portal) box(bodyRect(world.portal));
+    world.portals.forEach((g) => box(bodyRect(g)));
+    if (world.house) box(bodyRect({ ...world.house, ...HOUSE_SIZE }));
     world.doors.forEach((d) => box(bodyRect(d)));
     ctx.setLineDash([6, 6]);
     world.level.rooms.forEach((room) => ctx.strokeRect(room.left, 0, room.right - room.left, VIEW_H));
@@ -155,6 +164,10 @@ export function createScene(ctx) {
     if (level.checkpoint) drawCheckpoint(ctx, level.checkpoint, world.checkpointReached, time);
     world.doors.forEach((d, i) => drawDoor(ctx, d, time, 731 + i * 11));
     if (world.portal?.open) drawPortal(ctx, world.portal, (world.time - world.portal.openedAt) / PORTAL.grow, time);
+    world.portals.forEach((g, i) => {
+      if (g.open) drawForestPortal(ctx, g, (world.time - g.openedAt) / PORTAL.grow, time, 1241 + i * 11);
+    });
+    if (world.house) drawHouse(ctx, world.house, time);
     world.movers.forEach((m, i) => (level.theme === 'sea' ? drawSandStick : drawMovingCloud)(ctx, m, 391 + i * 13));
     level.signs.forEach((sign, i) => drawSign(ctx, sign, tSign(sign.textKey, lang, touch), 61 + i * 7));
     world.crystals.forEach((c, i) => drawRedCrystal(ctx, c, time, 41 + i));

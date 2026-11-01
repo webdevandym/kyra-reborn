@@ -26,6 +26,7 @@ const WORLD_ICONS = {
   sky: '<svg class="level-card__world" viewBox="0 0 30 18" aria-hidden="true"><path d="M26 2a5 5 0 1 0 3 8a4 4 0 1 1-3-8z"/><path d="M4 16a4 4 0 0 1 1-8a5 5 0 0 1 9-2a4 4 0 0 1 6 3a3.5 3.5 0 0 1 0 7z"/></svg>',
   castle: '<svg class="level-card__world" viewBox="0 0 24 18" aria-hidden="true"><path d="M5 17V5h3v2h2V5h4v2h2V5h3v12z"/><path d="M10 17v-4a2 2 0 0 1 4 0v4"/></svg>',
   sea: '<svg class="level-card__world" viewBox="0 0 30 18" aria-hidden="true"><path d="M2 9c3-4 6 4 9 0s6 4 9 0s5 3 8 0"/><path d="M2 15c3-4 6 4 9 0s6 4 9 0s5 3 8 0"/><circle cx="22" cy="3.5" r="2"/></svg>',
+  forest: '<svg class="level-card__world" viewBox="0 0 30 18" aria-hidden="true"><path d="M8 17v-4M3 13l5-10 5 10z"/><path d="M22 17v-5"/><circle cx="22" cy="8" r="5"/></svg>',
 };
 
 const canvas = document.getElementById('game');
@@ -341,6 +342,12 @@ const BUTTON_ACTIONS = {
   mute: toggleMute,
 };
 
+function popMonkeyBubble() {
+  audio.sfx.bubblePop();
+  const monkey = game.world.enemies.find((enemy) => enemy.kind === 'monkey');
+  if (monkey) particles.poof(monkey.x, monkey.y - monkey.h / 2);
+}
+
 function handleEvents(events) {
   for (const e of events) {
     switch (e.type) {
@@ -367,6 +374,7 @@ function handleEvents(events) {
         if (e.result === 'defeated') particles.poof(e.x, e.y + 12);
         break;
       case 'throw':
+      case 'stickThrow':
         if (onScreen(e.x)) audio.sfx.throw();
         break;
       case 'boneBreak':
@@ -380,6 +388,8 @@ function handleEvents(events) {
         if (onScreen(e.x)) audio.sfx.fire();
         break;
       case 'shell':
+      case 'cone':
+      case 'ball':
         if (onScreen(e.x)) audio.sfx.shell();
         break;
       case 'bubble':
@@ -425,6 +435,24 @@ function handleEvents(events) {
         particles.sparkle(e.to.x, e.to.y - 35, COLORS.portal);
         particles.text(e.to.x + 120, e.to.y - 90, t('checkpoint', prefs.lang), COLORS.ink);
         snapToPlayer();
+        break;
+      case 'warp':
+        audio.sfx.portal();
+        particles.sparkle(e.from.x, e.from.y - 35, COLORS.goal);
+        particles.sparkle(e.to.x, e.to.y - 35, COLORS.goal);
+        snapToPlayer();
+        break;
+      case 'savepoint':
+        audio.sfx.shieldUp();
+        particles.sparkle(e.x - 14, e.y - 70, COLORS.star);
+        break;
+      case 'monkeyState':
+        if (e.state === 'awake') popMonkeyBubble();
+        break;
+      case 'grandmaOut':
+      case 'houseGone':
+        audio.sfx.pearl();
+        particles.poof(e.x, e.y - 40);
         break;
       case 'rainStart':
         if (onScreen(e.x)) audio.sfx.rain();
