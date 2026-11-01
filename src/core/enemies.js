@@ -1,7 +1,8 @@
-import { TILE, STEP, CARROT, ZOMBIE, PROPELLER, BEE, FLYER, RULES, STAR, BAT, RAT, SKELETON, GHOST, SPIDER, FIREBALL, BONE, DOLPHIN, FISH, SHARK, SHELL } from '../config.js';
+import { TILE, STEP, CARROT, ZOMBIE, PROPELLER, BEE, FLYER, RULES, STAR, BAT, RAT, SKELETON, GHOST, SPIDER, FIREBALL, BONE, DOLPHIN, FISH, SHARK, SHELL, RABBIT, DEER, SNAKE, CONE } from '../config.js';
 import { applyGravity, moveAndCollide } from './physics.js';
 import { tileAt, roomAt } from './level.js';
 import { shooterState, updateShooter, stompShooter } from './shooter.js';
+import { aim8 } from './aim.js';
 
 function baseEnemy(spec, w, h, speed) {
   return {
@@ -346,6 +347,55 @@ const shark = {
   onStomp: (e) => stompShooter(e, SHARK, defeat),
 };
 
+const SNAKE_REACH_ROWS = 8;
+
+function snakeShot(e, player) {
+  const centreY = e.y - e.h / 2;
+  const { dx, dy } = aim8(e.x, centreY, player.x, player.y - player.h / 2);
+  const reach = Math.max(e.w, e.h) / 2 + CONE.size / 2;
+  return { kind: 'cone', x: e.x + dx * reach, y: centreY + dy * reach, vx: dx * CONE.speed, vy: dy * CONE.speed };
+}
+
+const SNAKE_RULES = {
+  cfg: SNAKE,
+  minVolley: 1,
+  maxVolley: 3,
+  inRange(e, level, player) {
+    const rows = Math.abs(player.y - player.h / 2 - (e.y - e.h / 2)) / TILE;
+    return !player.dead && roomAt(level, player.x) === e.room && Math.abs(player.x - e.x) <= SNAKE.maxRange * TILE && rows <= SNAKE_REACH_ROWS;
+  },
+  shoot: snakeShot,
+};
+
+const hoveringSnake = flyer({ ...SNAKE, speed: 0, range: 0 });
+
+const snake = {
+  create: (spec) => ({
+    ...(spec.fly ? hoveringSnake.create(spec) : baseEnemy(spec, SNAKE.w, SNAKE.h, 0)),
+    ...shooterState(SNAKE, SNAKE_RULES.minVolley),
+    room: null,
+    fly: Boolean(spec.fly),
+  }),
+  update(e, dt, level, player) {
+    e.room ??= roomAt(level, e.x);
+    if (e.fly) {
+      e.phase += e.bobSpeed * dt;
+      e.prevBottom = e.y;
+      e.y = flyerFeet(e);
+    }
+    return updateShooter(e, dt, level, player, SNAKE_RULES);
+  },
+  onStomp: (e) => stompShooter(e, SNAKE, defeat),
+};
+
+const rabbit = {
+  create: (spec) => baseEnemy(spec, RABBIT.w, RABBIT.h, RABBIT.speed),
+  update: patrol,
+  onStomp: defeat,
+};
+
+const deer = twoLife(DEER);
+
 export const ENEMY_KINDS = {
   dolphin,
   fish,
@@ -360,6 +410,9 @@ export const ENEMY_KINDS = {
   skeleton,
   ghost,
   spider,
+  rabbit,
+  deer,
+  snake,
 };
 
 export function createEnemy(spec) {

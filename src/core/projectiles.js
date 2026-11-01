@@ -1,4 +1,4 @@
-import { TILE, BONE, SHELL, FIREBALL } from '../config.js';
+import { TILE, BONE, SHELL, FIREBALL, CONE } from '../config.js';
 import { tileAt } from './level.js';
 
 export const PROJECTILES = {
@@ -32,6 +32,19 @@ export const PROJECTILES = {
       f.x += f.vx * dt;
       const lead = f.x + Math.sign(f.vx) * (FIREBALL.size / 2);
       return tileAt(level, Math.floor(lead / TILE), Math.floor(f.y / TILE)) !== 'solid';
+    },
+  },
+  cone: {
+    event: 'cone',
+    size: CONE.size,
+    move(f, dt, level) {
+      f.x += f.vx * dt;
+      f.y += f.vy * dt;
+      const along = CONE.size / 2 / (Math.hypot(f.vx, f.vy) || 1);
+      const leadX = f.x + f.vx * along;
+      const leadY = f.y + f.vy * along;
+      const inside = f.x >= -TILE && f.x <= level.width + TILE && f.y >= -TILE && f.y <= level.height + TILE;
+      return inside && tileAt(level, Math.floor(leadX / TILE), Math.floor(leadY / TILE)) !== 'solid';
     },
   },
 };
